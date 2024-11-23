@@ -1,0 +1,8 @@
+use floria_plugin_sdk::{data::*, utils::*};
+
+/// Evaluate an expression.
+pub fn evaluate(mut arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+    assert_argument_count(&arguments, 1)?;
+
+    arguments.remove(0).evaluate(&call_site)
+}
