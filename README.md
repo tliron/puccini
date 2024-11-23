@@ -1,0 +1,48 @@
+*Work in progress, not ready for general use. For now, see the [previous version](https://github.com/tliron/go-puccini).*
+
+Puccini
+=======
+
+Tools for working with [TOSCA](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html) (Topology and Orchestration Specification for Cloud Applications) and CSAR (Cloud Service Archive).
+
+It comprises:
+
+* Libraries for TOSCA (parsing, validation, compilation) and CSAR (validation, reading, writing)
+* [Wasm](https://webassembly.org) implementations for TOSCA's built-in functions
+* CLI tools based on the above:
+
+`puccini-tosca`
+---------------
+
+TOSCA parser, validator, and compiler.
+
+The compilation output is [Floria](https://floria.khutulun.org) templates, which can then be instantiated by Puccini in order to test imperative behaviors such as calling TOSCA functions embedded in properties, attributes, and outputs, as well as invoking operations and responding to notifications.
+
+For a Floria-based cloud orchestrator, see [Khutulun](https://khutulun.org).
+
+`puccini-csar`
+--------------
+
+Can create compliant CSAR files, validate existing ones, extract contained artifacts, and query or modify the metadata.
+
+Supports both tarballs and zip files.
+
+Documentation
+-------------
+
+* [Installation Guide](https://puccini.cloud/documentation/install)
+* [Frequently Asked Questions](https://puccini.cloud/documentation/faq)
+* [Puccini and Floria](https://puccini.cloud/documentation/floria)
+* [puccini-tosca API Documentation](https://docs.rs/puccini-tosca/latest/puccini_tosca/)
+* [puccini-csar API Documentation](https://docs.rs/puccini-csar/latest/puccini_csar/)
+* [puccini-tosca examples](https://github.com/tliron/puccini/tree/main/tosca/examples)
+
+License
+-------
+
+Like much of the Rust ecosystem, licensed under your choice of either of
+
+* [Apache License, Version 2.0](https://github.com/tliron/puccini/blob/main/LICENSE-APACHE)
+* [MIT license](https://github.com/tliron/puccini/blob/main/LICENSE-MIT)
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.

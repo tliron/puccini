@@ -1,0 +1,38 @@
+use floria_plugin_sdk::{data::*, errors, utils::*};
+
+/// The $has_prefix function takes two arguments. Both arguments are either of type string or of
+/// tpe list. It evaluates to true if the second argument is a prefix of the first argument. For
+/// lists this means that the values of the second list are the first values of the first list in
+/// the same order.
+pub fn has_prefix(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+    assert_argument_count(&arguments, 2)?;
+    let mut arguments = arguments.into_iter();
+
+    let haystack = arguments.next().unwrap().must_evaluate(&call_site)?;
+    match haystack {
+        Expression::Text(haystack) => {
+            let needle = arguments.next().unwrap().must_evaluate(&call_site)?.cast_string("second argument")?;
+            Ok(Some(haystack.starts_with(&needle).into()))
+        }
+
+        Expression::List(haystack) => {
+            let haystack = &haystack.list().inner;
+            let needle = arguments.next().unwrap().must_evaluate(&call_site)?;
+            let needle = &needle.cast_list("second argument")?.list().inner;
+
+            if needle.len() > haystack.len() {
+                return Ok(Some(false.into()));
+            }
+
+            for (index, item) in needle.iter().enumerate() {
+                if *item != haystack[index] {
+                    return Ok(Some(false.into()));
+                }
+            }
+
+            Ok(Some(true.into()))
+        }
+
+        _ => Err(errors::not_of_types_for("first argument", &haystack, &["string", "list"])),
+    }
+}

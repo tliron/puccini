@@ -1,0 +1,6 @@
+#theme: jekyll-theme-cayman
+# plugins:
+# - jekyll-remote-theme
+remote_theme: pages-themes/slate@v0.2.0
+show_downloads: false
+google_analytics: G-ZQ1TDG4HG2

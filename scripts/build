@@ -1,0 +1,94 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+cd "$ROOT"
+
+# sudo dnf install clang
+# cargo install wild-linker
+# curl https://wasmtime.dev/install.sh -sSf | bash
+
+PLUGIN=puccini_plugin_tosca_2_0_functions
+WASM_ASSETS=$ROOT/assets/wasm
+
+if [ "$1" == -r ]; then
+    NATIVE=${NATIVE:-release}
+	WASM=${WASM:-release}
+	WASM_PRECOMPILE=${WASM_PRECOMPILE:-true}
+	WASM_DEBUG=${WASM_DEBUG:-false}
+else
+    NATIVE=${NATIVE:-dev}
+	WASM=${WASM:-dev}
+	WASM_PRECOMPILE=${WASM_PRECOMPILE:-false}
+	WASM_DEBUG=${WASM_DEBUG:-true}
+fi
+
+#
+# Wasm
+#
+
+m "building wasm ($WASM)..." "$CYAN"
+
+if [ "$WASM" == release ]; then
+	cargo build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2 --release
+else
+	RUSTFLAGS='-Z threads=8' \
+	cargo +nightly build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2
+fi
+
+#
+# Precompile Wasm
+#
+
+rm --force \
+    "$WASM_ASSETS/$PLUGIN.wasm" \
+    "$WASM_ASSETS/$PLUGIN.cwasm"
+
+if [ "$WASM" == release ]; then
+    WASM_SOURCE=$ROOT/target/wasm32-wasip2/release
+else
+    WASM_SOURCE=$ROOT/target/wasm32-wasip2/debug
+fi
+
+if [ "$WASM_PRECOMPILE" == true ]; then
+    if [ "$WASM_DEBUG" == true ]; then
+        m "precompiling cwasm ($WASM with debug info)..." "$CYAN"
+        # This *requires* puccini-tosca --plugin-debug flag
+        WASMTIME_COMPILE_ARGS='--debug debug-info=y'
+    else
+        m "precompiling cwasm ($WASM)..." "$CYAN"
+    fi
+
+	wasmtime compile \
+	    $WASMTIME_COMPILE_ARGS \
+	    --wasm gc-support=n,threads=n \
+		--output "$WASM_ASSETS/$PLUGIN.cwasm" \
+		"$WASM_SOURCE/$PLUGIN.wasm"
+else
+	ln --symbolic "$WASM_SOURCE/$PLUGIN.wasm" "$WASM_ASSETS/"
+fi
+
+#
+# Native
+#
+
+if [ "$WASM_PRECOMPILE" == true ]; then
+	NATIVE_FEATURES=--features=wasm-precompiled
+	if [ "$WASM_DEBUG" == true ]; then
+		m "building native ($NATIVE with cwasm and debug info)..." "$CYAN"
+        NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug-info"
+	else
+		m "building native ($NATIVE with cwasm)..." "$CYAN"
+    fi
+else
+    m "building native ($NATIVE with wasm)..." "$CYAN"
+fi
+
+if [ "$NATIVE" == release ]; then
+	cargo install --path="$ROOT/cli" $NATIVE_FEATURES
+else
+	RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
+	cargo +nightly install --path="$ROOT/cli" --debug --features=floria/wasm_debug $NATIVE_FEATURES
+fi
