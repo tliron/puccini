@@ -10,7 +10,7 @@ use {
 /// Entity kind.
 ///
 /// Their names are provided by
-/// [Dialect::entity_kind_name](super::super::dialect::Dialect::entity_kind_name).
+/// [Dialect::entity_kinds](super::super::dialect::Dialect::entity_kinds).
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct EntityKind(pub usize);
 

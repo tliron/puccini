@@ -20,6 +20,7 @@ where
     where
         AnnotatedT: 'static,
     {
+        // TODO: completed_entity (we need and should have error recipient)
         let data_type = catalog.entity::<DataType<AnnotatedT>, _>(DATA_TYPE, &self.type_name, source_id)?;
         let reference = data_type.initialize_schema(&self.type_name, schema, self, source_id, catalog)?;
         Ok(StructSchemaField::new(reference, self.required.unwrap_or(true)))

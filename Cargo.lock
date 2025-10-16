@@ -632,7 +632,7 @@ checksum = "e47641d3deaf41fb1538ac1f54735925e275eaf3bf4d55c81b137fba797e5cbb"
 
 [[package]]
 name = "compris"
-version = "0.0.7"
+version = "0.0.10"
 dependencies = [
  "anstream",
  "base64",
@@ -657,7 +657,7 @@ dependencies = [
 
 [[package]]
 name = "compris-macros"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "floria"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
  "compris",
  "duplicate",
@@ -1148,7 +1148,7 @@ dependencies = [
 
 [[package]]
 name = "floria-plugin-sdk"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
  "duplicate",
  "num-traits",
@@ -2792,7 +2792,7 @@ dependencies = [
 
 [[package]]
 name = "kutil"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2822,7 +2822,7 @@ dependencies = [
 
 [[package]]
 name = "kutil-cli-macros"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -2832,7 +2832,7 @@ dependencies = [
 
 [[package]]
 name = "kutil-std-macros"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -3607,7 +3607,7 @@ dependencies = [
 
 [[package]]
 name = "puccini-cli"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anstream",
  "clap",
@@ -3619,11 +3619,12 @@ dependencies = [
  "read-url",
  "thiserror 2.0.17",
  "tracing",
+ "wasmtime",
 ]
 
 [[package]]
 name = "puccini-csar"
-version = "0.0.1"
+version = "0.0.3"
 dependencies = [
  "compris",
 ]
@@ -3641,7 +3642,7 @@ dependencies = [
 
 [[package]]
 name = "puccini-tosca"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anstream",
  "chrono",
@@ -3836,7 +3837,7 @@ dependencies = [
 
 [[package]]
 name = "read-url"
-version = "0.0.6"
+version = "0.0.9"
 dependencies = [
  "async-compression",
  "flate2",

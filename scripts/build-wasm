@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+cd "$ROOT"
+
+# # curl https://wasmtime.dev/install.sh -sSf | bash
+
+PLUGIN=puccini_plugin_tosca_2_0_functions
+WASM_ASSETS=$ROOT/assets/wasm
+
+if [ "$1" == -r ]; then
+	WASM=${WASM:-release}
+else
+	WASM=${WASM:-dev}
+fi
+
+m "building wasm ($WASM)..." "$CYAN"
+
+if [ "$WASM" == release ]; then
+	cargo build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2 --release
+else
+    # Note: wild can't link wasm
+    # RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
+
+	RUSTFLAGS='-Z threads=8' \
+	cargo +nightly -Z bindeps build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2
+fi

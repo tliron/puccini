@@ -8,12 +8,12 @@ use {
 const PREFIX: char = '@';
 
 impl Source {
-    /// To [NamespacesDepiction].
+    /// To namespaces depiction.
     pub fn namespaces_depiction<'own>(&'own self, entity_kinds: &'own EntityKinds) -> NamespacesDepiction<'own> {
         NamespacesDepiction::new(self, entity_kinds)
     }
 
-    /// To [EntitiesDepiction].
+    /// To entities depiction.
     pub fn entities_depiction<'own>(&'own self, entity_kinds: &'own EntityKinds) -> EntitiesDepiction<'own> {
         EntitiesDepiction::new(self, entity_kinds)
     }

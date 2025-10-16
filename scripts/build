@@ -8,87 +8,48 @@ cd "$ROOT"
 
 # sudo dnf install clang
 # cargo install wild-linker
-# curl https://wasmtime.dev/install.sh -sSf | bash
 
-PLUGIN=puccini_plugin_tosca_2_0_functions
-WASM_ASSETS=$ROOT/assets/wasm
+BINDEPS=${BINDEPS:-false}
 
 if [ "$1" == -r ]; then
     NATIVE=${NATIVE:-release}
-	WASM=${WASM:-release}
+    WASM=${WASM:-release}
 	WASM_PRECOMPILE=${WASM_PRECOMPILE:-true}
-	WASM_DEBUG=${WASM_DEBUG:-false}
+	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-false}
 else
     NATIVE=${NATIVE:-dev}
-	WASM=${WASM:-dev}
+    WASM=${WASM:-dev}
 	WASM_PRECOMPILE=${WASM_PRECOMPILE:-false}
-	WASM_DEBUG=${WASM_DEBUG:-true}
+	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-true}
 fi
 
-#
-# Wasm
-#
-
-m "building wasm ($WASM)..." "$CYAN"
-
-if [ "$WASM" == release ]; then
-	cargo build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2 --release
-else
-	RUSTFLAGS='-Z threads=8' \
-	cargo +nightly build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2
-fi
-
-#
-# Precompile Wasm
-#
-
-rm --force \
-    "$WASM_ASSETS/$PLUGIN.wasm" \
-    "$WASM_ASSETS/$PLUGIN.cwasm"
-
-if [ "$WASM" == release ]; then
-    WASM_SOURCE=$ROOT/target/wasm32-wasip2/release
-else
-    WASM_SOURCE=$ROOT/target/wasm32-wasip2/debug
+# We won't need this with bindeps
+if [ "$BINDEPS" == false ]; then
+    WASM=$WASM \
+    "$HERE/build-wasm"
 fi
 
 if [ "$WASM_PRECOMPILE" == true ]; then
-    if [ "$WASM_DEBUG" == true ]; then
-        m "precompiling cwasm ($WASM with debug info)..." "$CYAN"
-        # This *requires* puccini-tosca --plugin-debug flag
-        WASMTIME_COMPILE_ARGS='--debug debug-info=y'
-    else
-        m "precompiling cwasm ($WASM)..." "$CYAN"
-    fi
-
-	wasmtime compile \
-	    $WASMTIME_COMPILE_ARGS \
-	    --wasm gc-support=n,threads=n \
-		--output "$WASM_ASSETS/$PLUGIN.cwasm" \
-		"$WASM_SOURCE/$PLUGIN.wasm"
-else
-	ln --symbolic "$WASM_SOURCE/$PLUGIN.wasm" "$WASM_ASSETS/"
-fi
-
-#
-# Native
-#
-
-if [ "$WASM_PRECOMPILE" == true ]; then
-	NATIVE_FEATURES=--features=wasm-precompiled
-	if [ "$WASM_DEBUG" == true ]; then
-		m "building native ($NATIVE with cwasm and debug info)..." "$CYAN"
+    NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-precompiled"
+   	if [ "$WASM_DEBUG_INFO" == true ]; then
+  		m "building ($NATIVE + cwasm with debug info)..." "$CYAN"
         NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug-info"
-	else
-		m "building native ($NATIVE with cwasm)..." "$CYAN"
+   	else
+  		m "building ($NATIVE + cwasm)..." "$CYAN"
     fi
 else
-    m "building native ($NATIVE with wasm)..." "$CYAN"
+    m "building ($NATIVE + wasm)..." "$CYAN"
 fi
 
 if [ "$NATIVE" == release ]; then
 	cargo install --path="$ROOT/cli" $NATIVE_FEATURES
 else
-	RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
-	cargo +nightly install --path="$ROOT/cli" --debug --features=floria/wasm_debug $NATIVE_FEATURES
+    if [ "$BINDEPS" == true ]; then
+        # wild can't link wasm (it's an artifact dependency)
+        RUSTFLAGS='-Z threads=8' \
+        cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=bindeps,floria/wasm_debug $NATIVE_FEATURES
+    else
+        RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
+        cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=floria/wasm_debug $NATIVE_FEATURES
+    fi
 fi

@@ -83,7 +83,8 @@ impl Source {
 
     /// Get an entity reference.
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     pub fn entity_ref<AnnotatedT>(
         &self,
         entity_kind: EntityKind,
@@ -164,7 +165,8 @@ impl Source {
 
     /// Get an [Entity].
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     pub fn entity<EntityT, AnnotatedT>(
         &self,
         entity_kind: EntityKind,

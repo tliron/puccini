@@ -25,7 +25,7 @@ keywords = [
 [dependencies]
 base64 = "0.22.1"
 chrono = "0.4.42"
-floria-plugin-sdk = "=0.0.1"
+floria-plugin-sdk = "=0.0.4"
 regex = "1.12.2"
 wit-bindgen = "0.46.0"
 
@@ -35,4 +35,5 @@ crate-type = ["cdylib"]
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]
 all-features = true
+default-target = "wasm32-wasip2"
 rustdoc-args = ["--cfg", "docsrs"]

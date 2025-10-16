@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+cd "$ROOT"
+
+# curl https://wasmtime.dev/install.sh -sSf | bash
+
+PLUGIN=puccini_plugin_tosca_2_0_functions
+WASM_ASSETS=$ROOT/assets/wasm
+
+if [ "$1" == -r ]; then
+	WASM=${WASM:-release}
+	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-false}
+else
+	WASM=${WASM:-dev}
+	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-true}
+fi
+
+rm --force "$WASM_ASSETS/$PLUGIN.cwasm"
+
+if [ "$WASM" == release ]; then
+    WASM_SOURCE=$ROOT/target/wasm32-wasip2/release
+else
+    WASM_SOURCE=$ROOT/target/wasm32-wasip2/debug
+fi
+
+if [ "$WASM_DEBUG_INFO" == true ]; then
+    m "building cwasm ($WASM + debug info)..." "$CYAN"
+    # This *requires* puccini-tosca --plugin-debug flag
+    WASMTIME_COMPILE_ARGS='--debug debug-info=y'
+else
+    m "building cwasm ($WASM)..." "$CYAN"
+fi
+
+wasmtime compile \
+    $WASMTIME_COMPILE_ARGS \
+    --wasm gc-support=n,threads=n \
+	--output "$WASM_ASSETS/$PLUGIN.cwasm" \
+	"$WASM_SOURCE/$PLUGIN.wasm"

@@ -3,7 +3,7 @@ edition = "2024"
 
 name = "puccini-tosca"
 description = "TOSCA parser, validator, and Floria compiler"
-version = "0.0.2"
+version = "0.0.3"
 rust-version = "1.90"
 
 license = "MIT OR Apache-2.0"
@@ -24,13 +24,13 @@ keywords = [
 
 [dependencies]
 anstream = "0.6.21"
-compris = { version = "=0.0.7", features = ["derive"] }
+compris = { version = "=0.0.10", features = ["derive"] }
 chrono = "0.4.42"
 duplicate = "2.0.0"
-floria = "=0.0.1"
-kutil = { version = "=0.0.1", features = ["cli", "std", "immutable"] }
+floria = "=0.0.4"
+kutil = { version = "=0.0.2", features = ["cli", "std", "immutable"] }
 num-traits = "0.2.19"
-read-url = { version = "=0.0.6", default-features = false, features = ["blocking"] }
+read-url = { version = "=0.0.9", default-features = false, features = ["blocking"] }
 smart-default = "0.7.1"
 thiserror = "2.0.17"
 tracing = "0.1.41"
@@ -47,4 +47,5 @@ tosca-2_0 = []
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]
 all-features = true
+features = ["read-url/async"]
 rustdoc-args = ["--cfg", "docsrs"]

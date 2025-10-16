@@ -42,19 +42,20 @@ impl Compile {
             None => {}
 
             // Bundle
+            // include_bytes!("../../../assets/wasm/puccini_plugin_tosca_2_0_functions.wasm"),
             #[cfg(not(feature = "_blanket"))]
             None => {
                 #[cfg(feature = "wasm-precompiled")]
                 library.add_dispatch_plugin(
                     tosca_2_0::DIALECT_ID,
-                    include_bytes!("../../../assets/wasm/puccini_plugin_tosca_2_0_functions.cwasm"),
+                    include_bytes!(concat!(env!("OUT_DIR"), "/puccini_plugin_tosca_2_0_functions.cwasm")),
                     true,
                 )?;
 
                 #[cfg(not(feature = "wasm-precompiled"))]
                 library.add_dispatch_plugin(
                     tosca_2_0::DIALECT_ID,
-                    include_bytes!("../../../assets/wasm/puccini_plugin_tosca_2_0_functions.wasm"),
+                    include_bytes!(concat!(env!("OUT_DIR"), "/puccini_plugin_tosca_2_0_functions.wasm")),
                     false,
                 )?;
             }

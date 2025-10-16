@@ -76,7 +76,7 @@ where
     #[depict(option, style(string))]
     pub checksum: Option<ByteString>,
 
-    /// Algorithm used to calculate the artifact checksum (e.g. MD5, SHA [Ref]). Shall be specified
+    /// Algorithm used to calculate the artifact checksum (e.g. MD5, SHA \[Ref\]). Shall be specified
     /// if checksum is specified for an artifact.
     #[resolve]
     #[depict(option, style(string))]

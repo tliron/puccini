@@ -3,7 +3,7 @@ edition = "2024"
 
 name = "puccini-cli"
 description = "Puccini TOSCA and CSAR CLI utilities"
-version = "0.0.2"
+version = "0.0.3"
 rust-version = "1.90"
 
 license = "MIT OR Apache-2.0"
@@ -22,15 +22,26 @@ keywords = [
     "khutulun",
 ]
 
+[build-dependencies]
+# bindeps:
+# https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
+# puccini-plugin-tosca-2_0-functions = { version = "=0.0.1", artifact = "cdylib", target = "wasm32-wasip2" }
+wasmtime = { version = "37.0.2", default-features = false, features = [
+    "cranelift",
+    "parallel-compilation",
+    "pooling-allocator",
+    "component-model",
+] }
+
 [dependencies]
 anstream = "0.6.21"
-compris = "=0.0.7"
+compris = "=0.0.10"
 clap = { version = "4.5.49", features = ["derive"] }
-floria = "=0.0.1"
-floria-plugin-sdk = "=0.0.1" # unused; for patching
-kutil = { version = "=0.0.1", features = ["cli", "std", "clap", "derive"] }
-puccini-tosca = { version = "=0.0.2", default-features = false, features = ["tosca-2_0"] }
-read-url = { version = "=0.0.6", features = ["blocking"] }
+floria = "=0.0.4"
+floria-plugin-sdk = "=0.0.4" # unused; for patching
+kutil = { version = "=0.0.2", features = ["cli", "std", "clap", "derive"] }
+puccini-tosca = { version = "=0.0.3", default-features = false, features = ["tosca-2_0"] }
+read-url = { version = "=0.0.9", features = ["blocking"] }
 thiserror = "2.0.17"
 tracing = "0.1.41"
 
@@ -43,7 +54,10 @@ http = ["puccini-tosca/http"]
 wasm-precompiled = []
 wasm-debug-info = []
 
-## Don't manually enable
+bindeps = []
+
+## Don't manually enable this!
+## It's for situations where we have all features enabled
 _blanket = []
 
 [[bin]]

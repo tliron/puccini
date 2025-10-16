@@ -33,7 +33,8 @@ impl Catalog {
 
     /// Get an entity reference.
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     pub fn entity_ref<AnnotatedT>(
         &self,
         entity_kind: EntityKind,
@@ -70,7 +71,8 @@ impl Catalog {
     ///
     /// Note that the entity is removed from the catalog while it is being completed.
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     pub fn completed_entity_ref<AnnotatedT, ErrorRecipientT>(
         &mut self,
         entity_kind: EntityKind,
@@ -176,7 +178,8 @@ impl Catalog {
 
     /// Get an [Entity].
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     pub fn entity<EntityT, AnnotatedT>(
         &self,
         entity_kind: EntityKind,
@@ -195,7 +198,8 @@ impl Catalog {
     /// calling [complete](Entity::complete) on it if
     /// [should_complete](Entity::should_complete) is true.
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     ///
     /// A [DerivationPath] is created in order to detect circular dependencies.
     ///
@@ -219,7 +223,8 @@ impl Catalog {
     /// calling [complete](Entity::complete) on it if
     /// [should_complete](Entity::should_complete) is true.
     ///
-    /// If not found will return the fallback if it exists.
+    /// If not found (e.g. it is currently removed for its completion phase) will return the
+    /// fallback if it exists.
     ///
     /// The call is added to the derivation_path in order to detect circular dependencies.
     ///
