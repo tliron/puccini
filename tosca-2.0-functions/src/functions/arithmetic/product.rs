@@ -1,6 +1,6 @@
 use super::super::super::data::*;
 
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
@@ -14,7 +14,7 @@ use floria_plugin_sdk::{data::*, errors, utils::*};
 /// * Any number of arguments of type integer or float. If all inputs are of type integer, then the
 ///   result is of type integer, otherwise it is of type float. The result value is the arithmetic
 ///   product of all the arguments values.
-pub fn product(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn product(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count_min(&arguments, 1)?;
     let length = arguments.len();
     let mut arguments = arguments.into_iter();

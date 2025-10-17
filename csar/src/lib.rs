@@ -6,8 +6,10 @@
 CSAR.
 */
 
-mod meta;
-mod version;
+mod errors;
+
+/// CSAR meta.
+pub mod meta;
 
 #[allow(unused_imports)]
-pub use {meta::*, version::*};
+pub use {errors::*, meta::*};

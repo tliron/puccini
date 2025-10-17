@@ -2,10 +2,10 @@ use super::{cli::*, errors::*, utils::*};
 
 use {
     anstream::println,
-    compris::{annotate::*, normal::*},
+    compris::annotate::*,
     floria::*,
     kutil::{
-        cli::{depict::*, log::*, run::*},
+        cli::{depict::*, run::*},
         std::error::*,
     },
     puccini_tosca::grammar::*,
@@ -15,12 +15,7 @@ use {
 
 impl Compile {
     /// Run compile subcommand.
-    pub fn run(&self) -> Result<(), MainError> {
-        if !self.quiet {
-            self.output_colorize.initialize();
-            initialize_tracing(self.verbose + 2, self.log_path.as_ref())?;
-        }
-
+    pub fn run(&self, cli: &CLI) -> Result<(), MainError> {
         #[cfg(not(feature = "plugins"))]
         if self.instantiate {
             return Err(ExitError::from("to use `--instantiate` you must enable \"plugins\" feature in build").into());
@@ -31,14 +26,14 @@ impl Compile {
         }
 
         if self.no_annotations {
-            self.run_annotated::<WithoutAnnotations>()
+            self.run_annotated::<WithoutAnnotations>(cli)
         } else {
-            self.run_annotated::<WithAnnotations>()
+            self.run_annotated::<WithAnnotations>(cli)
         }
     }
 
     /// Run compile subcommand.
-    pub fn run_annotated<AnnotatedT>(&self) -> Result<(), MainError>
+    pub fn run_annotated<AnnotatedT>(&self, cli: &CLI) -> Result<(), MainError>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default + Send + Sync,
     {
@@ -88,94 +83,101 @@ impl Compile {
 
         // Output
 
-        if !self.quiet {
-            let mut print_floria = true;
-            let mut first = true;
+        let mut output_floria = true;
+        let mut print_first = true;
 
-            // Depict TOSCA errors
+        // Depict TOSCA errors
 
-            if let Err(tosca_errors) = tosca_errors.check() {
-                print_floria = false;
-                first = false;
+        if let Err(tosca_errors) = tosca_errors.check() {
+            output_floria = false;
+
+            if !cli.quiet {
+                print_first = false;
 
                 tosca_errors.annotated_depictions(Some("TOSCA Errors".into())).print_default_depiction();
             }
+        }
 
-            // Depict Floria errors
+        // Depict Floria errors
 
-            #[cfg(feature = "plugins")]
-            if let Err(floria_errors) = floria_errors.check() {
-                print_floria = false;
+        #[cfg(feature = "plugins")]
+        if let Err(floria_errors) = floria_errors.check() {
+            output_floria = false;
 
-                if !first {
+            if !cli.quiet {
+                if !print_first {
                     println!();
                 }
-                first = false;
+                print_first = false;
 
                 floria_errors.to_depict("Floria Errors").print_default_depiction();
             }
+        }
 
-            // Depict debug
+        // Depict debug
 
-            match self.debug {
-                Some(Debug::Namespaces) => {
-                    print_floria = false;
+        match self.debug {
+            Some(Debug::Namespaces) => {
+                output_floria = false;
 
-                    if !first {
+                if !cli.quiet {
+                    if !print_first {
                         println!();
                     }
-                    first = false;
+                    print_first = false;
 
                     catalog.namespaces_depiction().print_default_depiction();
                 }
+            }
 
-                Some(Debug::Parsed | Debug::Completed) => {
-                    print_floria = false;
+            Some(Debug::Parsed | Debug::Completed) => {
+                output_floria = false;
 
-                    if !first {
+                if !cli.quiet {
+                    if !print_first {
                         println!();
                     }
-                    first = false;
+                    print_first = false;
 
                     catalog.entities_depiction().print_default_depiction();
                 }
-
-                Some(Debug::Compiled) => {
-                    // Force it to be true, even if there were compilation errors
-                    print_floria = true;
-                }
-
-                _ => {}
             }
 
-            // Output Floria instance
-
-            #[cfg(feature = "plugins")]
-            if print_floria
-                && !matches!(self.debug, Some(Debug::Compiled))
-                && let Some(floria_instance) = floria_instance
-            {
-                print_floria = false;
-
-                if !first {
-                    println!();
-                }
-
-                output!(self, store, floria_instance);
+            Some(Debug::Compiled) => {
+                // Force it to be true, even if there were compilation errors
+                output_floria = true;
             }
 
-            // Output Floria template
+            _ => {}
+        }
 
-            if print_floria
-                && let Some(floria_service_template_id) = floria_service_template_id
-                && let Some(floria_service_template) = store.get_vertex_template(&floria_service_template_id)?
-            {
-                if !first {
-                    println!();
-                }
+        // Output Floria instance
 
-                output!(self, store, floria_service_template);
+        #[cfg(feature = "plugins")]
+        if output_floria
+            && !matches!(self.debug, Some(Debug::Compiled))
+            && let Some(floria_instance) = floria_instance
+        {
+            output_floria = false;
+
+            if !cli.quiet && !print_first {
+                println!();
             }
+
+            output!(self, cli, store, floria_instance);
+        }
+
+        // Output Floria template
+
+        if output_floria
+            && let Some(floria_service_template_id) = floria_service_template_id
+            && let Some(floria_service_template) = store.get_vertex_template(&floria_service_template_id)?
+        {
+            if !cli.quiet && !print_first {
+                println!();
+            }
+
+            output!(self, cli, store, floria_service_template);
         }
 
         #[cfg(not(feature = "plugins"))]

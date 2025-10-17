@@ -5,8 +5,12 @@ Puccini
 */
 
 mod cli;
+mod create;
 mod errors;
+mod extract;
+mod meta;
 mod run;
+mod utils;
 
 use run::*;
 

@@ -1,6 +1,6 @@
 use super::value::*;
 
-use floria_plugin_sdk::data::*;
+use floria_plugin_sdk::{data::*, *};
 
 //
 // Schema
@@ -15,12 +15,12 @@ pub struct Schema {
 
 impl Schema {
     /// Root schema.
-    pub fn root(&self) -> Result<&ValueSchema, String> {
+    pub fn root(&self) -> Result<&ValueSchema, DispatchError> {
         self.dereference(0)
     }
 
     /// Dereference.
-    pub fn dereference(&self, reference: SchemaReference) -> Result<&ValueSchema, String> {
+    pub fn dereference(&self, reference: SchemaReference) -> Result<&ValueSchema, DispatchError> {
         match self.values.get(reference as usize) {
             Some(schema) => match schema {
                 ValueSchema::Reference(reference) => self.dereference(*reference),
@@ -32,13 +32,13 @@ impl Schema {
     }
 
     /// Coerce into the schema.
-    pub fn coerce(&self, expression: Expression, call_site: &CallSite) -> Result<Expression, String> {
+    pub fn coerce(&self, expression: Expression, call_site: &CallSite) -> Result<Expression, DispatchError> {
         self.root()?.coerce(expression, self, call_site)
     }
 }
 
 impl TryFrom<Expression> for Schema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         match expression {

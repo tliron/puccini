@@ -1,12 +1,12 @@
 use super::super::super::entities::*;
 
 use {
-    floria_plugin_sdk::{data::*, entities::*, host, log, utils::*},
+    floria_plugin_sdk::{data::*, entities::*, utils::*, *},
     std::fmt,
 };
 
 /// Select capability. Return its Floria vertex ID.
-pub fn select_capability(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn select_capability(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     log!("select_capability", "{}", expression_vec_to_string(&arguments));
 
     let constraints = CapabilityConstraints::parse(&arguments)?;

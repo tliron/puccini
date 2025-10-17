@@ -24,6 +24,13 @@ keywords = [
 
 [dependencies]
 compris = "=0.0.10"
+kutil = { version = "=0.0.2", features = ["cli", "std"] }
+thiserror = "2.0.17"
+utf8-chars = "3.0.5"
+
+[[example]]
+name = "meta"
+required-features = ["compris/serde"]
 
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]

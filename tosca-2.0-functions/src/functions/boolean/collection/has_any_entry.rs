@@ -1,4 +1,4 @@
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
@@ -7,7 +7,7 @@ use floria_plugin_sdk::{data::*, errors, utils::*};
 /// second argument is a list with the entry_schema matching the entry_schema of the first
 /// argument. It evaluates to true if there is an entry in the second argument that is equal to an
 /// entry in the first argument.
-pub fn has_any_entry(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn has_any_entry(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 2)?;
     let mut arguments = arguments.into_iter();
 
