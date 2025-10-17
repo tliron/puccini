@@ -2,6 +2,9 @@ use super::super::super::data::*;
 
 use floria_plugin_sdk::{data::*, errors, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $product function takes either:
 ///
 /// * Two arguments where the first argument is of a scalar type and the second argument is of an

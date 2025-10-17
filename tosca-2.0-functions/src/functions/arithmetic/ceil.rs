@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $ceil function takes a float argument. The result is an integer with the closest value that
 /// is greater or equal to the value of the float argument.
 pub fn ceil(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {

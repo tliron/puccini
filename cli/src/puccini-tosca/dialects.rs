@@ -41,8 +41,7 @@ impl Compile {
             #[cfg(feature = "_blanket")]
             None => {}
 
-            // Bundle
-            // include_bytes!("../../../assets/wasm/puccini_plugin_tosca_2_0_functions.wasm"),
+            // Bundle the plugin
             #[cfg(not(feature = "_blanket"))]
             None => {
                 #[cfg(feature = "wasm-precompiled")]

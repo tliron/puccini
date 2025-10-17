@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $and function takes two or more Boolean arguments. It evaluates to true if all its
 /// arguments evaluate to true. It evaluates to false in all other cases.
 pub fn and(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {

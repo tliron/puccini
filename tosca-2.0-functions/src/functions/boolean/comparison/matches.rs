@@ -5,6 +5,9 @@ use {
     regex::*,
 };
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $matches function takes two arguments. The first argument is a general string, and the
 /// second argument is a string that encodes a regular expression pattern. It evaluates to true if
 /// the first argument matches the regular expression pattern represented by the second argument

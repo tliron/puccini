@@ -10,6 +10,9 @@ use {
 // RequirementAssignment
 //
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// A requirement assignment is used by node template authors to provide assignments for the
 /// corresponding requirement definition in the node template's node type. This includes specifying
 /// target nodes, either by providing symbolic names of target nodes or by providing selection

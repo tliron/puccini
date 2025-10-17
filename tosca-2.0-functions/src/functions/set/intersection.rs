@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $intersection function takes one or more list arguments, all having the entry schema of the
 /// same type. The result is a list that contains all entries that can be found in each of the
 /// argument lists.

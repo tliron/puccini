@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, errors, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $concat function takes one or more arguments of either the type string or the type list
 /// with the same type of their entry_schema. In the case of strings, it returns a string which is
 /// the concatenation of the argument strings. In the case of lists, it returns a list that

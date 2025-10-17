@@ -2,6 +2,9 @@ use super::super::super::data::*;
 
 use floria_plugin_sdk::{data::*, errors, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $remainder function takes two arguments where the first argument is of an integer, or
 /// scalar type and the second argument is of an integer. The result is of the same type as the
 /// first argument and its value is the remainder of the division to the second argument.

@@ -6,10 +6,14 @@
 TOSCA 2.0 built-in functions.
 */
 
-mod data;
-mod dispatcher;
-mod entities;
-mod functions;
+/// Data.
+pub mod data;
 
-#[allow(unused_imports)]
-pub use dispatcher::*;
+/// Dispatcher.
+pub mod dispatcher;
+
+/// Entities.
+pub mod entities;
+
+/// Functions.
+pub mod functions;

@@ -7,12 +7,16 @@ use std::str::*;
 /// TOSCA kind.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum ToscaKind {
-    // Vertexes
+    /// Node.
     Node,
+
+    /// Capability.
     Capability,
+
+    /// Service.
     Service,
 
-    // Edges
+    /// Relationship.
     Relationship,
 }
 

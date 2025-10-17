@@ -26,7 +26,7 @@ pub struct Scalar {
     /// Unit.
     pub unit: String,
 
-    // Schema.
+    /// Schema.
     pub schema: ScalarSchema,
 }
 

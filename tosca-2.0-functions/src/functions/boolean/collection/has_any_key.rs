@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $has_any_key function takes two arguments. The first argument is a map. The second argument
 /// is a list with the entry_schema matching the key_schema of the first argument. It evaluates to
 /// true if there is an entry in the second argument which is equal to a key in the first argument.

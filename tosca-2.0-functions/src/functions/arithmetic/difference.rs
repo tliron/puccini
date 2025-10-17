@@ -2,6 +2,9 @@ use super::super::super::data::*;
 
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $difference function takes two arguments of either integer, float, or scalar type. The
 /// result is of the same type as the arguments and its value is the arithmetic subtraction of the
 /// second argument value from the first argument value.

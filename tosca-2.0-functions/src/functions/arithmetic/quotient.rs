@@ -2,6 +2,9 @@ use super::super::super::data::*;
 
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $quotient function takes two arguments where the first argument is of an integer, float, or
 /// scalar type and the second argument is of an integer or float type. The result is of
 ///

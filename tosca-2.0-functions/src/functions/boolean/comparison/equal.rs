@@ -2,6 +2,9 @@ use super::super::super::{super::data::*, puccini::*};
 
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $equal function takes two arguments that have the same type. It evaluates to true if the
 /// arguments are equal. An $equal function that uses arguments of different types SHOULD be
 /// flagged as an error.

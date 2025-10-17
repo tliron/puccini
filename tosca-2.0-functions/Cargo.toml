@@ -3,12 +3,12 @@ edition = "2024"
 
 name = "puccini-plugin-tosca-2_0-functions"
 description = "TOSCA"
-version = "0.0.1"
+version = "0.0.3"
 rust-version = "1.90"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
-documentation = "https://docs.rs/puccini-tosca"
+documentation = "https://docs.rs/puccini-plugin-tosca-2_0-functions"
 authors = ["Tal Liron"]
 
 readme = "../README.md"
@@ -35,5 +35,5 @@ crate-type = ["cdylib"]
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]
 all-features = true
-default-target = "wasm32-wasip2"
+targets = ["wasm32-wasip2"]
 rustdoc-args = ["--cfg", "docsrs"]

@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $valid_values function takes two arguments. The first argument is of any type and the
 /// second argument is a list with any number of values of the same type as the first argument. It
 /// evaluates to true if the first argument is equal to a value in the second argument list and

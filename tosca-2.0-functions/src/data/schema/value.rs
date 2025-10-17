@@ -12,11 +12,22 @@ pub type SchemaReference = u64;
 /// Value schema.
 #[derive(Clone, Debug)]
 pub enum ValueSchema {
+    /// Reference.
     Reference(SchemaReference),
+
+    /// Primitive schema.
     Primitive(PrimitiveSchema),
+
+    /// Scalar schema.
     Scalar(ScalarSchema),
+
+    /// List schema.
     List(ListSchema),
+
+    /// Map schema.
     Map(MapSchema),
+
+    /// Struct schema.
     Struct(StructSchema),
 }
 

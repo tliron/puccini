@@ -1,5 +1,8 @@
 use floria_plugin_sdk::{data::*, errors, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $has_entry function takes two arguments. The first argument is a list or a map. The second
 /// argument is of the type matching the entry_schema of the first argument. It evaluates to true
 /// if the second argument is an entry in the first argument. For lists this means that the second

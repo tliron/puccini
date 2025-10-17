@@ -11,7 +11,7 @@ use {
 // Version
 //
 
-/// (Quoted from
+/// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 ///
 /// The TOSCA version type represents a version string. TOSCA versions provide a normative means to

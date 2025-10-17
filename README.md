@@ -1,5 +1,8 @@
 *Work in progress, not ready for general use. For now, see the [previous version](https://github.com/tliron/go-puccini).*
 
+[![crates.io](https://img.shields.io/crates/v/puccini-tosca?color=%23227700)](https://crates.io/crates/puccini-tosca)
+[![docs.rs](https://img.shields.io/badge/docs.rs-latest?color=grey)](https://docs.rs/puccini-tosca/latest/puccini_tosca/)
+
 Puccini
 =======
 

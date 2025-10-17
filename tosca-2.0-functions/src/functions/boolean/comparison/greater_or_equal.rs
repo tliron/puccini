@@ -2,6 +2,9 @@ use super::super::super::{super::data::*, puccini::*};
 
 use floria_plugin_sdk::{data::*, utils::*};
 
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+///
 /// The $greater_or_equal function takes two arguments of integer, float, string, timestamp,
 /// version, any scalar type, or their derivations. It evaluates to true if both arguments are of
 /// the same type, and if the first argument is greater than or equal to the second argument and
