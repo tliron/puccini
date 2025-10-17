@@ -8,10 +8,7 @@ mod cli;
 mod compile;
 mod dialects;
 mod errors;
-#[cfg(feature = "plugins")]
-mod instantiate;
 mod run;
-mod utils;
 
 use run::*;
 

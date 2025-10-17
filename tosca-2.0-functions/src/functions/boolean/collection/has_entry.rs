@@ -1,4 +1,4 @@
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
@@ -8,7 +8,7 @@ use floria_plugin_sdk::{data::*, errors, utils::*};
 /// if the second argument is an entry in the first argument. For lists this means that the second
 /// argument is a value in the first argument list. For maps this means that the second argument is
 /// a value in any of the key-value pairs in the first argument map.
-pub fn has_entry(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn has_entry(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 2)?;
     let mut arguments = arguments.into_iter();
 

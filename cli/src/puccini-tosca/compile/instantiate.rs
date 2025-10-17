@@ -1,4 +1,4 @@
-use super::{cli::*, errors::*};
+use super::super::{cli::*, errors::*};
 
 use {
     floria::{plugins::*, *},
@@ -36,8 +36,6 @@ impl Compile {
         if self.update {
             floria_instance.update(&mut Propagation::outgoing_all(), &mut library, errors)?;
         }
-
-        // TODO: update edges, too!
 
         Ok(Some(floria_instance))
     }

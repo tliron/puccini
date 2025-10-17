@@ -178,6 +178,6 @@ impl Source {
         AnnotatedT: Default,
     {
         let entity = self.entity_ref(entity_kind, entity_kind_name, name)?;
-        Ok(entity.downcast_ref_or_error("entity", type_name::<EntityT>())?)
+        Ok(entity.into_any_ref_checked("entity", type_name::<EntityT>())?)
     }
 }

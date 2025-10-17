@@ -1,4 +1,4 @@
-use floria_plugin_sdk::data::*;
+use floria_plugin_sdk::{data::*, *};
 
 //
 // Comparator
@@ -7,5 +7,5 @@ use floria_plugin_sdk::data::*;
 /// Comparator.
 pub trait Comparator {
     /// Comparator.
-    fn comparator(&self) -> Result<Expression, String>;
+    fn comparator(&self) -> Result<Expression, DispatchError>;
 }

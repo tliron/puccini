@@ -1,6 +1,6 @@
 use super::{coerce::*, list::*, map::*, primitive::*, scalar::*, schema::*, r#struct::*};
 
-use floria_plugin_sdk::{data::*, errors};
+use floria_plugin_sdk::{data::*, errors, *};
 
 /// Schema reference.
 pub type SchemaReference = u64;
@@ -33,7 +33,12 @@ pub enum ValueSchema {
 
 impl ValueSchema {
     /// Coerce into the schema.
-    pub fn coerce(&self, expression: Expression, schema: &Schema, call_site: &CallSite) -> Result<Expression, String> {
+    pub fn coerce(
+        &self,
+        expression: Expression,
+        schema: &Schema,
+        call_site: &CallSite,
+    ) -> Result<Expression, DispatchError> {
         match self {
             Self::Reference(reference) => schema.dereference(*reference)?.coerce(expression, schema, call_site),
             Self::Primitive(primitive) => primitive.coerce(expression, schema, call_site),
@@ -50,7 +55,7 @@ impl ValueSchema {
         expression: Option<Expression>,
         schema: &Schema,
         call_site: &CallSite,
-    ) -> Result<Option<Expression>, String> {
+    ) -> Result<Option<Expression>, DispatchError> {
         match self {
             Self::Reference(reference) => schema.dereference(*reference)?.coerce_option(expression, schema, call_site),
             Self::Primitive(primitive) => primitive.coerce_option(expression, schema, call_site),
@@ -63,7 +68,7 @@ impl ValueSchema {
 }
 
 impl TryFrom<Expression> for ValueSchema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         if let Expression::Map(map_resource) = &expression {

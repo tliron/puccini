@@ -27,7 +27,7 @@ base64 = "0.22.1"
 chrono = "0.4.42"
 floria-plugin-sdk = "=0.0.4"
 regex = "1.12.2"
-wit-bindgen = "0.46.0"
+wit-bindgen = "0.47.0"
 
 [lib]
 crate-type = ["cdylib"]

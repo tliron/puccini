@@ -23,7 +23,29 @@ keywords = [
 ]
 
 [dependencies]
+chrono = "0.4.42"
 compris = "=0.0.10"
+duplicate = "2.0.0"
+flate2 = { optional = true, version = "1.1.5" }
+indexmap = "2.12.0"
+indicatif = "0.18.1"
+kutil = { version = "=0.0.2", features = ["cli", "std"] }
+read-url = { optional = true, version = "=0.0.9", features = ["blocking"] }
+thiserror = "2.0.17"
+self_cell = { optional = true, version = "1.2.1" }
+tar = { optional = true, version = "0.4.44" }
+tracing = "0.1.41"
+utf8-chars = "3.0.5"
+walkdir = "2.5.0"
+zip = { optional = true, version = "6.0.0", default-features = false, features = ["deflate-flate2", "chrono"] }
+
+[features]
+creator = ["dep:tar", "dep:flate2", "dep:zip", "dep:self_cell"]
+url = ["dep:read-url"]
+
+[[example]]
+name = "csar_meta"
+required-features = ["compris/serde"]
 
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]

@@ -1,13 +1,36 @@
 #!/bin/bash
 set -e
 
+#
+# Environment variables:
+#
+# NATIVE = release | dev
+# Build profile for native code: puccini-tosca, puccini-csar
+#
+# WASM = release | dev
+# Build profile for Wasm code: puccini_plugin_tosca_2_0_functions
+#
+# WASM_PRECOMPILE = true | false
+# Whether to precompile Wasm code to native (.wasm to .cwasm)
+#
+# WASM_DEBUG_INFO = true | false
+# Whether to include debug information in Wasm
+# This affects *both* .wasm and .cwasm building
+# *as well* as how the Wasm runtime defaults in native code
+# Note that this *does* work when WASM=release even though the debug info is empty
+#
+# BINDEPS = true | false
+# Experimental support for artifact dependencies:
+# https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
+# Currently only supported on NATIVE=dev
+
+# sudo dnf install clang
+# cargo install wild-linker
+
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
 cd "$ROOT"
-
-# sudo dnf install clang
-# cargo install wild-linker
 
 BINDEPS=${BINDEPS:-false}
 
@@ -19,7 +42,7 @@ if [ "$1" == -r ]; then
 else
     NATIVE=${NATIVE:-dev}
     WASM=${WASM:-dev}
-	WASM_PRECOMPILE=${WASM_PRECOMPILE:-false}
+	WASM_PRECOMPILE=${WASM_PRECOMPILE:-true}
 	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-true}
 fi
 
@@ -45,11 +68,13 @@ if [ "$NATIVE" == release ]; then
 	cargo install --path="$ROOT/cli" $NATIVE_FEATURES
 else
     if [ "$BINDEPS" == true ]; then
-        # wild can't link wasm (it's an artifact dependency)
-        RUSTFLAGS='-Z threads=8' \
-        cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=bindeps,floria/wasm_debug $NATIVE_FEATURES
+        NATIVE_FEATURES="$NATIVE_FEATURES --features=bindeps"
+
+        # wild can't link wasm (same linker is used for artifact dependencies)
+        export RUSTFLAGS='-Z threads=8'
     else
-        RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
-        cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=floria/wasm_debug $NATIVE_FEATURES
+        export RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild'
     fi
+
+    cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=floria/wasm-debug $NATIVE_FEATURES
 fi

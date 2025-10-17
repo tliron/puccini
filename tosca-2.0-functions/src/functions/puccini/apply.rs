@@ -1,6 +1,6 @@
 use super::super::super::data::*;
 
-use floria_plugin_sdk::data::*;
+use floria_plugin_sdk::{data::*, *};
 
 /// Returns the call site value (like [`$value`](super::super::graph::value)) while also optionally
 /// applying a series of expressions to it.
@@ -12,7 +12,7 @@ use floria_plugin_sdk::data::*;
 /// error, for example if the value is invalid.
 ///
 /// Expected to be called eagerly.
-pub fn apply(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn apply(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     reset_call_site_value()?;
 
     for preparer in arguments {

@@ -3,13 +3,13 @@ use super::super::errors::*;
 use {kutil::std::any::*, std::any::*};
 
 //
-// DowncastRefOrError
+// IntoAnyRefChecked
 //
 
-/// Downcast to an [Any] reference or return an error.
-pub trait DowncastRefOrError {
-    /// Downcast to an [Any] reference or return an error.
-    fn downcast_ref_or_error<AnyT, AnnotatedT>(
+/// Convert into [Any] reference or return an error.
+pub trait IntoAnyRefChecked {
+    /// Convert into [Any] reference or return an error.
+    fn into_any_ref_checked<AnyT, AnnotatedT>(
         &self,
         entity: &'static str,
         type_name: &'static str,
@@ -19,11 +19,11 @@ pub trait DowncastRefOrError {
         AnnotatedT: Default;
 }
 
-impl<DowncastRefT> DowncastRefOrError for DowncastRefT
+impl<IntoAnyRefT> IntoAnyRefChecked for IntoAnyRefT
 where
-    DowncastRefT: DowncastRef,
+    IntoAnyRefT: IntoAnyRef,
 {
-    fn downcast_ref_or_error<AnyT, AnnotatedT>(
+    fn into_any_ref_checked<AnyT, AnnotatedT>(
         &self,
         entity: &'static str,
         type_name: &'static str,
@@ -32,6 +32,6 @@ where
         AnyT: Any,
         AnnotatedT: Default,
     {
-        self.downcast_ref().ok_or_else(|| WrongTypeError::new(entity.into(), type_name.into(), Default::default()))
+        self.into_any_ref().ok_or_else(|| WrongTypeError::new(entity.into(), type_name.into(), Default::default()))
     }
 }

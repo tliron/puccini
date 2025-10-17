@@ -8,7 +8,7 @@ rust-version = "1.90"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
-documentation = "https://docs.rs/puccini"
+documentation = "https://puccini.cloud"
 authors = ["Tal Liron"]
 
 readme = "../README.md"
@@ -26,7 +26,7 @@ keywords = [
 # bindeps:
 # https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
 # puccini-plugin-tosca-2_0-functions = { version = "=0.0.1", artifact = "cdylib", target = "wasm32-wasip2" }
-wasmtime = { version = "37.0.2", default-features = false, features = [
+wasmtime = { version = "38.0.3", default-features = false, features = [
     "cranelift",
     "parallel-compilation",
     "pooling-allocator",
@@ -36,10 +36,12 @@ wasmtime = { version = "37.0.2", default-features = false, features = [
 [dependencies]
 anstream = "0.6.21"
 compris = "=0.0.10"
-clap = { version = "4.5.49", features = ["derive"] }
+clap = { version = "4.5.50", features = ["derive"] }
+clap-num = "1.2.0"
 floria = "=0.0.4"
-floria-plugin-sdk = "=0.0.4" # unused; for patching
+indicatif = "0.18.1"
 kutil = { version = "=0.0.2", features = ["cli", "std", "clap", "derive"] }
+puccini-csar = { version = "=0.0.3", features = ["creator", "url"] }
 puccini-tosca = { version = "=0.0.3", default-features = false, features = ["tosca-2_0"] }
 read-url = { version = "=0.0.9", features = ["blocking"] }
 thiserror = "2.0.17"

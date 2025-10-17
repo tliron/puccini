@@ -22,6 +22,30 @@ pub struct CLI {
     #[command(subcommand)]
     pub subcommand: Option<SubCommand>,
 
+    /// suppress console output
+    #[arg(long, short = 'q')]
+    pub quiet: bool,
+
+    /// add a log verbosity level;
+    /// can be used 3 times
+    #[arg(long, short, verbatim_doc_comment, action = ArgAction::Count)]
+    pub verbose: u8,
+
+    /// colorize output
+    #[arg(long = "colorize", short = 'z', default_value_t = Colorize::True, value_enum)]
+    pub colorize: Colorize,
+
+    /// log to file path;
+    /// defaults to stderr
+    #[arg(long, long = "log", short = 'l', verbatim_doc_comment)]
+    pub log_path: Option<PathBuf>,
+
+    // TODO not used
+    /// timeout in seconds;
+    /// 0 for no timeout
+    #[arg(long, short = 't', verbatim_doc_comment, default_value_t = 0.0)]
+    pub timeout: f64,
+
     /// show this help
     #[arg(long, short = 'h', action = ArgAction::Help)]
     pub help: Option<bool>,
@@ -54,33 +78,30 @@ pub enum SubCommand {
 /// Compile subcommand.
 #[derive(Args)]
 pub struct Compile {
+    /// TOSCA or CSAR;
     /// can be a file path or a URL;
     /// when absent will read from stdin
     #[arg(verbatim_doc_comment)]
-    pub input_path_or_url: Option<String>,
+    pub input_file_or_url: Option<String>,
 
     /// output file path;
     /// when absent will write to stdout
     #[arg(long = "output", short = 'o', verbatim_doc_comment)]
-    pub output_path: Option<PathBuf>,
+    pub output_file: Option<PathBuf>,
 
     /// output format;
-    /// when absent will be set to input format
+    /// when absent will try to use the output file extension
     #[arg(long = "format", short = 'f', verbatim_doc_comment, value_enum)]
     pub output_format: Option<OutputFormat>,
 
-    /// colorize output
-    #[arg(long = "colorize", short = 'z', default_value_t = Colorize::True, value_enum)]
-    pub output_colorize: Colorize,
-
     /// plain output;
     /// avoid whitespace and colors
-    #[arg(long = "plain", short = 'p')]
+    #[arg(long = "plain", short = 'p', verbatim_doc_comment)]
     pub output_plain: bool,
 
     /// encode output to Base64;
-    /// for "cbor" and "messagepack" formats
-    #[arg(long = "base64", short = 'b', verbatim_doc_comment)]
+    /// for "cbor" and "messagepack" formats only
+    #[arg(long = "base64", verbatim_doc_comment)]
     pub output_base64: bool,
 
     /// compile into Floria directory
@@ -122,26 +143,6 @@ pub struct Compile {
     #[cfg(not(feature = "wasm-debug-info"))]
     #[arg(long = "plugin-debug", default_value_t = false)]
     pub plugin_debug: bool,
-
-    /// suppress console output
-    #[arg(long, short = 'q')]
-    pub quiet: bool,
-
-    /// add a log verbosity level;
-    /// can be used 3 times
-    #[arg(long, short, verbatim_doc_comment, action = ArgAction::Count)]
-    pub verbose: u8,
-
-    /// log to file path;
-    /// defaults to stderr
-    #[arg(long, long = "log", short = 'l', verbatim_doc_comment)]
-    pub log_path: Option<PathBuf>,
-
-    // TODO not used
-    /// timeout in seconds;
-    /// 0 for no timeout
-    #[arg(long, short = 't', verbatim_doc_comment, default_value_t = 0.0)]
-    pub timeout: f64,
 
     /// show this help
     #[arg(long, short = 'h', action = ArgAction::Help)]

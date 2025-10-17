@@ -1,7 +1,7 @@
 use super::{comparator::*, schema::*};
 
 use {
-    floria_plugin_sdk::{data::*, errors},
+    floria_plugin_sdk::{data::*, errors, *},
     std::{collections::*, fmt, str::*},
 };
 
@@ -37,7 +37,7 @@ impl Scalar {
     }
 
     /// Constructor.
-    pub fn new_canonical(mut number: Number, unit: &str, schema: ScalarSchema) -> Result<Self, String> {
+    pub fn new_canonical(mut number: Number, unit: &str, schema: ScalarSchema) -> Result<Self, DispatchError> {
         let factor = schema.unit_factor(unit)?;
 
         if !factor.is_one() {
@@ -51,7 +51,7 @@ impl Scalar {
     }
 
     /// Constructor.
-    pub fn new_from_expression(expression: Expression, schema: &ScalarSchema) -> Result<Self, String> {
+    pub fn new_from_expression(expression: Expression, schema: &ScalarSchema) -> Result<Self, DispatchError> {
         match expression {
             Expression::Text(text) => Self::new_from_str(&text, schema),
             Expression::Custom(custom_resource) => custom_resource.custom().try_into(),
@@ -60,7 +60,7 @@ impl Scalar {
     }
 
     /// Constructor.
-    pub fn new_from_str(representation: &str, schema: &ScalarSchema) -> Result<Self, String> {
+    pub fn new_from_str(representation: &str, schema: &ScalarSchema) -> Result<Self, DispatchError> {
         let mut split = representation.split_whitespace();
 
         let Some(number) = split.next() else {
@@ -85,13 +85,13 @@ impl Scalar {
     }
 
     /// Canonical number.
-    pub fn canonical(&self) -> Result<Number, String> {
+    pub fn canonical(&self) -> Result<Number, DispatchError> {
         if self.is_canonical() { Ok(self.number) } else { self.number.mul(self.schema.canonical_factor, false) }
     }
 }
 
 impl Comparator for Scalar {
-    fn comparator(&self) -> Result<Expression, String> {
+    fn comparator(&self) -> Result<Expression, DispatchError> {
         Ok(self.canonical()?.into())
     }
 }
@@ -105,7 +105,7 @@ impl fmt::Display for Scalar {
 // Conversions
 
 impl TryFrom<Expression> for Scalar {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         expression.cast_custom("scalar")?.custom().try_into()
@@ -113,7 +113,7 @@ impl TryFrom<Expression> for Scalar {
 }
 
 impl TryFrom<&Custom> for Scalar {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(custom: &Custom) -> Result<Self, Self::Error> {
         custom.assert_kind(SCALAR_CUSTOM_KIND, "scalar")?;

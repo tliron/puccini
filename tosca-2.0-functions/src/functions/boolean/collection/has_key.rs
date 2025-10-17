@@ -1,4 +1,4 @@
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
@@ -6,7 +6,7 @@ use floria_plugin_sdk::{data::*, utils::*};
 /// The $has_key function takes two arguments. The first argument is a map. The second argument is
 /// of the type matching the key_schema of the first argument. It evaluates to true if the second
 /// argument is a key in any of the key-value pairs in the first argument map.
-pub fn has_key(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn has_key(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 2)?;
     let mut arguments = arguments.into_iter();
 

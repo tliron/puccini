@@ -127,11 +127,16 @@ Here's an example of a "preparer" compiled from [`data-types.yaml`](https://gith
 _apply(
   _schema([
     {
-      "kind": "struct",
+      "kind": "list",
+      "entry": 1
+    },
+    {
+      "kind": "struct"
       "fields": {
-        "float": [1, false],
-        "integer": 2,
-        "nested": 3,
+        "float": [2, false],
+        "integer": 3,
+        "nested": 4,
+        "self": [1, false],
         "string": 6
       },
     },
@@ -140,16 +145,13 @@ _apply(
     {
       "kind": "struct",
       "fields": {
-        "nested-float": 4,
-        "nested_string": [5, false],
-      },
-    {
-      "kind": "float",
-      "validation": &greater_or_equal(value(), 0.0)
+        "nested-bytes": [5, false],
+        "nested-float": 2
+      }
     },
-    "string",
+    "bytes",
     {
-      "kind": "string",
+      "kind":"string",
       "default": "Default Value"
     }
   ])

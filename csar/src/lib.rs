@@ -6,8 +6,18 @@
 CSAR.
 */
 
-mod meta;
-mod version;
+mod errors;
+
+/// CSAR creator.
+#[cfg(feature = "creator")]
+pub mod creator;
+
+/// CSAR meta.
+pub mod meta;
+
+/// CSAR URL.
+#[cfg(feature = "url")]
+pub mod url;
 
 #[allow(unused_imports)]
-pub use {meta::*, version::*};
+pub use {errors::*, meta::*};
