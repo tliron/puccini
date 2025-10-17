@@ -108,15 +108,15 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for NodeTemplate<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -126,8 +126,8 @@ where
         _derivation_path: &mut DerivationPath,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors.to_error_recipient();
 
@@ -142,18 +142,18 @@ where
                 return Ok(());
             };
 
-            if_none_clone!(type_name, self, copy);
-            if_none_clone!(description, self, copy);
-            if_empty_clone!(metadata, self, copy);
-            if_empty_clone!(directives, self, copy);
-            if_empty_clone!(properties, self, copy);
-            if_empty_clone!(attributes, self, copy);
-            if_empty_clone!(requirements, self, copy);
-            if_empty_clone!(capabilities, self, copy);
-            if_empty_clone!(interfaces, self, copy);
-            if_empty_clone!(artifacts, self, copy);
-            if_none_clone!(count, self, copy);
-            if_none_clone!(node_filter, self, copy);
+            complete_field_none!(type_name, self, copy);
+            complete_field_none!(description, self, copy);
+            complete_field_empty!(metadata, self, copy);
+            complete_field_empty!(directives, self, copy);
+            complete_field_empty!(properties, self, copy);
+            complete_field_empty!(attributes, self, copy);
+            complete_field_empty!(requirements, self, copy);
+            complete_field_empty!(capabilities, self, copy);
+            complete_field_empty!(interfaces, self, copy);
+            complete_field_empty!(artifacts, self, copy);
+            complete_field_none!(count, self, copy);
+            complete_field_none!(node_filter, self, copy);
         }
 
         if self.type_name.is_none() {
@@ -161,16 +161,45 @@ where
             return Ok(());
         }
 
-        let node_type = completed_entity_option!(NODE_TYPE, NodeType, self, type_name, catalog, source_id, errors);
+        let (node_type, type_scope) =
+            entity_from_name_field_option!(NODE_TYPE, NodeType, self, type_name, catalog, source_id, errors);
 
-        complete_map_field!("property", properties, self, node_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, node_type, catalog, source_id, errors);
-        complete_tagged_values_field!("requirement", requirements, self, node_type, catalog, source_id, errors);
-        complete_map_field!("capability", capabilities, self, node_type, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, node_type, catalog, source_id, errors);
-        complete_map_field!("artifact", artifacts, self, node_type, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property, properties, type_scope, self, node_type, true, catalog, source_id, errors
+        );
+        complete_subentity_map_field!(
+            attribute, attributes, type_scope, self, node_type, true, catalog, source_id, errors
+        );
+        complete_subentity_tagged_values_field!(
+            requirement,
+            requirements,
+            self,
+            type_scope,
+            node_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            capability,
+            capabilities,
+            type_scope,
+            self,
+            node_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            interface, interfaces, type_scope, self, node_type, true, catalog, source_id, errors
+        );
+        complete_subentity_map_field!(
+            artifact, artifacts, type_scope, self, node_type, true, catalog, source_id, errors
+        );
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

@@ -17,6 +17,8 @@ use {
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Name(pub ByteString);
 
+impl_resolve_from_str!(Name);
+
 impl Name {
     /// Constructor.
     ///
@@ -56,8 +58,6 @@ impl FromStr for Name {
         Ok(Name(ByteString::from(string)))
     }
 }
-
-impl_resolve_from_str!(Name);
 
 // Delegation
 

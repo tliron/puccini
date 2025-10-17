@@ -1,7 +1,6 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
-    schema::*,
 };
 
 use {
@@ -79,26 +78,6 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> SchemaDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    /// Initialize a schema.
-    pub fn initialize_schema(
-        &self,
-        schema: &mut Schema<AnnotatedT>,
-        source_id: &SourceID,
-        catalog: &Catalog,
-    ) -> Result<SchemaReference, ToscaError<WithAnnotations>>
-    where
-        AnnotatedT: 'static,
-    {
-        let data_type = catalog.entity::<DataType<AnnotatedT>, _>(DATA_TYPE, &self.type_name, source_id)?;
-        let reference = data_type.initialize_schema(&self.type_name, schema, self, source_id, catalog)?;
-        Ok(reference.into())
-    }
-}
-
 impl<AnnotatedT> Subentity<SchemaDefinition<AnnotatedT>> for SchemaDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
@@ -106,84 +85,55 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&SchemaDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&SchemaDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors_ref: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors_ref.to_error_recipient();
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
+        complete_name_field!(type_name, scope, self, parent, catalog, errors);
 
+        if let Some(parent) = parent {
             complete_validation!(self, parent);
-
-            if self.data_kind.is_none() && parent.data_kind.is_some() {
-                self.data_kind = parent.data_kind;
-            }
+            complete_field_none!(data_kind, self, parent);
         }
 
-        let data_type = completed_entity!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors);
+        let (data_type, _type_scope) =
+            entity_from_name_field!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors);
 
-        if let Some((data_type, _scope)) = data_type {
+        if let Some(data_type) = data_type {
             complete_validation!(self, data_type);
-
-            if self.data_kind.is_none() && data_type.data_kind.is_some() {
-                self.data_kind = data_type.data_kind;
-            }
+            complete_field_none!(data_kind, self, data_type);
         }
 
-        complete_boxed_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_boxed_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
+        complete_subentity_boxed_field!(key_schema, scope, self, parent, catalog, source_id, errors_ref);
+        complete_subentity_boxed_field!(entry_schema, scope, self, parent, catalog, source_id, errors_ref);
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<SchemaDefinition<AnnotatedT>> for SchemaDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<SchemaDefinition<AnnotatedT>> for SchemaDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             description: self.description.clone(),
             validation: self.validation.clone(),
             key_schema: self
                 .key_schema
                 .as_ref()
-                .and_then(|key_schema| Some(key_schema.convert_into_scope(scope).into())),
+                .and_then(|schema_definition| Some(schema_definition.into_scoped(scope).into())),
             entry_schema: self
                 .entry_schema
                 .as_ref()
-                .and_then(|entry_schema| Some(entry_schema.convert_into_scope(scope).into())),
+                .and_then(|schema_definition| Some(schema_definition.into_scoped(scope).into())),
             data_kind: self.data_kind,
             annotations: self.annotations.clone(),
         }
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for SchemaDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        None
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref().map(|key_schema| key_schema.as_ref())
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref().map(|entry_schema| entry_schema.as_ref())
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
     }
 }

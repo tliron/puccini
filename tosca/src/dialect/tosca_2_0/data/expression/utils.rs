@@ -121,18 +121,14 @@ impl<AnnotatedT> ExpressionUtilities<AnnotatedT> for Option<Expression<Annotated
 ///
 /// If self or parent are already `$and` then will flatten as a single `$and`.
 #[macro_export]
-macro_rules! complete_validation (
+macro_rules! complete_validation {
     (
         $self:ident,
         $parent:ident $(,)?
     ) => {
-        $self.validation.complete_validation(
-            $parent.validation.as_ref(),
-            &mut $self.annotations,
-            &$parent.annotations,
-        )
-    }
-);
+        $self.validation.complete_validation($parent.validation.as_ref(), &mut $self.annotations, &$parent.annotations)
+    };
+}
 
 #[allow(unused_imports)]
 pub use complete_validation;

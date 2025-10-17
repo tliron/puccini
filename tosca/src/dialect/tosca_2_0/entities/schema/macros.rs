@@ -1,6 +1,6 @@
 /// Complete schema default and validation.
 #[macro_export]
-macro_rules! complete_schema_default_and_validation (
+macro_rules! complete_schema_default_and_validation {
     (
         $value_schema:ident,
         $self:ident,
@@ -13,14 +13,15 @@ macro_rules! complete_schema_default_and_validation (
         }
 
         if let Some(validation) = $definition.validation() {
+            println!("{}", validation);
             $value_schema.validation.join_and(validation.clone());
         }
-    }
-);
+    };
+}
 
 /// Complete complex schema default and validation.
 #[macro_export]
-macro_rules! complete_complex_schema_default_and_validation (
+macro_rules! complete_complex_schema_default_and_validation {
     (
         $value_schema:ident,
         $self:ident,
@@ -31,9 +32,7 @@ macro_rules! complete_complex_schema_default_and_validation (
             (Some(default), None) => $value_schema.default = Some(default.clone()),
             (None, Some(default)) => $value_schema.default = Some(default.clone()),
             (Some(default), Some(_)) => {
-                return Err(OverrideProhibitedError::new("default".into())
-                    .with_annotations_from(default)
-                    .into());
+                return Err(OverrideProhibitedError::new("default".into()).with_annotations_from(default).into());
             }
         }
 
@@ -43,17 +42,15 @@ macro_rules! complete_complex_schema_default_and_validation (
             (None, Some(validation)) => $value_schema.validation = Some(validation.clone()),
             (Some(validation), Some(_)) => {
                 //println!("{} vs {}", validation, v);
-                return Err(OverrideProhibitedError::new("validation".into())
-                    .with_annotations_from(validation)
-                    .into());
+                return Err(OverrideProhibitedError::new("validation".into()).with_annotations_from(validation).into());
             }
         }
-    }
-);
+    };
+}
 
 /// Complete entry schema.
 #[macro_export]
-macro_rules! complete_entry_schema (
+macro_rules! complete_entry_schema {
     (
         $value_schema:ident,
         $self:ident,
@@ -76,17 +73,15 @@ macro_rules! complete_entry_schema (
             }
 
             (Some(entry), Some(_)) => {
-                return Err(OverrideProhibitedError::new("entry_schema".into())
-                    .with_annotations_from(entry)
-                    .into());
+                return Err(OverrideProhibitedError::new("entry_schema".into()).with_annotations_from(entry).into());
             }
         }
-    }
-);
+    };
+}
 
 /// Complete key schema.
 #[macro_export]
-macro_rules! complete_key_schema (
+macro_rules! complete_key_schema {
     (
         $value_schema:ident,
         $self:ident,
@@ -106,9 +101,8 @@ macro_rules! complete_key_schema (
                     && let Some(data_kind) = key.data_kind()
                     && data_kind != DataKind::String
                 {
-                    let annotations = $self
-                        .key_schema()
-                        .and_then(|key_schema| key_schema.field_annotations("type_name").cloned());
+                    let annotations =
+                        $self.key_schema().and_then(|key_schema| key_schema.field_annotations("type_name").cloned());
 
                     return Err(WrongTypeError::new("key_schema".into(), data_kind.to_string(), vec!["string".into()])
                         .with_annotations_option(annotations)
@@ -139,13 +133,11 @@ macro_rules! complete_key_schema (
             }
 
             (Some(key), Some(_)) => {
-                return Err(OverrideProhibitedError::new("key_schema".into())
-                    .with_annotations_from(key)
-                    .into());
+                return Err(OverrideProhibitedError::new("key_schema".into()).with_annotations_from(key).into());
             }
         }
-    }
-);
+    };
+}
 
 #[allow(unused_imports)]
 pub use {

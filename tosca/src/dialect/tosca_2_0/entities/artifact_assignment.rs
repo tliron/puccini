@@ -89,19 +89,29 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        artifact_definition: Option<(&ArtifactDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        artifact_definition: Option<&ArtifactDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        complete_map_field!("property", properties, self, artifact_definition, catalog, source_id, errors);
+        complete_name_field!(type_name, scope, self, artifact_definition, catalog, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            scope,
+            self,
+            artifact_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
-        if let Some((artifact_definition, _scope)) = artifact_definition {
-            validate_type_name(&self.type_name, &artifact_definition.type_name, catalog, errors)?;
-
-            if_none_else!(file, self, artifact_definition, Some(artifact_definition.file.clone()));
+        if let Some(artifact_definition) = artifact_definition {
+            complete_field_none_to!(file, self, artifact_definition, Some(artifact_definition.file.clone()));
 
             // if_none_call(
             //     &mut self.file,
@@ -111,23 +121,23 @@ where
             //     "file",
             // );
 
-            if_none_clone!(repository, self, artifact_definition);
-            if_none_clone!(artifact_version, self, artifact_definition);
-            if_none_clone!(checksum, self, artifact_definition);
-            if_none_clone!(checksum_algorithm, self, artifact_definition);
+            complete_field_none!(repository, self, artifact_definition);
+            complete_field_none!(artifact_version, self, artifact_definition);
+            complete_field_none!(checksum, self, artifact_definition);
+            complete_field_none!(checksum_algorithm, self, artifact_definition);
         }
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<ArtifactAssignment<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<ArtifactAssignment<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> ArtifactAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> ArtifactAssignment<AnnotatedT> {
         ArtifactAssignment {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             file: Some(self.file.clone()),
             repository: self.repository.clone(),
             description: self.description.clone(),
@@ -135,7 +145,7 @@ where
             artifact_version: self.artifact_version.clone(),
             checksum: self.checksum.clone(),
             checksum_algorithm: self.checksum_algorithm.clone(),
-            properties: self.properties.convert_into_scope(scope),
+            properties: self.properties.into_scoped(scope),
             annotations: self.annotations.clone(), // same fields
         }
     }

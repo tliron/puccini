@@ -80,14 +80,16 @@ where
     fn complete(
         &mut self,
         name: Option<ByteString>,
-        requirement_definition: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        requirement_definition: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         self.relationship.complete(
             name,
-            requirement_definition.map(|(parent, scope)| (&parent.relationship, scope)),
+            scope,
+            requirement_definition.map(|parent| &parent.relationship),
             catalog,
             source_id,
             errors.clone(),
@@ -95,16 +97,9 @@ where
 
         let errors = &mut errors.to_error_recipient();
 
-        if let Some((requirement_definition, scope)) = requirement_definition {
-            if_none_else!(
-                node,
-                self,
-                requirement_definition,
-                requirement_definition.node.clone().map(|node| node.in_scope(scope.clone()))
-            );
-
-            if_none_clone!(node_filter, self, requirement_definition);
-
+        if let Some(requirement_definition) = requirement_definition {
+            complete_field_none_to!(node, self, requirement_definition, requirement_definition.node.into_scoped(scope));
+            complete_field_none!(node_filter, self, requirement_definition);
             validate_type_name(&self.capability, &requirement_definition.capability, catalog, errors)?;
         }
 
@@ -114,17 +109,17 @@ where
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RequirementDefinition<AnnotatedT>> for RequirementDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<RequirementDefinition<AnnotatedT>> for RequirementDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            relationship: self.relationship.convert_into_scope(scope),
-            node: self.node.clone().map(|node| node.in_scope(scope.clone())),
-            capability: self.capability.clone().in_scope(scope.clone()),
+            relationship: self.relationship.into_scoped(scope),
+            node: self.node.into_scoped(scope),
+            capability: self.capability.into_scoped(scope),
             node_filter: self.node_filter.clone(),
             count_range: self.count_range.clone(),
             annotations: self.annotations.clone(),

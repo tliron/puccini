@@ -8,7 +8,7 @@ use {
     duplicate::*,
     kutil::std::error::*,
     read_url::*,
-    std::io,
+    std::io::{self, IsTerminal},
 };
 
 impl Catalog {
@@ -34,21 +34,26 @@ impl Catalog {
 
         // Read and parse
         let (variant, url_context) = match source_id {
-            SourceID::UUID(_) => {
+            SourceID::ID(id) => {
                 tracing::info!(source = source_id.to_string(), "reading from stdin");
-                let parser = Parser::new(Format::YAML).with_source(source_id.into());
-                (unwrap_or_give_and_return!(parser.parse_reader(&mut io::stdin()), errors, Ok(())), url_context.clone())
+                let mut stdin = io::stdin();
+                if !stdin.is_terminal() {
+                    let parser = Parser::new(Format::YAML).with_source(source_id.into());
+                    (unwrap_or_give_and_return!(parser.parse_reader(&mut stdin), errors, Ok(())), url_context.clone())
+                } else {
+                    tracing::error!("cannot load source from stdin: {}", id);
+                    errors.give(SourceNotLoadedError::new(source_id.clone()))?;
+                    return Ok(());
+                }
             }
 
             SourceID::URL(url) => {
                 tracing::info!(source = source_id.to_string(), "reading");
                 let url = unwrap_or_give_and_return!(url_context.url_or_file_path(&url), errors, Ok(()));
-                let mut reader = unwrap_or_give_and_return!(url.open(), errors, Ok(()));
+                let mut reader = io::BufReader::new(unwrap_or_give_and_return!(url.open(), errors, Ok(())));
+                let parser = Parser::new(Format::YAML).with_source(source_id.into());
                 (
-                    {
-                        let parser = Parser::new(Format::YAML).with_source(source_id.into());
-                        unwrap_or_give_and_return!(parser.parse_reader(&mut reader), errors, Ok(()))
-                    },
+                    unwrap_or_give_and_return!(parser.parse_reader(&mut reader), errors, Ok(())),
                     url.base()
                         .and_then(|base| {
                             let mut base_urls = url_context.clone_base_urls();
@@ -60,7 +65,9 @@ impl Catalog {
             }
 
             SourceID::Internal(internal) => {
-                panic!("cannot load internal source: {}", internal);
+                tracing::error!("cannot load internal source: {}", internal);
+                errors.give(SourceNotLoadedError::new(source_id.clone()))?;
+                return Ok(());
             }
         };
 

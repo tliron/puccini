@@ -25,6 +25,8 @@ pub struct WrongTypeError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(WrongTypeError);
+
 impl<AnnotatedT> WrongTypeError<AnnotatedT> {
     /// Constructor.
     pub fn new(entity: String, type_name: String, expected_type_names: Vec<String>) -> Self
@@ -33,19 +35,18 @@ impl<AnnotatedT> WrongTypeError<AnnotatedT> {
     {
         Self { entity, type_name, expected_type_names, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> WrongTypeError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<WrongTypeError<NewAnnotatedT>> for WrongTypeError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> WrongTypeError<NewAnnotatedT> {
         WrongTypeError::new(self.entity, self.type_name, self.expected_type_names)
             .with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(WrongTypeError);
 
 impl<AnnotatedT> Depict for WrongTypeError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

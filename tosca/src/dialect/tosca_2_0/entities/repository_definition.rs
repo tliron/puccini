@@ -41,15 +41,15 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for RepositoryDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -59,8 +59,8 @@ where
         _derivation_path: &mut DerivationPath,
         _errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Complete;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

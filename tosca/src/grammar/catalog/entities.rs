@@ -1,5 +1,5 @@
 use super::{
-    super::{entity::*, errors::*, name::*, source::*, utils::*},
+    super::{entity::*, errors::*, name::*, source::*},
     catalog::*,
 };
 
@@ -191,7 +191,7 @@ impl Catalog {
         AnnotatedT: Default,
     {
         let entity = self.entity_ref(entity_kind, full_name, source_id)?;
-        Ok(entity.downcast_ref_or_error("entity", type_name::<EntityT>())?)
+        Ok(entity.into_any_ref_checked("entity", type_name::<EntityT>())?)
     }
 
     /// Get an [Entity],
@@ -216,7 +216,7 @@ impl Catalog {
         AnnotatedT: Annotated + Default,
         ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
     {
-        self.completed_entity_with_derivation_path(entity_kind, full_name, source_id, &mut Default::default(), errors)
+        self.completed_entity_checked(entity_kind, full_name, source_id, &mut Default::default(), errors)
     }
 
     /// Get an [Entity],
@@ -229,7 +229,7 @@ impl Catalog {
     /// The call is added to the derivation_path in order to detect circular dependencies.
     ///
     /// Note that the entity is removed from the catalog while it is being completed.
-    pub fn completed_entity_with_derivation_path<EntityT, AnnotatedT, ErrorRecipientT>(
+    pub fn completed_entity_checked<EntityT, AnnotatedT, ErrorRecipientT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
@@ -243,7 +243,7 @@ impl Catalog {
         ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
     {
         Ok(match self.completed_entity_ref(entity_kind, full_name, source_id, derivation_path, errors)? {
-            Some(entity) => match entity.downcast_ref_or_error("entity", type_name::<EntityT>()) {
+            Some(entity) => match entity.into_any_ref_checked("entity", type_name::<EntityT>()) {
                 Ok(entity) => Some(entity),
                 Err(error) => {
                     errors.give(error)?;

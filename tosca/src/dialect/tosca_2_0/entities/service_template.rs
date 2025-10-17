@@ -89,15 +89,15 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for ServiceTemplate<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -107,11 +107,11 @@ where
         _derivation_path: &mut DerivationPath,
         _errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
+        assert!(self.completion_state == CompletionState::Incomplete);
 
         // TODO: inputs and outputs
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

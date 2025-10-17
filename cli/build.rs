@@ -1,6 +1,11 @@
 #![allow(unused)]
 
-use std::{env, fs::*, io::Read, path::*};
+use std::{
+    env,
+    fs::*,
+    io::{self, Read},
+    path::*,
+};
 
 fn main() {
     #[cfg(not(feature = "_blanket"))]
@@ -28,7 +33,7 @@ fn build(name: &str) -> Result<(), String> {
 //
 
 fn read_file(path: &Path) -> Result<Vec<u8>, String> {
-    let mut file = File::open(path).map_err(|_| format!("open: {}", path.display()))?;
+    let mut file = io::BufReader::new(File::open(path).map_err(|_| format!("open: {}", path.display()))?);
     let mut bytes = Vec::default();
     file.read_to_end(&mut bytes).map_err(|_| format!("read: {}", path.display()));
     Ok(bytes)

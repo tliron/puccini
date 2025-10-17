@@ -38,14 +38,14 @@ pub struct Version {
     pub build: Option<u64>,
 }
 
+impl_resolve_from_str!(Version);
+
 impl Version {
     /// Constructor.
     pub fn new(major: u64, minor: u64, fix: Option<u64>, qualifier: Option<ByteString>, build: Option<u64>) -> Self {
         Self { major, minor, fix, qualifier, build }
     }
 }
-
-impl_resolve_from_str!(Version);
 
 impl Depict for Version {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

@@ -21,8 +21,7 @@ impl super::Dialect {
         AnnotatedT: 'static + Annotated + Default + Clone,
         ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
     {
-        let file: Option<File<_>> =
-            variant.resolve_with_errors(&mut errors.into_annotated().to_resolve_error_recipient())?;
+        let file: Option<File<_>> = variant.resolve_with_errors(&mut errors.to_variant_error_recipient())?;
 
         let Some(file) = file else {
             return Ok(());

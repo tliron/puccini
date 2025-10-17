@@ -53,29 +53,51 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        capability_definition: Option<(&CapabilityDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        capability_definition: Option<&CapabilityDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        complete_map_field!("property", properties, self, capability_definition, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, capability_definition, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            scope,
+            self,
+            capability_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            scope,
+            self,
+            capability_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<CapabilityAssignment<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<CapabilityAssignment<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> CapabilityAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> CapabilityAssignment<AnnotatedT> {
         CapabilityAssignment {
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            annotations: clone_struct_annotations(&self.annotations, &["properties", "attributes"]),
+            properties: self.properties.into_scoped(scope),
+            attributes: self.attributes.into_scoped(scope),
+            annotations: self.annotations.clone_fields(&["properties", "attributes"]),
             ..Default::default()
         }
     }

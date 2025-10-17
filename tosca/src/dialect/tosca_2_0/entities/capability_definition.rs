@@ -91,48 +91,63 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-        }
+        complete_name_field!(type_name, scope, self, parent, catalog, errors);
 
-        let capability_type =
-            completed_entity!(CAPABILITY_TYPE, CapabilityType, self, type_name, catalog, source_id, errors);
+        let (capability_type, type_scope) =
+            entity_from_name_field!(CAPABILITY_TYPE, CapabilityType, self, type_name, catalog, source_id, errors);
 
-        complete_map_field!("property", properties, self, capability_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, capability_type, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            type_scope,
+            self,
+            capability_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(property, properties, scope, self, parent, true, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            type_scope,
+            self,
+            capability_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(attribute, attributes, scope, self, parent, true, catalog, source_id, errors);
 
-        if let Some((capability_type, scope)) = &capability_type {
+        if let Some(capability_type) = &capability_type {
             errors_with_fallback_annotations_from_field!(
                 errors, self, "valid_source_node_types",
-                complete_types(
+                complete_type_list(
                     &mut self.valid_source_node_types,
                     &capability_type.valid_source_node_types,
                     catalog,
                     source_id,
-                    scope,
                     errors,
                 )?;
             );
 
             errors_with_fallback_annotations_from_field!(
                 errors, self, "valid_relationship_types",
-                complete_types(
+                complete_type_list(
                     &mut self.valid_relationship_types,
                     &capability_type.valid_relationship_types,
                     catalog,
                     source_id,
-                    scope,
                     errors,
                 )?;
             );
@@ -142,19 +157,19 @@ where
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<CapabilityDefinition<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<CapabilityDefinition<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            valid_source_node_types: self.valid_source_node_types.convert_into_scope(scope),
-            valid_relationship_types: self.valid_relationship_types.convert_into_scope(scope),
+            properties: self.properties.into_scoped(scope),
+            attributes: self.attributes.into_scoped(scope),
+            valid_source_node_types: self.valid_source_node_types.into_scoped(scope),
+            valid_relationship_types: self.valid_relationship_types.into_scoped(scope),
             annotations: self.annotations.clone(),
         }
     }

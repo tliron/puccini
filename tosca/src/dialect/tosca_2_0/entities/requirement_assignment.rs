@@ -120,7 +120,8 @@ where
     fn complete(
         &mut self,
         name: Option<ByteString>,
-        requirement_definition: Option<(&RequirementDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        requirement_definition: Option<&RequirementDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
@@ -129,19 +130,20 @@ where
 
         // TODO: validate capability adheres to parent's capability type
 
-        if let Some((requirement_definition, scope)) = requirement_definition {
-            if_none_else!(
+        if let Some(requirement_definition) = requirement_definition {
+            complete_field_none_to!(
                 relationship,
                 self,
                 requirement_definition,
-                Some(requirement_definition.relationship.clone().convert_into_scope(scope))
+                Some(requirement_definition.relationship.into_scoped(scope))
             );
         }
 
         if let Some(relationship) = &mut self.relationship {
             relationship.complete(
                 name,
-                requirement_definition.map(|(parent, scope)| (&parent.relationship, scope)),
+                scope,
+                requirement_definition.map(|parent| &parent.relationship),
                 catalog,
                 source_id,
                 errors,
@@ -152,20 +154,17 @@ where
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RequirementAssignment<AnnotatedT>> for RequirementDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<RequirementAssignment<AnnotatedT>> for RequirementDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> RequirementAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> RequirementAssignment<AnnotatedT> {
         RequirementAssignment {
             node: self.node.clone().map(|full_name| IndexedFullName::new(full_name, None)),
             capability: Some(self.capability.clone()),
-            relationship: Some(self.relationship.convert_into_scope(scope)),
+            relationship: Some(self.relationship.into_scoped(scope)),
             node_filter: self.node_filter.clone(),
-            annotations: clone_struct_annotations(
-                &self.annotations,
-                &["node", "capability", "relationship", "node_filter"],
-            ),
+            annotations: self.annotations.clone_fields(&["node", "capability", "relationship", "node_filter"]),
             ..Default::default()
         }
     }

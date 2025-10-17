@@ -72,15 +72,15 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for RelationshipTemplate<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -90,8 +90,8 @@ where
         _derivation_path: &mut DerivationPath,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors.to_error_recipient();
 
@@ -106,12 +106,12 @@ where
                 return Ok(());
             };
 
-            if_none_clone!(type_name, self, copy);
-            if_none_clone!(description, self, copy);
-            if_empty_clone!(metadata, self, copy);
-            if_empty_clone!(properties, self, copy);
-            if_empty_clone!(attributes, self, copy);
-            if_empty_clone!(interfaces, self, copy);
+            complete_field_none!(type_name, self, copy);
+            complete_field_none!(description, self, copy);
+            complete_field_empty!(metadata, self, copy);
+            complete_field_empty!(properties, self, copy);
+            complete_field_empty!(attributes, self, copy);
+            complete_field_empty!(interfaces, self, copy);
         }
 
         if self.type_name.is_none() {
@@ -119,14 +119,51 @@ where
             return Ok(());
         }
 
-        let relationship_type =
-            completed_entity_option!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, catalog, source_id, errors);
+        let (relationship_type, type_scope) = entity_from_name_field_option!(
+            RELATIONSHIP_TYPE,
+            RelationshipType,
+            self,
+            type_name,
+            catalog,
+            source_id,
+            errors
+        );
 
-        complete_map_field!("property", properties, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, relationship_type, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            type_scope,
+            self,
+            relationship_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            type_scope,
+            self,
+            relationship_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            interface,
+            interfaces,
+            type_scope,
+            self,
+            relationship_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

@@ -1,0 +1,63 @@
+tosca_definitions_version: tosca_2_0
+
+description: Kubernetes resource model (KRM)
+
+data_types:
+
+  Container:
+    properties:
+      label:
+        type: string
+        # won't work because:
+        # 1. data types don't know which TOSCA Path context they'll be in
+        # 2. TOSCA Path doesn't let you move from capability to containing node
+        #default: { $get_property: [ SELF, containing node?, label ] }
+        default: { $k8s_update: [] }
+      name:
+        type: string
+      image:
+        type: string
+      ports:
+        type: list
+        entry_schema: Port
+        required: false
+
+  Port: {}
+
+capability_types:
+
+  Deployment:
+    properties:
+      containers:
+        type: list
+        entry_schema: Container
+
+  Service:
+    properties:
+      ports:
+        type: list
+        entry_schema:
+          type: Port
+
+relationship_types:
+
+  Connects: {}
+
+node_types:
+
+  Kubernetes:
+    description:
+      Convenience base type for Kubernetes-based nodes.
+
+      It is not necessary to inherit from this. It *is* necessary to have the Kubernetes interface.
+    interfaces:
+      kubernetes:
+        type: Kubernetes
+
+interface_types:
+
+  Kubernetes:
+    operations:
+      create: {}
+      update: {}
+      delete: {}

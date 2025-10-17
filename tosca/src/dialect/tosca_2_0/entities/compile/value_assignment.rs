@@ -30,7 +30,7 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
         floria_property.metadata.set_tosca_description(self.description.as_ref());
         floria_property.metadata.set_tosca_custom_metadata(&self.metadata);
 
-        if let Some(data_type) = &self.data_type {
+        if let Some(data_type) = &self.type_name {
             floria_property.class_ids.add_tosca_type(data_type, directory, store.clone(), errors)?;
         }
 

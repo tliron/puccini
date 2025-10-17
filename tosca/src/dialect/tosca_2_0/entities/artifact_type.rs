@@ -68,7 +68,7 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(ArtifactType);
@@ -77,8 +77,8 @@ impl<AnnotatedT> Entity for ArtifactType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -88,21 +88,39 @@ where
         derivation_path: &mut DerivationPath,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors.to_error_recipient();
 
-        let parent = completed_parent!(ARTIFACT_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        let (parent, parent_scope) = entity_from_name_field_checked!(
+            ARTIFACT_TYPE,
+            self,
+            derived_from,
+            catalog,
+            source_id,
+            derivation_path,
+            errors
+        );
 
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            parent_scope,
+            self,
+            parent,
+            false,
+            catalog,
+            source_id,
+            errors
+        );
 
-        if let Some((parent, _scope)) = &parent {
-            if_none_clone!(mime_type, self, parent);
-            if_none_clone!(file_ext, self, parent);
+        if let Some(parent) = parent {
+            complete_field_none!(mime_type, self, parent);
+            complete_field_none!(file_ext, self, parent);
         }
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

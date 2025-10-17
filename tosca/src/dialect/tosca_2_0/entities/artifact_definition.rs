@@ -99,42 +99,50 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        let artifact_type = completed_entity!(ARTIFACT_TYPE, ArtifactType, self, type_name, catalog, source_id, errors);
+        complete_name_field!(type_name, scope, self, parent, catalog, errors);
 
-        complete_map_field!("property", properties, self, artifact_type, catalog, source_id, errors);
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
+        let (artifact_type, type_scope) =
+            entity_from_name_field!(ARTIFACT_TYPE, ArtifactType, self, type_name, catalog, source_id, errors);
 
-        if let Some((parent, _scope)) = parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
+        complete_subentity_map_field!(
+            property,
+            properties,
+            type_scope,
+            self,
+            artifact_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!("property", properties, scope, self, parent, true, catalog, source_id, errors);
 
-            if_none_clone!(repository, self, parent);
-            if_none_clone!(artifact_version, self, parent);
-            if_none_clone!(checksum, self, parent);
-            if_none_clone!(checksum_algorithm, self, parent);
+        if let Some(parent) = parent {
+            complete_field_none!(repository, self, parent);
+            complete_field_none!(artifact_version, self, parent);
+            complete_field_none!(checksum, self, parent);
+            complete_field_none!(checksum_algorithm, self, parent);
         }
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<ArtifactDefinition<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<ArtifactDefinition<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             file: self.file.clone(),
             repository: self.repository.clone(),
             description: self.description.clone(),
@@ -142,7 +150,7 @@ where
             artifact_version: self.artifact_version.clone(),
             checksum: self.checksum.clone(),
             checksum_algorithm: self.checksum_algorithm.clone(),
-            properties: self.properties.convert_into_scope(scope),
+            properties: self.properties.into_scoped(scope),
             annotations: self.annotations.clone(),
         }
     }

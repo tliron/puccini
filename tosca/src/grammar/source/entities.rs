@@ -1,5 +1,5 @@
 use super::{
-    super::{entity::*, errors::*, name::*, utils::*},
+    super::{entity::*, errors::*, name::*},
     source::*,
 };
 
@@ -11,7 +11,7 @@ impl Source {
         self.entities.keys().map(|key| (key.entity_kind, key.inner.clone())).collect()
     }
 
-    /// Entitiy names as a sorted tree.
+    /// Entity names as a sorted tree.
     pub fn entity_names_tree(&self) -> BTreeMap<EntityKind, Vec<Name>> {
         let mut entity_names_tree = BTreeMap::<EntityKind, Vec<Name>>::default();
 
@@ -178,6 +178,6 @@ impl Source {
         AnnotatedT: Default,
     {
         let entity = self.entity_ref(entity_kind, entity_kind_name, name)?;
-        Ok(entity.downcast_ref_or_error("entity", type_name::<EntityT>())?)
+        Ok(entity.into_any_ref_checked("entity", type_name::<EntityT>())?)
     }
 }

@@ -71,7 +71,7 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(PolicyType);
@@ -80,8 +80,8 @@ impl<AnnotatedT> Entity for PolicyType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -91,24 +91,42 @@ where
         derivation_path: &mut DerivationPath,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors.to_error_recipient();
 
-        let parent = completed_parent!(POLICY_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        let (parent, parent_scope) = entity_from_name_field_checked!(
+            POLICY_TYPE,
+            self,
+            derived_from,
+            catalog,
+            source_id,
+            derivation_path,
+            errors
+        );
 
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-        complete_map_field!("trigger", triggers, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            parent_scope,
+            self,
+            parent,
+            false,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(trigger, triggers, parent_scope, self, parent, false, catalog, source_id, errors);
 
-        if let Some((parent, scope)) = parent {
+        if let Some(parent) = parent {
             errors_with_fallback_annotations_from_field!(
                 errors, self, "targets",
-                complete_types(&mut self.targets, &parent.targets, catalog, source_id, scope, errors)?;
+                complete_type_list(&mut self.targets, &parent.targets, catalog, source_id, errors)?;
             );
         }
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

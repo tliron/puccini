@@ -3,11 +3,26 @@
 #![warn(missing_docs)]
 
 /*!
-CSAR.
+Tools for working with
+[CSAR](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html#cloud-service-archive-csar-format)
+(Cloud Service Archive).
+
+For documentation and usage examples see the
+[Puccini site](https://puccini.cloud).
 */
 
-mod meta;
-mod version;
+mod errors;
+
+/// CSAR creator.
+#[cfg(feature = "creator")]
+pub mod creator;
+
+/// TOSCA meta.
+pub mod tosca_meta;
+
+/// CSAR URL.
+#[cfg(feature = "url")]
+pub mod url;
 
 #[allow(unused_imports)]
-pub use {meta::*, version::*};
+pub use {errors::*, tosca_meta::*};

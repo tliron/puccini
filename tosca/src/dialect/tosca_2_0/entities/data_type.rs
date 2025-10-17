@@ -1,7 +1,6 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     property_definition::*,
-    schema::*,
     schema_definition::*,
 };
 
@@ -123,7 +122,7 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(DataType);
@@ -132,8 +131,8 @@ impl<AnnotatedT> Entity for DataType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -143,18 +142,20 @@ where
         derivation_path: &mut DerivationPath,
         errors_ref: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors_ref.to_error_recipient();
 
-        let parent = completed_parent!(DATA_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        let (parent, parent_scope) =
+            entity_from_name_field_checked!(DATA_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
 
-        if let Some((parent, _scope)) = &parent {
-            if_none_clone!(scalar_data_type, self, parent);
-            if_none_clone!(scalar_canonical_unit, self, parent);
-            if_none_clone!(scalar_units, self, parent);
-            if_none_clone!(scalar_prefixes, self, parent);
+        complete_name_field_both_option!(scalar_data_type, parent_scope, self, parent, catalog, errors);
+
+        if let Some(parent) = &parent {
+            complete_field_none!(scalar_canonical_unit, self, parent);
+            complete_field_none!(scalar_units, self, parent);
+            complete_field_none!(scalar_prefixes, self, parent);
 
             if self.data_kind.is_none() && parent.data_kind.is_some() {
                 self.data_kind = parent.data_kind;
@@ -244,40 +245,29 @@ where
             }
         }
 
-        if let Some((parent, _scope)) = &parent {
+        if let Some(parent) = &parent {
             complete_validation!(self, parent);
         }
 
         // We complete these last because they may recurse to *this* data type
         // (they will be using the fallback, but in any case we want the errors above to occur
         // first in case of fail-fast)
-        complete_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
-        complete_map_option_field!("property", properties, self, parent, catalog, source_id, errors);
+        complete_subentity_field!(key_schema, parent_scope, self, parent, catalog, source_id, errors_ref);
+        complete_subentity_field!(entry_schema, parent_scope, self, parent, catalog, source_id, errors_ref);
+        complete_subentity_map_field_option!(
+            property,
+            properties,
+            parent_scope,
+            self,
+            parent,
+            false,
+            catalog,
+            source_id,
+            errors
+        );
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for DataType<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        None
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref()
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref()
     }
 }
 

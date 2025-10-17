@@ -1,7 +1,7 @@
 use super::{coerce::*, schema::*, value::*};
 
 use {
-    floria_plugin_sdk::{data::*, errors, utils::*},
+    floria_plugin_sdk::{data::*, errors, utils::*, *},
     std::collections::*,
 };
 
@@ -42,7 +42,12 @@ impl Coerce for StructSchema {
         self.validation.as_ref()
     }
 
-    fn coerce(&self, expression: Expression, schema: &Schema, call_site: &CallSite) -> Result<Expression, String> {
+    fn coerce(
+        &self,
+        expression: Expression,
+        schema: &Schema,
+        call_site: &CallSite,
+    ) -> Result<Expression, DispatchError> {
         let expression = expression.must_dispatch_if_call(call_site)?;
 
         let Expression::Map(map_resource) = &expression else {
@@ -95,7 +100,7 @@ impl Coerce for StructSchema {
 }
 
 impl TryFrom<Expression> for StructSchema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         let map = expression.cast_map("struct schema")?;
@@ -109,7 +114,7 @@ impl TryFrom<Expression> for StructSchema {
     }
 }
 
-fn get_map(map: &Map, name: &'static str) -> Result<BTreeMap<String, StructSchemaField>, String> {
+fn get_map(map: &Map, name: &'static str) -> Result<BTreeMap<String, StructSchemaField>, DispatchError> {
     match map.into_get(name) {
         Some(Expression::Map(map_resource)) => {
             let mut map = BTreeMap::default();

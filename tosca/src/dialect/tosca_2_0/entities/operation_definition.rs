@@ -60,34 +60,35 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        complete_map_field!("input", inputs, self, parent, catalog, source_id, errors);
-        complete_map_field!("output", outputs, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(input, inputs, scope, self, parent, true, catalog, source_id, errors);
+        complete_subentity_map_field!(output, outputs, scope, self, parent, true, catalog, source_id, errors);
 
-        if let Some((parent, _scope)) = parent {
-            if_none_clone!(implementation, self, parent);
+        if let Some(parent) = parent {
+            complete_field_none!(implementation, self, parent);
         }
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<OperationDefinition<AnnotatedT>> for OperationDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<OperationDefinition<AnnotatedT>> for OperationDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
             description: self.description.clone(),
             implementation: self.implementation.clone(),
-            inputs: self.inputs.convert_into_scope(scope),
-            outputs: self.outputs.convert_into_scope(scope),
+            inputs: self.inputs.into_scoped(scope),
+            outputs: self.outputs.into_scoped(scope),
             annotations: self.annotations.clone(),
         }
     }

@@ -20,6 +20,8 @@ pub struct FullName {
     pub name: Name,
 }
 
+impl_resolve_from_str!(FullName);
+
 impl FullName {
     /// Constructor.
     pub fn new(scope: Scope, name: Name) -> Self {
@@ -43,6 +45,16 @@ impl FullName {
         directory.add_first_segment(prefix.into());
         directory.add_first_segment("tosca".into());
         floria::ID::new_for(floria::EntityKind::Class, directory, name.into())
+    }
+}
+
+impl IntoScoped<FullName> for FullName {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
+        let clone = self.clone();
+        match scope {
+            Some(scope) => clone.in_scope(scope.clone()),
+            None => clone,
+        }
     }
 }
 
@@ -88,5 +100,3 @@ impl From<Name> for FullName {
         Self::new(Default::default(), name)
     }
 }
-
-impl_resolve_from_str!(FullName);

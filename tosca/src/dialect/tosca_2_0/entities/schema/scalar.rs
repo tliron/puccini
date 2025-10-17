@@ -2,8 +2,8 @@ use super::{
     super::{
         super::{super::super::grammar::*, data::*},
         data_type::*,
-        schema::*,
     },
+    details::*,
     macros::*,
 };
 

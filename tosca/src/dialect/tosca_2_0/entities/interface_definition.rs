@@ -79,47 +79,82 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-        }
+        complete_name_field!(type_name, scope, self, parent, catalog, errors);
 
-        let interface_type =
-            completed_entity!(INTERFACE_TYPE, InterfaceType, self, type_name, catalog, source_id, errors);
+        let (interface_type, type_scope) =
+            entity_from_name_field!(INTERFACE_TYPE, InterfaceType, self, type_name, catalog, source_id, errors);
 
-        complete_map_field!("input", inputs, self, interface_type, catalog, source_id, errors);
-        complete_map_field!("input", inputs, self, parent, catalog, source_id, errors);
-        complete_map_field!("operation", operations, self, interface_type, catalog, source_id, errors);
-        complete_map_field!("operation", operations, self, parent, catalog, source_id, errors);
-        complete_map_field!("notification", notifications, self, interface_type, catalog, source_id, errors);
-        complete_map_field!("notification", notifications, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            input,
+            inputs,
+            type_scope,
+            self,
+            interface_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(input, inputs, scope, self, parent, true, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            operation,
+            operations,
+            type_scope,
+            self,
+            interface_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(operation, operations, scope, self, parent, true, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            notification,
+            notifications,
+            type_scope,
+            self,
+            interface_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            notification,
+            notifications,
+            scope,
+            self,
+            parent,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<InterfaceDefinition<AnnotatedT>> for InterfaceDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<InterfaceDefinition<AnnotatedT>> for InterfaceDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            inputs: self.inputs.convert_into_scope(scope),
-            operations: self.operations.convert_into_scope(scope),
-            notifications: self.notifications.convert_into_scope(scope),
+            inputs: self.inputs.into_scoped(scope),
+            operations: self.operations.into_scoped(scope),
+            notifications: self.notifications.into_scoped(scope),
             annotations: self.annotations.clone(),
         }
     }

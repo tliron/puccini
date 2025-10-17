@@ -1,7 +1,9 @@
-use super::super::{
-    super::{super::super::grammar::*, data::*},
-    data_type::*,
-    schema::*,
+use super::{
+    super::{
+        super::{super::super::grammar::*, data::*},
+        data_type::*,
+    },
+    details::*,
 };
 
 use compris::{annotate::*, normal::MalformedError};
@@ -55,7 +57,7 @@ where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
     {
-        // TODO: we won't get everything
+        // TODO: we won't get everything if it's a fallback
         if let Some(reference) = schema.data_type_references.get(data_type_name) {
             return Ok(*reference);
         }

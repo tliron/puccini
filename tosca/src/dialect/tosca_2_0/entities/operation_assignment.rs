@@ -67,34 +67,55 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        operation_definition: Option<(&OperationDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        operation_definition: Option<&OperationDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        complete_map_field!("input", inputs, self, operation_definition, catalog, source_id, errors);
-        complete_map_field!("output", outputs, self, operation_definition, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            input,
+            inputs,
+            scope,
+            self,
+            operation_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            output,
+            outputs,
+            scope,
+            self,
+            operation_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
-        if let Some((operation_definition, _scope)) = operation_definition {
-            if_none_clone!(implementation, self, operation_definition);
+        if let Some(operation_definition) = operation_definition {
+            complete_field_none!(implementation, self, operation_definition);
         }
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<OperationAssignment<AnnotatedT>> for OperationDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<OperationAssignment<AnnotatedT>> for OperationDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> OperationAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> OperationAssignment<AnnotatedT> {
         OperationAssignment {
             implementation: self.implementation.clone(),
-            inputs: self.inputs.convert_into_scope(scope),
-            outputs: self.outputs.convert_into_scope(scope),
-            annotations: clone_struct_annotations(&self.annotations, &["implementation", "inputs", "outputs"]),
+            inputs: self.inputs.into_scoped(scope),
+            outputs: self.outputs.into_scoped(scope),
+            annotations: self.annotations.clone_fields(&["implementation", "inputs", "outputs"]),
             ..Default::default()
         }
     }

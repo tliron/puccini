@@ -79,7 +79,7 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(CapabilityType);
@@ -88,8 +88,8 @@ impl<AnnotatedT> Entity for CapabilityType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -99,44 +99,69 @@ where
         derivation_path: &mut DerivationPath,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors.to_error_recipient();
 
-        let parent =
-            completed_parent!(CAPABILITY_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        let (parent, parent_scope) = entity_from_name_field_checked!(
+            CAPABILITY_TYPE,
+            self,
+            derived_from,
+            catalog,
+            source_id,
+            derivation_path,
+            errors
+        );
 
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            parent_scope,
+            self,
+            parent,
+            false,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            parent_scope,
+            self,
+            parent,
+            false,
+            catalog,
+            source_id,
+            errors
+        );
 
-        if let Some((parent, scope)) = parent {
+        if let Some(parent) = parent {
             errors_with_fallback_annotations_from_field!(
                 errors, self, "valid_source_node_types",
-                complete_types(
+                complete_type_list(
                     &mut self.valid_source_node_types,
                     &parent.valid_source_node_types,
                     catalog,
                     source_id,
-                    scope,
                     errors,
                 )?;
             );
 
             errors_with_fallback_annotations_from_field!(
                 errors, self, "valid_relationship_types",
-                complete_types(
+                complete_type_list(
                     &mut self.valid_relationship_types,
                     &parent.valid_relationship_types,
                     catalog,
                     source_id,
-                    scope,
                     errors,
                 )?;
             );
         }
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

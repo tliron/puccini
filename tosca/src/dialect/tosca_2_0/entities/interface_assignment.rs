@@ -59,31 +59,62 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        interface_definition: Option<(&InterfaceDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        interface_definition: Option<&InterfaceDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        complete_map_field!("input", inputs, self, interface_definition, catalog, source_id, errors);
-        complete_map_field!("operation", operations, self, interface_definition, catalog, source_id, errors);
-        complete_map_field!("notification", notifications, self, interface_definition, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            input,
+            inputs,
+            scope,
+            self,
+            interface_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            operation,
+            operations,
+            scope,
+            self,
+            interface_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            notification,
+            notifications,
+            scope,
+            self,
+            interface_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<InterfaceAssignment<AnnotatedT>> for InterfaceDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<InterfaceAssignment<AnnotatedT>> for InterfaceDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> InterfaceAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> InterfaceAssignment<AnnotatedT> {
         InterfaceAssignment {
-            inputs: self.inputs.convert_into_scope(scope),
-            operations: self.operations.convert_into_scope(scope),
-            notifications: self.notifications.convert_into_scope(scope),
-            annotations: clone_struct_annotations(&self.annotations, &["inputs", "operations", "notifications"]),
+            inputs: self.inputs.into_scoped(scope),
+            operations: self.operations.into_scoped(scope),
+            notifications: self.notifications.into_scoped(scope),
+            annotations: self.annotations.clone_fields(&["inputs", "operations", "notifications"]),
             ..Default::default()
         }
     }

@@ -59,39 +59,67 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        relationship_definition: Option<(&RelationshipDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        relationship_definition: Option<&RelationshipDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        if let Some((relationship_definition, _scope)) = &relationship_definition {
+        if let Some(relationship_definition) = &relationship_definition {
             validate_type_name(&self.type_name, &relationship_definition.type_name, catalog, errors)?;
         }
 
-        complete_map_field!("property", properties, self, relationship_definition, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, relationship_definition, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, relationship_definition, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            scope,
+            self,
+            relationship_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            scope,
+            self,
+            relationship_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            interface,
+            interfaces,
+            scope,
+            self,
+            relationship_definition,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RelationshipAssignment<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<RelationshipAssignment<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> RelationshipAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> RelationshipAssignment<AnnotatedT> {
         RelationshipAssignment {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            interfaces: self.interfaces.convert_into_scope(scope),
-            annotations: clone_struct_annotations(
-                &self.annotations,
-                &["type_name", "properties", "attributes", "interfaces"],
-            ),
+            type_name: self.type_name.into_scoped(scope),
+            properties: self.properties.into_scoped(scope),
+            attributes: self.attributes.into_scoped(scope),
+            interfaces: self.interfaces.into_scoped(scope),
+            annotations: self.annotations.clone_fields(&["type_name", "properties", "attributes", "interfaces"]),
         }
     }
 }

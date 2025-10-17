@@ -1,5 +1,5 @@
 use super::{
-    super::{dialect::*, entity::*, errors::*, utils::*},
+    super::{dialect::*, entity::*, errors::*},
     catalog::*,
 };
 
@@ -29,7 +29,7 @@ impl Catalog {
         AnnotatedT: Default,
     {
         let dialect = self.get_dialect_ref(dialect_id)?;
-        Ok(dialect.downcast_ref_or_error("dialect", type_name::<DialectT>())?)
+        Ok(dialect.into_any_ref_checked("dialect", type_name::<DialectT>())?)
     }
 
     /// Supported entity kinds.

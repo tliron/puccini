@@ -79,47 +79,72 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors.to_error_recipient();
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-        }
+        complete_name_field!(type_name, scope, self, parent, catalog, errors);
 
-        let relationship_type =
-            completed_entity!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, catalog, source_id, errors);
+        let (relationship_type, scope) =
+            entity_from_name_field!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, catalog, source_id, errors);
 
-        complete_map_field!("property", properties, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, parent, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            scope,
+            self,
+            relationship_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(property, properties, scope, self, parent, true, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            scope,
+            self,
+            relationship_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(attribute, attributes, scope, self, parent, true, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            interface,
+            interfaces,
+            scope,
+            self,
+            relationship_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(interface, interfaces, scope, self, parent, true, catalog, source_id, errors);
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RelationshipDefinition<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<RelationshipDefinition<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            interfaces: self.interfaces.convert_into_scope(scope),
+            properties: self.properties.into_scoped(scope),
+            attributes: self.attributes.into_scoped(scope),
+            interfaces: self.interfaces.into_scoped(scope),
             annotations: self.annotations.clone(),
         }
     }

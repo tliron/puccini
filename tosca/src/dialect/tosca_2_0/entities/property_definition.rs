@@ -1,7 +1,6 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
-    schema::*,
     schema_definition::*,
 };
 
@@ -100,31 +99,27 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors_ref: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         let errors = &mut errors_ref.to_error_recipient();
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
+        complete_name_field!(type_name, scope, self, parent, catalog, errors);
 
-            if_none_clone!(required, self, parent);
-            if_none_clone!(default, self, parent);
-            if_none_clone!(value, self, parent);
+        if let Some(parent) = parent {
+            complete_field_none!(required, self, parent);
+            complete_field_none!(default, self, parent);
+            complete_field_none!(value, self, parent);
             complete_validation!(self, parent);
         }
 
-        // TODO: self-referential structs?
+        let (data_type, _type_scope) =
+            entity_from_name_field!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors);
 
-        let data_type = completed_entity!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors);
-
-        if let Some((data_type, _scope)) = data_type {
+        if let Some(data_type) = data_type {
             complete_validation!(self, data_type);
 
             //let scope = &self.type_name.scope;
@@ -139,51 +134,30 @@ where
             // (only for map and list types)
         }
 
-        complete_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
+        complete_subentity_field!(key_schema, scope, self, parent, catalog, source_id, errors_ref);
+        complete_subentity_field!(entry_schema, scope, self, parent, catalog, source_id, errors_ref);
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<PropertyDefinition<AnnotatedT>> for PropertyDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<PropertyDefinition<AnnotatedT>> for PropertyDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.into_scoped(scope),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
             required: self.required,
             default: self.default.clone(),
             value: self.value.clone(),
             validation: self.validation.clone(),
-            key_schema: self.key_schema.clone(),
-            entry_schema: self.entry_schema.clone(),
+            key_schema: self.key_schema.as_ref().map(|schema_definition| schema_definition.into_scoped(scope)),
+            entry_schema: self.entry_schema.as_ref().map(|schema_definition| schema_definition.into_scoped(scope)),
             annotations: self.annotations.clone(),
         }
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for PropertyDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        self.default.as_ref()
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref()
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref()
     }
 }
 

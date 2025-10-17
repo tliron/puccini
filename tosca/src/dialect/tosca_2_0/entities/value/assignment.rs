@@ -1,8 +1,6 @@
 use super::super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
-    schema::*,
-    schema_definition::*,
 };
 
 use {
@@ -31,9 +29,9 @@ pub struct ValueAssignment<AnnotatedT> {
     #[depict(option, as(depict))]
     pub validation: Option<Expression<AnnotatedT>>,
 
-    /// Data type.
+    /// Data type name.
     #[depict(option, as(depict))]
-    pub data_type: Option<FullName>,
+    pub type_name: Option<FullName>,
 
     /// Metadata.
     #[depict(iter(kv), as(depict), key_style(string))]
@@ -56,32 +54,28 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
+        scope: Option<&Scope>,
+        parent: Option<&Self>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let Some((parent, scope)) = parent else {
+        let Some(parent) = parent else {
             return Ok(());
         };
 
         let errors = &mut errors.to_error_recipient();
 
-        if_none_clone!(expression, self, parent);
+        complete_name_field_both_option!(type_name, scope, self, Some(parent), catalog, errors);
+        //complete_field_none_to!(type_name, self, parent, parent.type_name.into_scoped(scope));
+        complete_field_none!(expression, self, parent);
 
-        if_none_else!(
-            data_type,
-            self,
-            parent,
-            parent.data_type.as_ref().map(|data_type| data_type.clone().in_scope(scope.clone()))
-        );
-
-        if let Some(type_name) = &self.data_type
+        if let Some(type_name) = &self.type_name
             && let Some(data_type) = catalog
                 .completed_entity::<DataType<AnnotatedT>, _, _>(DATA_TYPE, type_name, source_id, errors)?
                 .cloned()
         {
-            if let Some(parent_data_type) = &parent.data_type {
+            if let Some(parent_data_type) = &parent.type_name {
                 validate_type(&data_type, parent_data_type, catalog, errors)?;
             }
 
@@ -95,22 +89,22 @@ where
             }
         }
 
-        if_none_clone!(description, self, parent);
+        complete_field_none!(description, self, parent);
 
         Ok(())
     }
 }
 
 // Used by ArtifactAssignment and ArtifactDefinition
-impl<AnnotatedT> ConvertIntoScope<ValueAssignment<AnnotatedT>> for ValueAssignment<AnnotatedT>
+impl<AnnotatedT> IntoScoped<ValueAssignment<AnnotatedT>> for ValueAssignment<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn into_scoped(&self, scope: Option<&Scope>) -> Self {
         Self {
             expression: self.expression.clone(),
             validation: None,
-            data_type: self.data_type.as_ref().map(|data_type| data_type.clone().in_scope(scope.clone())),
+            type_name: self.type_name.into_scoped(scope),
             metadata: self.metadata.clone(),
             description: self.description.clone(),
             annotations: self.annotations.clone(),
@@ -137,27 +131,6 @@ where
     {
         let expression: Option<Expression<_>> = self.resolve_with_errors(errors)?;
         Ok(expression.map(|expression| expression.into()))
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for ValueAssignment<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        None
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        None
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        None
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
     }
 }
 

@@ -1,4 +1,4 @@
-use {floria::*, kutil::cli::run::*, puccini_tosca::grammar::*, read_url::*, std::io, thiserror::*};
+use {compris::ser::*, floria::*, kutil::cli::run::*, puccini_tosca::grammar::*, read_url::*, std::io, thiserror::*};
 
 //
 // MainError
@@ -9,7 +9,6 @@ use {floria::*, kutil::cli::run::*, puccini_tosca::grammar::*, read_url::*, std:
 pub enum MainError {
     /// Exit.
     #[error("{0}")]
-    #[allow(dead_code)]
     Exit(#[from] ExitError),
 
     #[error("I/O: {0}")]
@@ -30,6 +29,9 @@ pub enum MainError {
 
     #[error("store: {0}")]
     Store(#[from] StoreError),
+
+    #[error("serialize: {0}")]
+    Serialize(#[from] SerializeError),
 }
 
 // impl<AnnotatedT> From<PucciniError<AnnotatedT>> for MainError {
@@ -44,14 +46,4 @@ impl<AnnotatedT> From<ToscaError<AnnotatedT>> for MainError {
     }
 }
 
-impl RunError for MainError {
-    fn handle(&self) -> (bool, u8) {
-        (
-            false,
-            match self {
-                MainError::Exit(exit) => exit.code,
-                _ => 1,
-            },
-        )
-    }
-}
+handle_exit_error!(MainError, Exit);

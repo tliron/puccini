@@ -1,10 +1,10 @@
 use {
-    floria_plugin_sdk::{data::*, utils::*},
+    floria_plugin_sdk::{data::*, utils::*, *},
     std::sync::*,
 };
 
 /// Error if argument is not true.
-pub fn assert(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn assert(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 1)?;
     let mut arguments = arguments.into_iter();
 

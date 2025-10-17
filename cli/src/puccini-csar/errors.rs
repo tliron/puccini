@@ -1,4 +1,4 @@
-use {compris::parse::*, kutil::cli::run::*, read_url::*, std::io, thiserror::*};
+use {compris::ser::*, kutil::cli::run::*, puccini_csar::*, read_url::*, std::io, thiserror::*};
 
 //
 // MainError
@@ -7,28 +7,20 @@ use {compris::parse::*, kutil::cli::run::*, read_url::*, std::io, thiserror::*};
 /// Main error.
 #[derive(Debug, Error)]
 pub enum MainError {
-    #[error("exit: {0}")]
-    #[allow(dead_code)]
+    #[error("{0}")]
     Exit(#[from] ExitError),
 
     #[error("I/O: {0}")]
     IO(#[from] io::Error),
 
-    #[error("parse: {0}")]
-    Parse(#[from] ParseError),
+    #[error("CSAR: {0}")]
+    CSAR(#[from] CsarError),
 
     #[error("URL: {0}")]
     URL(#[from] UrlError),
+
+    #[error("serialize: {0}")]
+    Serialize(#[from] SerializeError),
 }
 
-impl RunError for MainError {
-    fn handle(&self) -> (bool, u8) {
-        (
-            false,
-            match self {
-                MainError::Exit(exit) => exit.code,
-                _ => 1,
-            },
-        )
-    }
-}
+handle_exit_error!(MainError, Exit);

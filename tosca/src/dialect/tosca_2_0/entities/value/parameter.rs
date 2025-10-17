@@ -19,16 +19,19 @@ where
     fn complete(
         &mut self,
         name: Option<ByteString>,
-        parameter_definition: Option<(&ParameterDefinition<AnnotatedT>, &Scope)>,
+        scope: Option<&Scope>,
+        parameter_definition: Option<&ParameterDefinition<AnnotatedT>>,
         catalog: &mut Catalog,
         source_id: &SourceID,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let Some((parameter_definition, scope)) = parameter_definition else {
+        let errors = &mut errors.to_error_recipient();
+
+        complete_name_field_both_option!(type_name, scope, self, parameter_definition, catalog, errors);
+
+        let Some(parameter_definition) = parameter_definition else {
             return Ok(());
         };
-
-        let errors = &mut errors.to_error_recipient();
 
         if self.expression.is_none() {
             if parameter_definition.value.is_some() {
@@ -40,14 +43,14 @@ where
             }
         }
 
-        if_none_else!(
-            data_type,
+        complete_field_none_to!(
+            type_name,
             self,
             parameter_definition,
-            parameter_definition.type_name.as_ref().map(|type_name| type_name.clone().in_scope(scope.clone()))
+            parameter_definition.type_name.as_ref().map(|type_name| type_name.into_scoped(scope))
         );
 
-        if let Some(type_name) = &self.data_type
+        if let Some(type_name) = &self.type_name
             && let Some(data_type) = catalog
                 .completed_entity::<DataType<AnnotatedT>, _, _>(DATA_TYPE, type_name, source_id, errors)?
                 .cloned()
@@ -65,17 +68,17 @@ where
             }
         }
 
-        if_none_clone!(description, self, parameter_definition);
+        complete_field_none!(description, self, parameter_definition);
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<ValueAssignment<AnnotatedT>> for ParameterDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<ValueAssignment<AnnotatedT>> for ParameterDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> ValueAssignment<AnnotatedT> {
+    fn into_scoped(&self, scope: Option<&Scope>) -> ValueAssignment<AnnotatedT> {
         ValueAssignment {
             expression: if self.value.is_some() {
                 self.value.clone()
@@ -85,7 +88,7 @@ where
                 None
             },
             validation: None,
-            data_type: self.type_name.as_ref().map(|type_name| type_name.clone().in_scope(scope.clone())),
+            type_name: self.type_name.into_scoped(scope),
             metadata: self.metadata.clone(),
             description: self.description.clone(),
             annotations: self.annotations.clone(),

@@ -27,8 +27,8 @@ where
     }
 }
 
-impl DowncastRef for DialectRef {
-    fn downcast_ref<AnyT>(&self) -> Option<&AnyT>
+impl IntoAnyRef for DialectRef {
+    fn into_any_ref<AnyT>(&self) -> Option<&AnyT>
     where
         AnyT: Any,
     {

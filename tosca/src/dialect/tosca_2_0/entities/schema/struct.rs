@@ -1,9 +1,10 @@
 use super::{
     super::{
-        super::{super::super::grammar::*, data::*},
+        super::{super::super::grammar::*, data::*, dialect::*},
         data_type::*,
-        schema::*,
+        property_definition::*,
     },
+    details::*,
     macros::*,
 };
 
@@ -38,5 +39,26 @@ where
         }
 
         Ok(schema.add_unique(reference, struct_schema.into()))
+    }
+}
+
+impl<AnnotatedT> PropertyDefinition<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    /// Initialize struct field schema.
+    pub fn initialize_struct_field_schema(
+        &self,
+        schema: &mut Schema<AnnotatedT>,
+        source_id: &SourceID,
+        catalog: &Catalog,
+    ) -> Result<StructSchemaField, ToscaError<WithAnnotations>>
+    where
+        AnnotatedT: 'static,
+    {
+        // TODO: completed_entity (we need and should have error recipient)
+        let data_type = catalog.entity::<DataType<AnnotatedT>, _>(DATA_TYPE, &self.type_name, source_id)?;
+        let reference = data_type.initialize_schema(&self.type_name, schema, self, source_id, catalog)?;
+        Ok(StructSchemaField::new(reference, self.required.unwrap_or(true)))
     }
 }

@@ -69,15 +69,15 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for PolicyTemplate<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
@@ -87,21 +87,42 @@ where
         _derivation_path: &mut DerivationPath,
         errors: ToscaErrorRecipientRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
         let errors = &mut errors.to_error_recipient();
 
-        let policy_type = completed_entity!(POLICY_TYPE, PolicyType, self, type_name, catalog, source_id, errors);
+        let (policy_type, type_scope) =
+            entity_from_name_field!(POLICY_TYPE, PolicyType, self, type_name, catalog, source_id, errors);
 
-        complete_map_field!("property", properties, self, policy_type, catalog, source_id, errors);
-        complete_map_field!("trigger", triggers, self, policy_type, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            type_scope,
+            self,
+            policy_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
+        complete_subentity_map_field!(
+            trigger,
+            triggers,
+            type_scope,
+            self,
+            policy_type,
+            true,
+            catalog,
+            source_id,
+            errors
+        );
 
-        if let Some((policy_type, _scope)) = policy_type {
+        if let Some(policy_type) = policy_type {
             validate_entities_types(&self.targets, &policy_type.targets, catalog, errors)?;
         }
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

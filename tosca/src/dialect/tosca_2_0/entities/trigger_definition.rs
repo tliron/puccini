@@ -56,7 +56,8 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        _parent: Option<(&Self, &Scope)>,
+        _scope: Option<&Scope>,
+        _parent: Option<&Self>,
         _catalog: &mut Catalog,
         _source_id: &SourceID,
         _errors: ToscaErrorRecipientRef,
@@ -66,11 +67,11 @@ where
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<TriggerDefinition<AnnotatedT>> for TriggerDefinition<AnnotatedT>
+impl<AnnotatedT> IntoScoped<TriggerDefinition<AnnotatedT>> for TriggerDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, _scope: &Scope) -> Self {
+    fn into_scoped(&self, _scope: Option<&Scope>) -> Self {
         self.clone()
     }
 }

@@ -1,7 +1,7 @@
 use super::{
     super::{catalog::*, errors::*, source::*},
-    completion::*,
-    derivation_path::*,
+    completion_state::*,
+    r#type::*,
 };
 
 use {compris::annotate::*, kutil::cli::depict::*, std::any::*};
@@ -18,17 +18,17 @@ pub trait Entity
 where
     Self: Any + DynDepict,
 {
-    /// The completion status.
-    fn completion(&self) -> Completion;
+    /// Completion state.
+    fn completion_state(&self) -> CompletionState;
 
     /// Whether the entity is complete.
     fn is_complete(&self) -> bool {
-        self.completion() == Completion::Complete
+        self.completion_state() == CompletionState::Complete
     }
 
     /// Whether the entity should be completed.
     fn should_complete(&self) -> bool {
-        self.completion() == Completion::Incomplete
+        self.completion_state() == CompletionState::Incomplete
     }
 
     /// Complete.

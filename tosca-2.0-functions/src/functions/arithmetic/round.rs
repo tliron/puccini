@@ -1,4 +1,4 @@
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
@@ -6,7 +6,7 @@ use floria_plugin_sdk::{data::*, utils::*};
 /// The $round function takes a float argument. The result is an integer with the closest value to
 /// the float argument. Equal value distance is rounded down (e.g. 3.5 is rounded down to 3, while
 /// 3.53 is rounded up to 4).
-pub fn round(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn round(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 1)?;
 
     // TODO: we round ties *away* from 0

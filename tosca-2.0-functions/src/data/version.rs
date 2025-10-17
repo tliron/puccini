@@ -1,7 +1,7 @@
 use super::comparator::*;
 
 use {
-    floria_plugin_sdk::{data::*, errors},
+    floria_plugin_sdk::{data::*, errors, *},
     std::{collections::*, fmt, str::*},
 };
 
@@ -48,8 +48,8 @@ impl Version {
 }
 
 impl Comparator for Version {
-    fn comparator(&self) -> Result<Expression, String> {
-        Ok(normal_vec!(
+    fn comparator(&self) -> Result<Expression, DispatchError> {
+        Ok(expression_vec!(
             self.major,
             self.minor,
             self.fix.map(|fix| fix.into()).unwrap_or(Expression::Null),
@@ -88,7 +88,7 @@ impl fmt::Display for Version {
 // Conversions
 
 impl FromStr for Version {
-    type Err = String;
+    type Err = DispatchError;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         // Our parsing method does no additional string allocation;
@@ -161,7 +161,7 @@ impl FromStr for Version {
 }
 
 impl TryFrom<Expression> for Version {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         match expression {
@@ -173,7 +173,7 @@ impl TryFrom<Expression> for Version {
 }
 
 impl TryFrom<&Custom> for Version {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(custom: &Custom) -> Result<Self, Self::Error> {
         custom.assert_kind(VERSION_CUSTOM_KIND, "version")?;
@@ -211,7 +211,7 @@ impl Into<Expression> for Version {
     }
 }
 
-fn get_unsigned_integer(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<u64, String> {
+fn get_unsigned_integer(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<u64, DispatchError> {
     match get_unsigned_integer_option(map, name)? {
         Some(unsigned_integer) => Ok(unsigned_integer),
         None => Err(format!("version missing |meta|{}| key", name)),
@@ -221,14 +221,17 @@ fn get_unsigned_integer(map: &BTreeMap<Expression, Expression>, name: &'static s
 fn get_unsigned_integer_option(
     map: &BTreeMap<Expression, Expression>,
     name: &'static str,
-) -> Result<Option<u64>, String> {
+) -> Result<Option<u64>, DispatchError> {
     Ok(match map.get(&name.into()) {
         Some(value) => Some(value.cast_u64_integer(&format!("version |meta|{}| key", name))?),
         None => None,
     })
 }
 
-fn get_string_option(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<Option<String>, String> {
+fn get_string_option(
+    map: &BTreeMap<Expression, Expression>,
+    name: &'static str,
+) -> Result<Option<String>, DispatchError> {
     Ok(match map.get(&name.into()) {
         Some(value) => Some(value.cast_string_clone(&format!("version |meta|{}| key", name))?),
         None => None,

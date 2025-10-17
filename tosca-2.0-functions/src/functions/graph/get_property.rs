@@ -1,6 +1,6 @@
 use super::super::super::entities::*;
 
-use floria_plugin_sdk::data::*;
+use floria_plugin_sdk::{data::*, *};
 
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
@@ -11,7 +11,7 @@ use floria_plugin_sdk::data::*;
 /// template. The $get_attribute function should be used to retrieve values for attribute
 /// definitions (or property definitions reflected as attribute definitions) from the
 /// representation graph of the TOSCA application (as realized by the TOSCA orchestrator).
-pub fn get_property(arguments: Vec<Expression>, site: CallSite) -> Result<Option<Expression>, String> {
+pub fn get_property(arguments: Vec<Expression>, site: CallSite) -> DispatchResult {
     let call_site = site.entity()?;
     follow_tosca_path_to_property_value(call_site, &arguments, true).map(Some)
 }
