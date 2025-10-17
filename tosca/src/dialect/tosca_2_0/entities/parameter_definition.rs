@@ -1,16 +1,13 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
-    schema::*,
     schema_definition::*,
 };
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     smart_default::*,
     std::collections::*,
 };
@@ -21,11 +18,11 @@ use {
 
 // Copied from PropertyDefinition, except that "type" is not required
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A parameter definition defines a named, typed value and related data that may be used to exchange
 /// values between the TOSCA orchestrator and the external world.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Depict, Resolve, SmartDefault)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -100,33 +97,38 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<ParameterDefinition<AnnotatedT>> for ParameterDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for ParameterDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors_ref: ToscaErrorRecipientRef,
+        parent: Option<&Self>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors_ref.to_error_recipient();
+        complete_optional_parent_name_field!(type_name, parent_namespace, self, parent, context);
+        complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
+        complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
 
-        if let Some((parent, _scope)) = &parent {
-            if_none_clone!(type_name, self, parent);
-            if_none_clone!(required, self, parent);
-            if_none_clone!(default, self, parent);
+        if self.value.is_some() && self.mapping.is_some() {
+            // TODO: error
+        }
+
+        if let Some(parent) = parent {
+            complete_none_field!(required, self, parent);
+            complete_none_field!(default, self, parent);
             complete_validation!(self, parent);
         }
 
-        if let Some((data_type, _scope)) =
-            completed_entity_option!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors)
-        {
+        let (data_type, _data_type_namespace) =
+            entity_from_optional_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
+
+        if let Some(data_type) = data_type {
             complete_validation!(self, data_type);
 
-            //let scope = &self.type_name.scope;
+            //let namespace = &self.type_name.namespace;
 
             // if "default" field is literal, we can check its type
             //
@@ -134,28 +136,17 @@ where
             // (only for map and list types)
         }
 
-        if let Some(type_name) = &self.type_name {
-            if let Some((parent, _scope)) = &parent
-                && let Some(parent_type_name) = &parent.type_name
-            {
-                validate_type_name(type_name, parent_type_name, catalog, errors)?;
-            }
-        }
-
-        complete_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
-
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<ParameterDefinition<AnnotatedT>> for ParameterDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for ParameterDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            type_name: self.type_name.clone().map(|type_name| type_name.in_scope(scope.clone())),
+            type_name: self.type_name.to_namespace(namespace),
             value: self.value.clone(),
             mapping: self.mapping.clone(),
             description: self.description.clone(),
@@ -163,31 +154,10 @@ where
             required: self.required,
             default: self.default.clone(),
             validation: self.validation.clone(),
-            key_schema: self.key_schema.clone(),
-            entry_schema: self.entry_schema.clone(),
+            key_schema: self.key_schema.as_ref().map(|schema_definition| schema_definition.to_namespace(namespace)),
+            entry_schema: self.entry_schema.as_ref().map(|schema_definition| schema_definition.to_namespace(namespace)),
             annotations: self.annotations.clone(),
         }
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for ParameterDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        self.default.as_ref()
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref()
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref()
     }
 }
 

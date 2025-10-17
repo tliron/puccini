@@ -2,7 +2,7 @@ use super::super::source::*;
 
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -21,6 +21,8 @@ pub struct SourceNotLoadedError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(SourceNotLoadedError);
+
 impl<AnnotatedT> SourceNotLoadedError<AnnotatedT> {
     /// Constructor.
     pub fn new(source_id: SourceID) -> Self
@@ -29,18 +31,17 @@ impl<AnnotatedT> SourceNotLoadedError<AnnotatedT> {
     {
         Self { source_id, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> SourceNotLoadedError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<SourceNotLoadedError<NewAnnotatedT>> for SourceNotLoadedError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> SourceNotLoadedError<NewAnnotatedT> {
         SourceNotLoadedError::new(self.source_id).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(SourceNotLoadedError);
 
 impl<AnnotatedT> Depict for SourceNotLoadedError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

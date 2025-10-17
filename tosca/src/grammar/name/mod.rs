@@ -1,6 +1,7 @@
 mod full_name;
 mod name;
-mod scope;
+mod namespace;
+mod to_namespace;
 
 #[allow(unused_imports)]
-pub use {full_name::*, name::*, scope::*};
+pub use {full_name::*, name::*, namespace::*, to_namespace::*};

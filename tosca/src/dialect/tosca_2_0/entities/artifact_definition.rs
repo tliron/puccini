@@ -1,15 +1,13 @@
 use super::{
-    super::{super::super::grammar::*, dialect::*},
+    super::{super::super::grammar::*, data::*, dialect::*},
     artifact_type::*,
-    value::*,
+    value_assignment::*,
 };
 
 use {
-    compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    compris::{annotate::*, normal::*, resolve::*},
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -17,12 +15,12 @@ use {
 // ArtifactDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// An artifact definition defines a named, typed file that can be associated with a node type or
 /// node template and used by a TOSCA Orchestrator to facilitate deployment and implementation of
 /// artifact operations.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 ///
 /// Puccini note: Though this is called a "definition" in the TOSCA spec, it is actually used both
 /// as a definition and as a template. See
@@ -92,49 +90,97 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<ArtifactDefinition<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
+impl<AnnotatedT> ArtifactDefinition<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    /// Constructor.
+    pub fn new_plugin(plugin: ByteString) -> Self {
+        let mut floria_prefix = ValueAssignment::<AnnotatedT>::default();
+        floria_prefix.expression = Some(plugin.into());
+
+        let mut properties = ValueAssignments::default();
+        properties.insert("floria-prefix".into(), floria_prefix);
+
+        Self { type_name: Name::from(PLUGIN_ARTIFACT_TYPE).into(), properties, ..Default::default() }
+    }
+
+    /// Plugin file and prefix.
+    pub fn plugin(&self) -> Result<(ByteString, Option<ByteString>), ToscaError<AnnotatedT>> {
+        if self.type_name == Name::from(PLUGIN_ARTIFACT_TYPE).into() {
+            let prefix = self
+                .properties
+                .get("floria-prefix")
+                .and_then(|floria_prefix| floria_prefix.expression.as_ref())
+                .and_then(|floria_prefix| {
+                    if let Expression::Simple(floria_prefix) = floria_prefix { Some(floria_prefix) } else { None }
+                })
+                .and_then(|floria_prefix| {
+                    if let Variant::Text(floria_prefix) = floria_prefix {
+                        Some(floria_prefix.inner.clone())
+                    } else {
+                        None
+                    }
+                });
+
+            Ok((self.file.clone(), prefix))
+        } else {
+            Err(WrongTypeError::new(
+                "artifact definition".into(),
+                self.type_name.to_string(),
+                vec![PLUGIN_ARTIFACT_TYPE.into()],
+            )
+            .with_annotations_from_field(self, "type_name")
+            .into())
+        }
+    }
+}
+
+impl<AnnotatedT> Subentity<Self> for ArtifactDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        parent: Option<&Self>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
+        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_subentity_map_field!(property, properties, self, parent, parent_namespace, true, context);
 
-        let artifact_type = completed_entity!(ARTIFACT_TYPE, ArtifactType, self, type_name, catalog, source_id, errors);
-
-        complete_map_field!("property", properties, self, artifact_type, catalog, source_id, errors);
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-
-        if let Some((parent, _scope)) = parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-
-            if_none_clone!(repository, self, parent);
-            if_none_clone!(artifact_version, self, parent);
-            if_none_clone!(checksum, self, parent);
-            if_none_clone!(checksum_algorithm, self, parent);
+        if let Some(parent) = parent {
+            complete_none_field!(repository, self, parent);
+            complete_none_field!(artifact_version, self, parent);
+            complete_none_field!(checksum, self, parent);
+            complete_none_field!(checksum_algorithm, self, parent);
         }
+
+        let (artifact_type, artifact_type_namespace) =
+            entity_from_full_name_field!(ARTIFACT_TYPE, ArtifactType, self, type_name, context);
+
+        complete_subentity_map_field!(
+            property,
+            properties,
+            self,
+            artifact_type,
+            artifact_type_namespace,
+            true,
+            context
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<ArtifactDefinition<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for ArtifactDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.to_namespace(namespace),
             file: self.file.clone(),
             repository: self.repository.clone(),
             description: self.description.clone(),
@@ -142,7 +188,7 @@ where
             artifact_version: self.artifact_version.clone(),
             checksum: self.checksum.clone(),
             checksum_algorithm: self.checksum_algorithm.clone(),
-            properties: self.properties.convert_into_scope(scope),
+            properties: self.properties.to_namespace(namespace),
             annotations: self.annotations.clone(),
         }
     }

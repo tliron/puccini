@@ -53,24 +53,3 @@ impl<AnnotatedT> From<Call<AnnotatedT>> for Expression<AnnotatedT> {
         Self::Call(call)
     }
 }
-
-impl<AnnotatedT> Into<floria::Expression> for Expression<AnnotatedT> {
-    fn into(self) -> floria::Expression {
-        match self {
-            Expression::Simple(simple) => simple.into(),
-
-            Expression::List(list) => {
-                let list: Vec<floria::Expression> = list.into_iter().map(|item| item.into()).collect();
-                list.into()
-            }
-
-            Expression::Map(map) => {
-                let map: BTreeMap<floria::Expression, floria::Expression> =
-                    map.into_iter().map(|(key, value)| (key.into(), value.into())).collect();
-                map.into()
-            }
-
-            Expression::Call(call) => call.into(),
-        }
-    }
-}

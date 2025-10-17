@@ -1,10 +1,6 @@
 use super::{super::entity::*, catalog::*};
 
-use {
-    compris::annotate::*,
-    kutil::{cli::depict::*, std::iter::*},
-    std::io,
-};
+use {compris::annotate::*, depiction::*, kutil::std::iter::*, std::io};
 
 impl Catalog {
     /// To namespaces depiction.

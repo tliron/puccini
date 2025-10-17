@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -19,6 +19,8 @@ pub struct NameReusedError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(NameReusedError);
+
 impl<AnnotatedT> NameReusedError<AnnotatedT> {
     /// Constructor.
     pub fn new(name: String) -> Self
@@ -27,18 +29,17 @@ impl<AnnotatedT> NameReusedError<AnnotatedT> {
     {
         Self { name, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> NameReusedError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<NameReusedError<NewAnnotatedT>> for NameReusedError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> NameReusedError<NewAnnotatedT> {
         NameReusedError::new(self.name).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(NameReusedError);
 
 impl<AnnotatedT> Depict for NameReusedError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

@@ -1,4 +1,3 @@
-mod compile;
 mod dialect;
 mod entity_kind;
 mod implicit;

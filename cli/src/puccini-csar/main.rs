@@ -4,7 +4,7 @@
 Puccini
 */
 
-mod cli;
+mod commands;
 mod errors;
 mod run;
 

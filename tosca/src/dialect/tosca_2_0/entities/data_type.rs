@@ -1,16 +1,13 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     property_definition::*,
-    schema::*,
     schema_definition::*,
 };
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::{error::*, immutable::*},
     std::collections::*,
 };
 
@@ -18,12 +15,12 @@ use {
 // DataType
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A data type defines the schema for user-defined data types in TOSCA. User-defined data types
 /// comprise derived types that derive from from the TOSCA built-in types and complex types that
 /// define collections of properties that each have their own data types.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -123,38 +120,48 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(DataType);
+
+impl<AnnotatedT> DataType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    /// Constructor.
+    pub fn new_internal(data_kind: DataKind) -> Self {
+        Self { data_kind: Some(data_kind), internal: true, ..Default::default() }
+    }
+}
 
 impl<AnnotatedT> Entity for DataType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
         &mut self,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors_ref: ToscaErrorRecipientRef,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
-        let errors = &mut errors_ref.to_error_recipient();
+        let errors = &mut context.errors.to_error_receiver();
 
-        let parent = completed_parent!(DATA_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        let (parent, parent_namespace) =
+            entity_from_name_field_checked!(DATA_TYPE, self, derived_from, derivation_path, context);
 
-        if let Some((parent, _scope)) = &parent {
-            if_none_clone!(scalar_data_type, self, parent);
-            if_none_clone!(scalar_canonical_unit, self, parent);
-            if_none_clone!(scalar_units, self, parent);
-            if_none_clone!(scalar_prefixes, self, parent);
+        complete_optional_parent_name_field!(scalar_data_type, parent_namespace, self, parent, context);
+
+        if let Some(parent) = &parent {
+            complete_none_field!(scalar_canonical_unit, self, parent);
+            complete_none_field!(scalar_units, self, parent);
+            complete_none_field!(scalar_prefixes, self, parent);
 
             if self.data_kind.is_none() && parent.data_kind.is_some() {
                 self.data_kind = parent.data_kind;
@@ -167,7 +174,12 @@ where
 
         if self.scalar_data_kind.is_none()
             && let Some(data_type) = &self.scalar_data_type
-            && let Some(data_type) = catalog.completed_entity::<Self, _, _>(DATA_TYPE, data_type, source_id, errors)?
+            && let Some(data_type) = context.catalog.completed_entity::<Self, _, _>(
+                DATA_TYPE,
+                data_type,
+                context.source_id,
+                &mut context.errors.with_fallback_annotations_from_field(self, "data_type"),
+            )?
             && data_type.data_kind.is_some()
         {
             self.scalar_data_kind = data_type.data_kind;
@@ -244,40 +256,19 @@ where
             }
         }
 
-        if let Some((parent, _scope)) = &parent {
+        if let Some(parent) = &parent {
             complete_validation!(self, parent);
         }
 
         // We complete these last because they may recurse to *this* data type
         // (they will be using the fallback, but in any case we want the errors above to occur
         // first in case of fail-fast)
-        complete_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
-        complete_map_option_field!("property", properties, self, parent, catalog, source_id, errors);
+        complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
+        complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
+        complete_optional_subentity_map_field!(property, properties, self, parent, parent_namespace, false, context);
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for DataType<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        None
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref()
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref()
     }
 }
 

@@ -1,5 +1,5 @@
 use {
-    floria_plugin_sdk::{data::*, utils::*},
+    floria_plugin_sdk::{data::*, utils::*, *},
     std::sync::*,
 };
 
@@ -10,11 +10,11 @@ use {
 /// Call site value.
 pub trait CallSiteValue {
     /// Value.
-    fn value(&self) -> Result<Expression, String>;
+    fn value(&self) -> Result<Expression, DispatchError>;
 }
 
 impl CallSiteValue for CallSite {
-    fn value(&self) -> Result<Expression, String> {
+    fn value(&self) -> Result<Expression, DispatchError> {
         match value_stack_top()? {
             Some(value) => Ok(value),
 
@@ -27,24 +27,24 @@ impl CallSiteValue for CallSite {
 }
 
 /// Reset call site value stack.
-pub fn reset_call_site_value() -> Result<(), String> {
+pub fn reset_call_site_value() -> Result<(), DispatchError> {
     set_value_stack(None)
 }
 
 /// Set call site value.
-pub fn set_call_site_value(expression: Expression) -> Result<(), String> {
+pub fn set_call_site_value(expression: Expression) -> Result<(), DispatchError> {
     set_value_stack(Some(vec![expression]))
 }
 
 /// Push to the top of the call site value stack.
-pub fn push_call_site_value(expression: Expression) -> Result<(), String> {
+pub fn push_call_site_value(expression: Expression) -> Result<(), DispatchError> {
     let mut stack = value_stack()?.unwrap_or_default();
     stack.push(expression);
     set_value_stack(Some(stack))
 }
 
 /// Remove the top of the call site value stack.
-pub fn pop_call_site_value() -> Result<(), String> {
+pub fn pop_call_site_value() -> Result<(), DispatchError> {
     if let Some(mut stack) = value_stack()? {
         stack.pop();
         set_value_stack(if !stack.is_empty() { Some(stack) } else { None })?;
@@ -54,19 +54,19 @@ pub fn pop_call_site_value() -> Result<(), String> {
 
 // Utils
 
-type Static<T> = LazyLock<Mutex<Option<T>>>;
+type Static<StaticT> = LazyLock<Mutex<Option<StaticT>>>;
 
 static VALUE_STACK: Static<Vec<Expression>> = Static::new(|| Default::default());
 
-fn set_value_stack(stack: Option<Vec<Expression>>) -> Result<(), String> {
+fn set_value_stack(stack: Option<Vec<Expression>>) -> Result<(), DispatchError> {
     *VALUE_STACK.lock().map_escape_depiction_error()? = stack;
     Ok(())
 }
 
-fn value_stack() -> Result<Option<Vec<Expression>>, String> {
+fn value_stack() -> Result<Option<Vec<Expression>>, DispatchError> {
     Ok(VALUE_STACK.lock().map_escape_depiction_error()?.clone())
 }
 
-fn value_stack_top() -> Result<Option<Expression>, String> {
+fn value_stack_top() -> Result<Option<Expression>, DispatchError> {
     Ok(value_stack()?.and_then(|stack| stack.last().cloned()))
 }

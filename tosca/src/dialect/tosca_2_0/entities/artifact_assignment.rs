@@ -1,11 +1,9 @@
-use super::{super::super::super::grammar::*, artifact_definition::*, value::*};
+use super::{super::super::super::grammar::*, artifact_definition::*, value_assignment::*};
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -89,19 +87,23 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        artifact_definition: Option<(&ArtifactDefinition<AnnotatedT>, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        artifact_definition: Option<&ArtifactDefinition<AnnotatedT>>,
+        artifact_definition_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
+        complete_name_field!(type_name, self, artifact_definition, artifact_definition_namespace, context);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            self,
+            artifact_definition,
+            artifact_definition_namespace,
+            true,
+            context
+        );
 
-        complete_map_field!("property", properties, self, artifact_definition, catalog, source_id, errors);
-
-        if let Some((artifact_definition, _scope)) = artifact_definition {
-            validate_type_name(&self.type_name, &artifact_definition.type_name, catalog, errors)?;
-
-            if_none_else!(file, self, artifact_definition, Some(artifact_definition.file.clone()));
+        if let Some(artifact_definition) = artifact_definition {
+            complete_none_field_to!(file, self, artifact_definition, || Some(artifact_definition.file.clone()));
 
             // if_none_call(
             //     &mut self.file,
@@ -111,23 +113,23 @@ where
             //     "file",
             // );
 
-            if_none_clone!(repository, self, artifact_definition);
-            if_none_clone!(artifact_version, self, artifact_definition);
-            if_none_clone!(checksum, self, artifact_definition);
-            if_none_clone!(checksum_algorithm, self, artifact_definition);
+            complete_none_field!(repository, self, artifact_definition);
+            complete_none_field!(artifact_version, self, artifact_definition);
+            complete_none_field!(checksum, self, artifact_definition);
+            complete_none_field!(checksum_algorithm, self, artifact_definition);
         }
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<ArtifactAssignment<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<ArtifactAssignment<AnnotatedT>> for ArtifactDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> ArtifactAssignment<AnnotatedT> {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> ArtifactAssignment<AnnotatedT> {
         ArtifactAssignment {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.to_namespace(namespace),
             file: Some(self.file.clone()),
             repository: self.repository.clone(),
             description: self.description.clone(),
@@ -135,7 +137,7 @@ where
             artifact_version: self.artifact_version.clone(),
             checksum: self.checksum.clone(),
             checksum_algorithm: self.checksum_algorithm.clone(),
-            properties: self.properties.convert_into_scope(scope),
+            properties: self.properties.to_namespace(namespace),
             annotations: self.annotations.clone(), // same fields
         }
     }

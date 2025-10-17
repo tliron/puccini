@@ -1,11 +1,12 @@
 mod catalog;
+mod compile;
+mod complete;
 mod data;
 mod dialect;
 mod entity;
 mod errors;
 mod name;
 mod source;
-mod utils;
 
 #[allow(unused_imports)]
-pub use {catalog::*, data::*, dialect::*, entity::*, errors::*, name::*, source::*, utils::*};
+pub use {catalog::*, compile::*, complete::*, data::*, dialect::*, entity::*, errors::*, name::*, source::*};

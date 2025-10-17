@@ -1,16 +1,13 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
-    schema::*,
     schema_definition::*,
 };
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     smart_default::*,
     std::collections::*,
 };
@@ -19,14 +16,14 @@ use {
 // PropertyDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A property definition defines a named, typed value and related data that can be associated with
 /// an entity defined in this specification (e.g., node types, relationship types, capability types,
 /// etc.). Properties are used by template authors to provide configuration values to TOSCA entities
 /// that indicate their desired state when they are instantiated. The value of a property can be
 /// retrieved using the $get_property function within TOSCA service templates.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Depict, Resolve, SmartDefault)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -93,41 +90,35 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<PropertyDefinition<AnnotatedT>> for PropertyDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for PropertyDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors_ref: ToscaErrorRecipientRef,
+        parent: Option<&Self>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors_ref.to_error_recipient();
+        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
+        complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-
-            if_none_clone!(required, self, parent);
-            if_none_clone!(default, self, parent);
-            if_none_clone!(value, self, parent);
+        if let Some(parent) = parent {
+            complete_none_field!(required, self, parent);
+            complete_none_field!(default, self, parent);
+            complete_none_field!(value, self, parent);
             complete_validation!(self, parent);
         }
 
-        // TODO: self-referential structs?
+        let (data_type, _data_type_namespace) =
+            entity_from_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
 
-        let data_type = completed_entity!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors);
-
-        if let Some((data_type, _scope)) = data_type {
+        if let Some(data_type) = data_type {
             complete_validation!(self, data_type);
 
-            //let scope = &self.type_name.scope;
+            //let namespace = &self.type_name.namespace;
 
             // if requirement=true, default cannot be Some
 
@@ -139,51 +130,27 @@ where
             // (only for map and list types)
         }
 
-        complete_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
-
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<PropertyDefinition<AnnotatedT>> for PropertyDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for PropertyDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.to_namespace(namespace),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
             required: self.required,
             default: self.default.clone(),
             value: self.value.clone(),
             validation: self.validation.clone(),
-            key_schema: self.key_schema.clone(),
-            entry_schema: self.entry_schema.clone(),
+            key_schema: self.key_schema.as_ref().map(|schema_definition| schema_definition.to_namespace(namespace)),
+            entry_schema: self.entry_schema.as_ref().map(|schema_definition| schema_definition.to_namespace(namespace)),
             annotations: self.annotations.clone(),
         }
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for PropertyDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        self.default.as_ref()
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref()
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref()
     }
 }
 

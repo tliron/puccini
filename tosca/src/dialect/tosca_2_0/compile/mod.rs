@@ -1,0 +1,9 @@
+mod artifact_assignment;
+mod call;
+mod capability_assignment;
+mod dialect;
+mod expression;
+mod node_template;
+mod requirement_assignment;
+mod service_template;
+mod value_assignment;

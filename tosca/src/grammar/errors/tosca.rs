@@ -5,9 +5,8 @@ use super::{
 
 use {
     compris::{annotate::*, normal::*, parse::*, resolve::*},
-    kutil::cli::depict::*,
+    depiction::*,
     read_url::*,
-    std::fmt,
     thiserror::*,
 };
 
@@ -114,47 +113,6 @@ pub enum ToscaError<AnnotatedT> {
     Store(#[from] floria::StoreError),
 }
 
-impl<AnnotatedT> ToscaError<AnnotatedT> {
-    /// Captured.
-    pub fn captured(self) -> CapturedAnnotatedError
-    where
-        AnnotatedT: 'static + Annotated + fmt::Debug + Send + Sync,
-    {
-        Box::new(self)
-    }
-
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> ToscaError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated + Default,
-        NewAnnotationsT: Annotated + Default,
-    {
-        match self {
-            Self::SourceNotLoaded(source_not_loaded) => source_not_loaded.into_annotated().into(),
-            Self::UnsupportedSource(unsupported_source) => unsupported_source.into(),
-            Self::UnsupportedDialect(unsupported_dialect) => unsupported_dialect.into_annotated().into(),
-            Self::URL(url) => url.into(),
-            Self::Parse(parse) => parse.into(),
-            Self::Resolve(resolve) => resolve.into_annotated().into(),
-            Self::Malformed(malformed) => malformed.into_annotated().into(),
-            Self::InvalidKey(invalid_key) => invalid_key.into_annotated().into(),
-            Self::MissingRequiredKey(missing_required_key) => missing_required_key.into_annotated().into(),
-            Self::IncompatibleVariantType(incompatible_variant_type) => {
-                incompatible_variant_type.into_annotated().into()
-            }
-            Self::NameReused(name_reused) => name_reused.into_annotated().into(),
-            Self::CyclicalDerivation(cyclical_derivation) => cyclical_derivation.into_annotated().into(),
-            Self::UnknownType(unknown_type) => unknown_type.into_annotated().into(),
-            Self::WrongType(wrong_type) => wrong_type.into_annotated().into(),
-            Self::Undeclared(undeclared) => undeclared.into_annotated().into(),
-            Self::OverrideProhibited(override_prohibited) => override_prohibited.into_annotated().into(),
-            Self::MissingRequired(missing_required) => missing_required.into_annotated().into(),
-            Self::NumberOverflow(number_overflow) => number_overflow.into_annotated().into(),
-            Self::Store(store) => store.into(),
-        }
-    }
-}
-
 // Delegated
 
 impl<AnnotatedT> Annotated for ToscaError<AnnotatedT>
@@ -214,18 +172,48 @@ where
     }
 }
 
-impl<AnnotatedT> DynAnnotatedError for ToscaError<AnnotatedT> where
-    AnnotatedT: 'static + Annotated + fmt::Debug + Send + Sync
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<ToscaError<NewAnnotatedT>> for ToscaError<AnnotatedT>
+where
+    AnnotatedT: Annotated + Default,
+    NewAnnotatedT: Annotated + Default,
 {
+    /// Into different [Annotated] implementation.
+    fn into_annotated(self) -> ToscaError<NewAnnotatedT> {
+        match self {
+            Self::SourceNotLoaded(source_not_loaded) => source_not_loaded.into_annotated().into(),
+            Self::UnsupportedSource(unsupported_source) => unsupported_source.into(),
+            Self::UnsupportedDialect(unsupported_dialect) => unsupported_dialect.into_annotated().into(),
+            Self::URL(url) => url.into(),
+            Self::Parse(parse) => parse.into(),
+            Self::Resolve(resolve) => resolve.into_annotated().into(),
+            Self::Malformed(malformed) => malformed.into_annotated().into(),
+            Self::InvalidKey(invalid_key) => invalid_key.into_annotated().into(),
+            Self::MissingRequiredKey(missing_required_key) => missing_required_key.into_annotated().into(),
+            Self::IncompatibleVariantType(incompatible_variant_type) => {
+                incompatible_variant_type.into_annotated().into()
+            }
+            Self::NameReused(name_reused) => name_reused.into_annotated().into(),
+            Self::CyclicalDerivation(cyclical_derivation) => cyclical_derivation.into_annotated().into(),
+            Self::UnknownType(unknown_type) => unknown_type.into_annotated().into(),
+            Self::WrongType(wrong_type) => wrong_type.into_annotated().into(),
+            Self::Undeclared(undeclared) => undeclared.into_annotated().into(),
+            Self::OverrideProhibited(override_prohibited) => override_prohibited.into_annotated().into(),
+            Self::MissingRequired(missing_required) => missing_required.into_annotated().into(),
+            Self::NumberOverflow(number_overflow) => number_overflow.into_annotated().into(),
+            Self::Store(store) => store.into(),
+        }
+    }
 }
 
 // Conversions
 
-impl<AnnotatedT> Into<CapturedAnnotatedError> for ToscaError<AnnotatedT>
-where
-    AnnotatedT: 'static + Annotated + fmt::Debug + Send + Sync,
-{
-    fn into(self) -> CapturedAnnotatedError {
-        self.captured()
+impl<AnnotatedT> TryFrom<ToscaError<AnnotatedT>> for ResolveError<AnnotatedT> {
+    type Error = ();
+
+    fn try_from(tosca_error: ToscaError<AnnotatedT>) -> Result<Self, Self::Error> {
+        match tosca_error {
+            ToscaError::Resolve(error) => Ok(error),
+            _ => Err(()),
+        }
     }
 }

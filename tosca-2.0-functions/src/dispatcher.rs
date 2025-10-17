@@ -12,7 +12,6 @@ impl_dispatcher!("tosca_2_0", arguments, call_site, {
     "node_index" => node_index(arguments, call_site),
     "relationship_index" => relationship_index(arguments, call_site),
     "available_allocation" => available_allocation(arguments, call_site),
-    "select_capability" => select_capability(arguments, call_site),
 
     // Boolean logic
     "and" => and(arguments, call_site),
@@ -64,4 +63,5 @@ impl_dispatcher!("tosca_2_0", arguments, call_site, {
     "_assert" => assert(arguments, call_site),
     "_apply" => apply(arguments, call_site),
     "_schema" => schema(arguments, call_site),
+    "_select_capability" => select_capability(arguments, call_site),
 });

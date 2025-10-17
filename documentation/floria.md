@@ -57,7 +57,7 @@ TOSCA types become Floria classes.
 
 Note that Floria offers no intrinsic handling of class inheritance. For this reason, each Floria entity (vertex templates, edge templates, properties) will be associated with not only the class representing its nominal TOSCA type, but also all the classes representing the type's ancestors. For example, if a node is of type "VirtualMachine", which inherits from "Compute", that node will be associated with *both* the "VirtualMachine" *and* the "Compute" classes.
 
-This allows for efficient indexing. Selecting the "Compute" class will include all vertexes that are also of type "VirtualMachine". Because each class association is a simple ID, storage is also efficient.
+This allows for efficient indexing. Selecting the "Compute" class will include all vertexes that are also of type "VirtualMachine". Because each class association is a simple ID, this is an efficient mechanism.
 
 Service Template, Node Templates, and Capabilities
 --------------------------------------------------
@@ -76,7 +76,9 @@ Requirements and Relationships
 
 TOSCA requirements become Floria edge templates. Because a TOSCA relationship is always contained in a requirement, that relationship is embedded in the edge template rather than as a separate entity.
 
-When this Floria edge template is instantiated, it is the implementation of the "relationship representation" in the TOSCA operational model.
+When this Floria edge template is instantiated, the Floria edge is the implementation of the "relationship representation" in the TOSCA operational model.
+
+TODO: finding the target capability
 
 Properties, Attributes, and Parameters
 --------------------------------------
@@ -91,7 +93,7 @@ If there are no function calls (a "purely literal" value), Puccini optimizes by 
 
 Otherwise, Puccini sets the expression as the Floria property's "updater". The "updater" is called whenever we issue an update operation on the property. All the embedded functions will be called, and if successful the result will be a candidate for the value. (The "preparer" is then called to ensure that this candidate is valid. See below.)
 
-TOSCA properties are marked as read-only Floria properties. As such that they can only be updated once. An update operation is always triggered during instantiation, thus locking the property values in place.
+TOSCA properties are marked as read-only Floria properties. As such that they can only be updated once. An update operation normally triggered during instantiation, thus locking the property values in place.
 
 ### Data Types
 
@@ -101,7 +103,7 @@ Because each Floria property would be associated with the Floria classes represe
 
 However, Floria classes are not meant to store data: they only have metadata. They are meant to be used for selection, e.g. for applying policies, transformations, etc., on entire classes of entities.
 
-So instead we opted instead to not store schema information in the class and instead store it in the property. The disadvantage is that this data is duplicated for each property of that type. However, the important advantage is that allows for properties to be self-contained, following the design principles discussed above. Individual property schemas can be modified, and indeed be moved between classes, without affecting other properties of that type. This also has a performance advantage as classes do not need to be retrieved from the database in order to apply schemas.
+Thus we opted to *not* store schema information in the class and instead store it in the property. The disadvantage is that this data is duplicated for each property of that type. However, the important advantage is that we allow for properties to be self-contained, following the design principles discussed above. Individual property schemas can be modified, and indeed be moved between classes, without affecting other properties of that type. This also has a performance advantage as classes do not need to be retrieved from the Floria store in order to apply schemas.
 
 ### `$_schema`
 
@@ -109,11 +111,11 @@ Puccini implements the schema by introducing a handful of "internal" built-in fu
 
 Central is the `$_apply` function, which applies a sequence of *coercion* expressions (which also, as a side effect, act as validators) to the familiar TOSCA `$value`.
 
-The most important coercion function is `$_schema`, which coerces any value to adhere to a schema structure. This schema contains all the TOSCA data type information: primitive type validation, required properties, default values, key and entry schema for collections, special types (timestamp, version, and scalar—which has its own special schema), and of course arbitrary function calls via the user-defined `validation` keyname. All of these can be nested, too, for lists, maps, and "structs" (data types with `properties`).
+The most important coercion function is `$_schema`, which coerces any value to adhere to a schema descriptor. This descriptor contains all the TOSCA data type information: primitive type validation, required properties, default values, key and entry schema for collections, special types (timestamp, version, and scalar—which has its own special schema), and of course arbitrary function calls via the user-defined `validation` keyname. All of these can be nested, too, for lists, maps, and "structs" (data types with `properties`).
 
 Note that for TOSCA parameters the `type` keyname is optional. In other words, they can be untyped, which simply means that they will not use the `$_schema` function. (They might still have `validation`, though; see below.)
 
-This schema structure ends up having a non-trivial design because, unlike system programming languages, TOSCA allows for recursive data types. For example, a data type deriving from a TOSCA `list` can have an `entry_schema` which is of the same type. If we were to naively nest these two schema structures we would hit infinite recursion, so instead Puccini's schema structure is organized as a collection of indexed schemas, such that any schema can refer to another schema by a numerical index. This moves the application of nesting to runtime, where the bounds of recursion are limited by the (finite) size of the value itself.
+The schema descriptor ends up having a non-trivial design because, unlike system programming languages, TOSCA allows for recursive data types. For example, a struct data type can have a field which is of the same type. If we were to naively nest these two schema descriptors we would hit infinite recursion, so instead Puccini's schema descriptor is organized as a list of descriptors, such that any descriptor can refer to another descriptor by a numerical index. This moves the application of nesting to runtime, where the bounds of recursion are limited by the (finite) size of the value itself.
 
 Note that because the TOSCA `validation` keyname expects a boolean expression, it must be turned into a coercion expression in order to be used in `$_apply`. We do this by wrapping it in an `$_assert` function, which simply raises an error if the expression does not evaluate to true.
 
@@ -121,33 +123,39 @@ The final complex expression, which may combine `$_apply`, `$_schema`, and `$_as
 
 When does an update happen? If you recall from discussion above, a TOSCA property, attribute, or parameter might have functions embedded in its value assignment, which will then be inserted in the Floria property "updater". This is the "pull" approach to update. However, various orchestration events can cause properties to be "pushed" in from external data. This is the intended use for TOSCA attributes, and indeed TOSCA provides another way of updating attributes: interface notifications (see below). Whatever the source of the update, the "preparer" will always be called to ensure that the value is valid.
 
-Here's an example of a "preparer" compiled from [`data-types.yaml`](https://github.com/tliron/puccini/blob/main/examples/2.0/data-types.yaml):
+Here's an example of a "preparer" with a schema descriptor compiled from [`data-types.yaml`](https://github.com/tliron/puccini/blob/main/examples/2.0/data-types.yaml):
 
 ```
 _apply(
   _schema([
     {
-      "kind": "struct",
-      "fields": {
-        "float": [1, false],
-        "integer": 2,
-        "nested": 3,
-        "string": 6
-      },
+      "kind": "list",
+      "entry": 6
     },
     "float",
     "integer",
     {
       "kind": "struct",
       "fields": {
-        "nested-float": 4,
-        "nested_string": [5, false],
-      },
+        "nested-bytes": [4, false],
+        "nested-float": 5
+      }
+    },
+    "bytes",
     {
       "kind": "float",
-      "validation": &greater_or_equal(value(), 0.0)
+      "validation": &_assert(greater_or_equal(value(), 0.0))
     },
-    "string",
+    {
+      "kind": "struct",
+      "fields": {
+        "float": [1, false],
+        "integer": 2,
+        "nested": 3,
+        "self": [6, false],
+        "string": 7
+      }
+    },
     {
       "kind": "string",
       "default": "Default Value"
@@ -156,16 +164,16 @@ _apply(
 )
 ```
 
-Careful readers will note that it may not be immediately clear *when* functions should be called. Some functions, specifically those in TOSCA `validation` expressions, would be called "on demand", and may indeed be called more than once, e.g. when validating the items of a list. Fortunately, Floria supports passing functions "by value", by marking them for "lazy" execution (marked with a `&` prefix above). While this difference cannot be expressed in TOSCA 2.0, Puccini makes use of it internally when constructing the "preparer" expression.
+Careful observers will note that it may not be immediately clear *when* functions should be called. Some functions, specifically those in TOSCA `validation` expressions, would be called "on demand", and may indeed be called more than once, e.g. when validating the items of a list. Fortunately, Floria supports passing functions "by value", by marking them for "lazy" execution (marked with a `&` prefix above). While this difference cannot be expressed in TOSCA 2.0, Puccini makes use of it internally when constructing the "preparer" expression.
 
 Built-In Functions
 ------------------
 
 All of TOSCA's built-in functions are provided as a single Wasm file. They are written in Rust using the [Floria Plugin SDK](https://floria.khutulun.org). This Wasm is embedded in the Puccini executable for convenience and will be delivered to a running Floria service during compilation.
 
-Note that these are *Floria functions* and so they work with the Floria graph of vertexes, edges, and their properties (the TOSCA "topology representations"). It is thus relatively straightforward to implement TOSCA Path functions, such as `$get_property` and `$get_attribute`. We provide a general-purpose TOSCA Path parser/follower that can be reused by other functions.
+Note that these are *Floria functions* and so they work with the Floria graph of vertexes, edges, and their properties (the TOSCA "topology representations"). It is thus relatively straightforward to implement TOSCA Path functions, such as `$get_property` and `$get_attribute`, as they can straightforwardly traverse the graph. We provide a general-purpose TOSCA Path parser/follower that can be reused by other functions.
 
-The comparison functions, such as `$less_than` and `$greater_or_equal` are a bit more subtle, specifically when comparing the special TOSCA types: version, timestamp, and scalar. TOSCA allows you to compare these to their unparsed forms, e.g. `{ $less_than: [ $value, "2 GB" ] }`. Thus each of these must provide a specialized comparison implementation. Moreover, scalars must embed their own embedded schema so that the other expression could be parsed to a comparable form.
+The comparison functions (`$less_than`, `$greater_or_equal`, etc.) are a bit more subtle, specifically when it comes to comparing the special TOSCA types: version, timestamp, and scalar, because TOSCA allows you to compare these to their unparsed forms, e.g. `{ $less_than: [ $value, "2 GB" ] }`. Thus each of these must provide a specialized comparison implementation. Moreover, scalars must embed their schema so that the other expression could be parsed to a comparable form. The scalar schema is part of the schema descriptor detailed above.
 
 By wonderful coincidence, Floria supports a custom data type exactly for these kinds of situations. We can thus simply mark our special types as custom so that we know to treat them specially.
 

@@ -1,11 +1,9 @@
-use super::{full_name::*, scope::*};
+use super::{full_name::*, namespace::*};
 
 use {
     compris::impl_resolve_from_str,
-    kutil::{
-        cli::depict::*,
-        std::{immutable::*, string::*},
-    },
+    depiction::*,
+    kutil::std::{immutable::*, string::*},
     std::{fmt, io, str::*},
 };
 
@@ -16,6 +14,8 @@ use {
 /// Name.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Name(pub ByteString);
+
+impl_resolve_from_str!(Name);
 
 impl Name {
     /// Constructor.
@@ -31,8 +31,8 @@ impl Name {
     }
 
     /// Convert to a [FullName].
-    pub fn to_full_name(self, scope: Scope) -> FullName {
-        FullName::new(scope, self)
+    pub fn into_full_name(self, namespace: Namespace) -> FullName {
+        FullName::new(namespace, self)
     }
 }
 
@@ -50,14 +50,12 @@ impl FromStr for Name {
     type Err = ParseError;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
-        if string.contains(":") {
+        if string.contains(NAMESPACE_DELIMITER) {
             return Err("contains invalid characters".into());
         }
         Ok(Name(ByteString::from(string)))
     }
 }
-
-impl_resolve_from_str!(Name);
 
 // Delegation
 

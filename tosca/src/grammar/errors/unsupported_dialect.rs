@@ -2,7 +2,7 @@ use super::super::dialect::*;
 
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -21,6 +21,8 @@ pub struct UnsupportedDialectError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(UnsupportedDialectError);
+
 impl<AnnotatedT> UnsupportedDialectError<AnnotatedT> {
     /// Constructor.
     pub fn new(dialect_id: DialectID) -> Self
@@ -29,18 +31,18 @@ impl<AnnotatedT> UnsupportedDialectError<AnnotatedT> {
     {
         Self { dialect_id, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> UnsupportedDialectError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<UnsupportedDialectError<NewAnnotatedT>>
+    for UnsupportedDialectError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> UnsupportedDialectError<NewAnnotatedT> {
         UnsupportedDialectError::new(self.dialect_id).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(UnsupportedDialectError);
 
 impl<AnnotatedT> Depict for UnsupportedDialectError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

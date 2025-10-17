@@ -7,7 +7,7 @@ use {kutil::std::immutable::*, std::fmt};
 //
 
 /// Data kind.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum DataKind {
     /// String.
     String,

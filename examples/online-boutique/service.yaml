@@ -1,0 +1,43 @@
+tosca_definitions_version: tosca_2_0
+
+description:
+
+  An Online Boutique service for Kubernetes.
+
+  The service comprises many interconnected microservices.
+
+imports:
+
+- url: profiles/applications/online-boutique.yaml
+  namespace: boutique
+
+service_template:
+
+  node_templates:
+
+    frontend1:
+      type: boutique:FrontendService
+      properties:
+        label: { $boutique:ms:krm:kubernetes: [] }
+        #label: adservice1
+
+    frontend2:
+      type: boutique:FrontendService
+      properties:
+        label: adservice2
+
+    checkout:
+      type: boutique:CheckoutService
+      requirements:
+      - shipping: shipping1
+      - shipping: shipping2
+
+    shipping1:
+      type: boutique:ShippingService
+      properties:
+        label: shippingservice1
+
+    shipping2:
+      type: boutique:ShippingService
+      properties:
+        label: shippingservice2

@@ -4,14 +4,9 @@
 Puccini
 */
 
-mod cli;
-mod compile;
-mod dialects;
+mod commands;
 mod errors;
-#[cfg(feature = "plugins")]
-mod instantiate;
 mod run;
-mod utils;
 
 use run::*;
 

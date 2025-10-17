@@ -2,7 +2,8 @@ use super::super::super::super::grammar::*;
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -10,10 +11,10 @@ use {
 // TriggerDefinition
 //
 
+/// A trigger definition defines an event, condition, action tuple associated with a policy.
+///
 /// (Documentation copied from
 /// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
-/// A trigger definition defines an event, condition, action tuple associated with a policy.
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -49,28 +50,27 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<TriggerDefinition<AnnotatedT>> for TriggerDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for TriggerDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        _parent: Option<(&Self, &Scope)>,
-        _catalog: &mut Catalog,
-        _source_id: &SourceID,
-        _errors: ToscaErrorRecipientRef,
+        _parent: Option<&Self>,
+        _parent_namespace: Option<&Namespace>,
+        _context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         // TODO
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<TriggerDefinition<AnnotatedT>> for TriggerDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for TriggerDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, _scope: &Scope) -> Self {
+    fn to_namespace(&self, _namespace: Option<&Namespace>) -> Self {
         self.clone()
     }
 }

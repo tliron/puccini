@@ -5,15 +5,13 @@ use super::{
     interface_assignment::*,
     node_type::*,
     requirement_assignment::*,
-    value::*,
+    value_assignment::*,
 };
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::{error::*, immutable::*},
     std::collections::*,
 };
 
@@ -21,12 +19,12 @@ use {
 // NodeTemplate
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A node template specifies the occurrence of one or more instances of a component of a given type
 /// in an application or service. A node template defines application-specific values for the
 /// properties, relationships, or interfaces defined by its node type.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -108,52 +106,40 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for NodeTemplate<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
         &mut self,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
         _derivation_path: &mut DerivationPath,
-        errors: ToscaErrorRecipientRef,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
-        let errors = &mut errors.to_error_recipient();
+        let errors = &mut context.errors.to_error_receiver();
 
-        if let Some(copy) = &self.copy {
-            let Some(copy) = catalog.completed_entity::<NodeTemplate<AnnotatedT>, _, _>(
-                NODE_TEMPLATE,
-                &copy.clone().into(),
-                source_id,
-                errors,
-            )?
-            else {
-                return Ok(());
-            };
-
-            if_none_clone!(type_name, self, copy);
-            if_none_clone!(description, self, copy);
-            if_empty_clone!(metadata, self, copy);
-            if_empty_clone!(directives, self, copy);
-            if_empty_clone!(properties, self, copy);
-            if_empty_clone!(attributes, self, copy);
-            if_empty_clone!(requirements, self, copy);
-            if_empty_clone!(capabilities, self, copy);
-            if_empty_clone!(interfaces, self, copy);
-            if_empty_clone!(artifacts, self, copy);
-            if_none_clone!(count, self, copy);
-            if_none_clone!(node_filter, self, copy);
+        if let Some(copy) = entity_from_optional_name_field!(NODE_TEMPLATE, NodeTemplate, self, copy, context) {
+            complete_none_field!(type_name, self, copy);
+            complete_none_field!(description, self, copy);
+            complete_empty_field!(metadata, self, copy);
+            complete_empty_field!(directives, self, copy);
+            complete_empty_field!(properties, self, copy);
+            complete_empty_field!(attributes, self, copy);
+            complete_empty_field!(requirements, self, copy);
+            complete_empty_field!(capabilities, self, copy);
+            complete_empty_field!(interfaces, self, copy);
+            complete_empty_field!(artifacts, self, copy);
+            complete_none_field!(count, self, copy);
+            complete_none_field!(node_filter, self, copy);
         }
 
         if self.type_name.is_none() {
@@ -161,16 +147,25 @@ where
             return Ok(());
         }
 
-        let node_type = completed_entity_option!(NODE_TYPE, NodeType, self, type_name, catalog, source_id, errors);
+        let (node_type, node_type_namespace) =
+            entity_from_optional_full_name_field!(NODE_TYPE, NodeType, self, type_name, context);
 
-        complete_map_field!("property", properties, self, node_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, node_type, catalog, source_id, errors);
-        complete_tagged_values_field!("requirement", requirements, self, node_type, catalog, source_id, errors);
-        complete_map_field!("capability", capabilities, self, node_type, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, node_type, catalog, source_id, errors);
-        complete_map_field!("artifact", artifacts, self, node_type, catalog, source_id, errors);
+        complete_subentity_map_field!(property, properties, self, node_type, node_type_namespace, true, context);
+        complete_subentity_map_field!(attribute, attributes, self, node_type, node_type_namespace, true, context);
+        complete_subentity_taxonomy_field!(
+            requirement,
+            requirements,
+            self,
+            node_type,
+            node_type_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(capability, capabilities, self, node_type, node_type_namespace, true, context);
+        complete_subentity_map_field!(interface, interfaces, self, node_type, node_type_namespace, true, context);
+        complete_subentity_map_field!(artifact, artifacts, self, node_type, node_type_namespace, true, context);
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

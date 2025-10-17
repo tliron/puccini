@@ -2,22 +2,20 @@ use super::{super::super::super::grammar::*, relationship_definition::*};
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // RequirementDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The requirement definition describes a requirement of a TOSCA node that needs to be fulfilled by
 /// a matching capability declared by another TOSCA node. A requirement is defined as part of a node
 /// type definition and may be refined during node type derivation.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -73,39 +71,30 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<RequirementDefinition<AnnotatedT>> for RequirementDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for RequirementDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         name: Option<ByteString>,
-        requirement_definition: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        requirement_definition: Option<&Self>,
+        requirement_definition_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         self.relationship.complete(
             name,
-            requirement_definition.map(|(parent, scope)| (&parent.relationship, scope)),
-            catalog,
-            source_id,
-            errors.clone(),
+            requirement_definition.map(|parent| &parent.relationship),
+            requirement_definition_namespace,
+            context,
         )?;
 
-        let errors = &mut errors.to_error_recipient();
-
-        if let Some((requirement_definition, scope)) = requirement_definition {
-            if_none_else!(
-                node,
-                self,
-                requirement_definition,
-                requirement_definition.node.clone().map(|node| node.in_scope(scope.clone()))
-            );
-
-            if_none_clone!(node_filter, self, requirement_definition);
-
-            validate_type_name(&self.capability, &requirement_definition.capability, catalog, errors)?;
+        if let Some(requirement_definition) = requirement_definition {
+            complete_none_field_to!(node, self, requirement_definition, || requirement_definition
+                .node
+                .to_namespace(requirement_definition_namespace));
+            complete_none_field!(node_filter, self, requirement_definition);
+            validate_type_name(&self.capability, &requirement_definition.capability, context)?;
         }
 
         // TODO: validate that count range is within parent count range?
@@ -114,17 +103,17 @@ where
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RequirementDefinition<AnnotatedT>> for RequirementDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for RequirementDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            relationship: self.relationship.convert_into_scope(scope),
-            node: self.node.clone().map(|node| node.in_scope(scope.clone())),
-            capability: self.capability.clone().in_scope(scope.clone()),
+            relationship: self.relationship.to_namespace(namespace),
+            node: self.node.to_namespace(namespace),
+            capability: self.capability.to_namespace(namespace),
             node_filter: self.node_filter.clone(),
             count_range: self.count_range.clone(),
             annotations: self.annotations.clone(),
@@ -136,5 +125,5 @@ where
 // RequirementDefinitions
 //
 
-/// [TaggedValues] of [RequirementDefinition].
-pub type RequirementDefinitions<AnnotatedT> = TaggedValues<ByteString, RequirementDefinition<AnnotatedT>>;
+/// [Taxonomy] of [RequirementDefinition].
+pub type RequirementDefinitions<AnnotatedT> = Taxonomy<ByteString, RequirementDefinition<AnnotatedT>>;

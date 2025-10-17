@@ -2,19 +2,20 @@ use super::super::super::super::grammar::*;
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // Import
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// Import definitions are used within a TOSCA file to uniquely identify and locate other TOSCA
 /// files that have type, repository, and function definitions to be imported (included) into
 /// this TOSCA file.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]

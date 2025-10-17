@@ -3,7 +3,7 @@ use super::{
     reference::*,
 };
 
-use {compris::annotate::*, kutil::cli::depict::*, std::collections::*};
+use {compris::annotate::*, depiction::*, std::collections::*};
 
 //
 // MapSchema

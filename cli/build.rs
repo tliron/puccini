@@ -1,17 +1,28 @@
 #![allow(unused)]
 
-use std::{env, fs::*, io::Read, path::*};
+use std::{
+    env,
+    fs::*,
+    io::{self, Read},
+    path::*,
+};
+
+const WASM: &str = "puccini_plugin_tosca_2_0_functions";
 
 fn main() {
     #[cfg(not(feature = "_blanket"))]
-    if let Err(error) = build("puccini_plugin_tosca_2_0_functions") {
+    if let Err(error) = build(WASM) {
         println!("cargo::error={}", error);
     }
 }
 
 fn build(name: &str) -> Result<(), String> {
+    println!("cargo::rerun-if-env-changed=WASM_PROFILE");
+
     let source_file = source_file(name)?;
+    println!("cargo::warning=Wasm from {}", source_file.display());
     println!("cargo::rerun-if-changed={}", source_file.display());
+
     let target_file = target_file(name)?;
 
     #[cfg(feature = "wasm-precompiled")]
@@ -28,13 +39,14 @@ fn build(name: &str) -> Result<(), String> {
 //
 
 fn read_file(path: &Path) -> Result<Vec<u8>, String> {
-    let mut file = File::open(path).map_err(|_| format!("open: {}", path.display()))?;
+    let mut file = io::BufReader::new(File::open(path).map_err(|_| format!("open: {}", path.display()))?);
     let mut bytes = Vec::default();
     file.read_to_end(&mut bytes).map_err(|_| format!("read: {}", path.display()));
     Ok(bytes)
 }
 
 fn copy_file(source_path: &Path, target_path: &Path) -> Result<(), String> {
+    println!("cargo::warning=Copying Wasm to {}", target_path.display());
     copy(&source_path, &target_path)
         .map_err(|_| format!("copy: {:?} -> {:?}", source_path.display(), target_path.display()))?;
     Ok(())
@@ -73,7 +85,10 @@ fn current_build_dir() -> Result<PathBuf, String> {
 
 fn external_build_dir() -> Result<PathBuf, String> {
     let cargo_manifest_path = environment_file("CARGO_MANIFEST_DIR")?;
-    let profile = environment_string("PROFILE")?;
+    let profile = match env::var("WASM_PROFILE") {
+        Ok(profile) => profile,
+        Err(_) => environment_string("PROFILE")?,
+    };
     Ok(cargo_manifest_path.join("..").join("target").join("wasm32-wasip2").join(profile))
 }
 
@@ -100,6 +115,7 @@ fn dump_environment() {
 
 #[cfg(feature = "wasm-precompiled")]
 fn precompile_wasm_file(source_path: &Path, target_path: &Path) -> Result<(), String> {
+    println!("cargo::warning=Precompiling Wasm to {}", target_path.display());
     let wasm = read_file(&source_path)?;
     let cwasm = precompile_wasm(&wasm)?;
     write(&target_path, &cwasm).map_err(|_| format!("write: {}", target_path.display()))
@@ -113,7 +129,7 @@ fn precompile_wasm(wasm: &[u8]) -> Result<Vec<u8>, String> {
     let mut config = Config::new();
 
     #[cfg(feature = "wasm-debug-info")]
-    config.debug_info(true);
+    config.debug_info(true).wasm_backtrace_details(WasmBacktraceDetails::Enable);
 
     let engine = Engine::new(&config).expect("wasmtime engine");
     let precompiled = engine.precompile_component(wasm).map_err(|error| format!("wasmtime precompile: {}", error));

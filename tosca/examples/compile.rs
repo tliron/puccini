@@ -1,7 +1,8 @@
 use {
     compris::annotate::*,
+    depiction::*,
     floria::*,
-    kutil::{cli::depict::*, std::error::*},
+    kutil::std::error::*,
     puccini_tosca::{dialect::tosca_2_0, grammar::*},
     read_url::*,
 };
@@ -37,26 +38,23 @@ service_template:
     // Load our source
 
     catalog
-        .load_source_with_annotations::<WithAnnotations, _>(&source_id, &url_context, &mut FailFastErrorRecipient)
+        .load_source_with_annotations::<WithAnnotations, _>(&source_id, &url_context, &mut FailFastErrorReceiver)
         .unwrap();
 
     // Complete
 
-    catalog.complete_entities::<WithAnnotations, _>(&mut FailFastErrorRecipient).unwrap();
+    catalog.complete_entities::<WithAnnotations, _>(&mut FailFastErrorReceiver).unwrap();
 
     // Compile service template into Floria in-memory store
 
     let store = InMemoryStore::default();
 
-    let service_template_id = catalog
-        .compile_service_template::<WithAnnotations, _>(
-            &Directory::default(),
-            store.to_ref(),
-            &source_id,
-            &mut FailFastErrorRecipient,
-        )
-        .unwrap()
-        .expect("compile_service_template");
+    let mut errors = FailFastErrorReceiver;
+    let directory = Directory::default();
+    let mut context = CompilationContext::new(&source_id, &catalog, &directory, store.to_ref(), errors.to_ref());
+
+    let service_template_id =
+        catalog.compile_service_template(&mut context).unwrap().expect("compile_service_template");
 
     // Print service template
 

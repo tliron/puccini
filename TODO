@@ -24,6 +24,10 @@ How TOSCA Compilation Works
 Language Bindings
 =================
 
+OpenAPI
+https://github.com/kurtbuilds/libninja
+https://github.com/svix/openapi-codegen
+
 https://rust-diplomat.github.io/book/
 C, C++, JS, Dart, Kotlin
 
@@ -39,6 +43,10 @@ Java
 https://cxx.rs/
 C++
 
+LSP?
+====
+
+https://github.com/tree-sitter-grammars/tree-sitter-yaml
 
 TOSCA errata
 ============

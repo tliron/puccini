@@ -7,10 +7,8 @@ use super::{
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -18,13 +16,13 @@ use {
 // CapabilityDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A capability definition defines a typed set of data that a node can expose and that is used to
 /// describe a relevant feature of the component described by the node that can be used to fulfill
 /// a requirement exposed by another node. A capability is defined as part of a node type
 /// definition and may be refined during node type derivation.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -33,7 +31,7 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the capability type on which this capability definition is based.
-    #[resolve(key = "type")]
+    #[resolve(single, key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
 
@@ -84,77 +82,64 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<CapabilityDefinition<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for CapabilityDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        parent: Option<&Self>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
+        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_subentity_map_field!(property, properties, self, parent, parent_namespace, false, context);
+        complete_subentity_map_field!(attribute, attributes, self, parent, parent_namespace, false, context);
+        complete_type_list_field!(valid_source_node_types, self, parent, context);
+        complete_type_list_field!(valid_relationship_types, self, parent, context);
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-        }
+        let (capability_type, capability_type_namespace) =
+            entity_from_full_name_field!(CAPABILITY_TYPE, CapabilityType, self, type_name, context);
 
-        let capability_type =
-            completed_entity!(CAPABILITY_TYPE, CapabilityType, self, type_name, catalog, source_id, errors);
-
-        complete_map_field!("property", properties, self, capability_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, capability_type, catalog, source_id, errors);
-
-        if let Some((capability_type, scope)) = &capability_type {
-            errors_with_fallback_annotations_from_field!(
-                errors, self, "valid_source_node_types",
-                complete_types(
-                    &mut self.valid_source_node_types,
-                    &capability_type.valid_source_node_types,
-                    catalog,
-                    source_id,
-                    scope,
-                    errors,
-                )?;
-            );
-
-            errors_with_fallback_annotations_from_field!(
-                errors, self, "valid_relationship_types",
-                complete_types(
-                    &mut self.valid_relationship_types,
-                    &capability_type.valid_relationship_types,
-                    catalog,
-                    source_id,
-                    scope,
-                    errors,
-                )?;
-            );
-        }
+        complete_subentity_map_field!(
+            property,
+            properties,
+            self,
+            capability_type,
+            capability_type_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            self,
+            capability_type,
+            capability_type_namespace,
+            true,
+            context
+        );
+        complete_type_list_field!(valid_source_node_types, self, capability_type, context);
+        complete_type_list_field!(valid_relationship_types, self, capability_type, context);
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<CapabilityDefinition<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for CapabilityDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.to_namespace(namespace),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            valid_source_node_types: self.valid_source_node_types.convert_into_scope(scope),
-            valid_relationship_types: self.valid_relationship_types.convert_into_scope(scope),
+            properties: self.properties.to_namespace(namespace),
+            attributes: self.attributes.to_namespace(namespace),
+            valid_source_node_types: self.valid_source_node_types.to_namespace(namespace),
+            valid_relationship_types: self.valid_relationship_types.to_namespace(namespace),
             annotations: self.annotations.clone(),
         }
     }

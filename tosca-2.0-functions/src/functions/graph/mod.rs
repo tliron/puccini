@@ -5,11 +5,10 @@ mod get_input;
 mod get_property;
 mod node_index;
 mod relationship_index;
-mod select_capability;
 mod value;
 
 #[allow(unused_imports)]
 pub use {
     available_allocation::*, get_artifact::*, get_attribute::*, get_input::*, get_property::*, node_index::*,
-    relationship_index::*, select_capability::*, value::*,
+    relationship_index::*, value::*,
 };

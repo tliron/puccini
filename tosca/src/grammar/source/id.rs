@@ -7,11 +7,11 @@ use {kutil::std::immutable::*, std::fmt, uuid::*};
 /// Source ID.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum SourceID {
-    /// Universally unique identifier.
-    UUID(Uuid),
-
     /// URL.
     URL(ByteString),
+
+    /// ID (universally unique).
+    ID(Uuid),
 
     /// Internal.
     Internal(ByteString),
@@ -29,15 +29,15 @@ impl SourceID {
 
 impl Default for SourceID {
     fn default() -> Self {
-        Self::UUID(Uuid::new_v4())
+        Self::ID(Uuid::new_v4())
     }
 }
 
 impl fmt::Display for SourceID {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UUID(uuid) => write!(formatter, "id:{}", uuid),
             Self::URL(url) => write!(formatter, "url:{}", url),
+            Self::ID(uuid) => write!(formatter, "id:{}", uuid),
             Self::Internal(internal) => write!(formatter, "internal:{}", internal),
         }
     }
@@ -46,8 +46,8 @@ impl fmt::Display for SourceID {
 impl Into<ByteString> for SourceID {
     fn into(self) -> ByteString {
         match self {
-            Self::UUID(uuid) => uuid.to_string().into(),
             Self::URL(url) => url,
+            Self::ID(id) => id.to_string().into(),
             Self::Internal(internal) => internal,
         }
     }
@@ -56,8 +56,8 @@ impl Into<ByteString> for SourceID {
 impl Into<ByteString> for &SourceID {
     fn into(self) -> ByteString {
         match self {
-            SourceID::UUID(uuid) => uuid.to_string().into(),
             SourceID::URL(url) => url.clone(),
+            SourceID::ID(id) => id.to_string().into(),
             SourceID::Internal(internal) => internal.clone(),
         }
     }

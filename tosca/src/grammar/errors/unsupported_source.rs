@@ -1,7 +1,7 @@
 use super::super::source::*;
 
 use {
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };

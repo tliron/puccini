@@ -6,19 +6,20 @@ use super::{
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // File
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A TOSCA file can contain definitions of reusable building blocks for use in cloud applications,
 /// complete models of cloud applications, or both. This section describes the top-level TOSCA
 /// keynames—along with their grammars—that are allowed to appear in a TOSCA file.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source)]
 #[resolve(annotated_parameter=AnnotatedT)]

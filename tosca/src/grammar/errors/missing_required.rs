@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -22,6 +22,8 @@ pub struct MissingRequiredError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(MissingRequiredError);
+
 impl<AnnotatedT> MissingRequiredError<AnnotatedT>
 where
     AnnotatedT: Default,
@@ -30,18 +32,17 @@ where
     pub fn new(type_name: String, name: Option<String>) -> Self {
         Self { type_name, name, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> MissingRequiredError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<MissingRequiredError<NewAnnotatedT>> for MissingRequiredError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> MissingRequiredError<NewAnnotatedT> {
         MissingRequiredError::new(self.type_name, self.name).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(MissingRequiredError);
 
 impl<AnnotatedT> Depict for MissingRequiredError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

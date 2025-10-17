@@ -1,0 +1,95 @@
+tosca_definitions_version: tosca_2_0
+
+description: |
+
+  Online Boutique is a cloud-first microservices demo application. The application is a web-based
+  e-commerce app where users can browse items, add them to the cart, and purchase them.
+
+  See: https://github.com/GoogleCloudPlatform/microservices-demo
+
+imports:
+
+- url: ../platforms/kubernetes/microservices.yaml
+  namespace: ms
+
+node_types:
+
+  FrontendService:
+    derived_from: ms:SimpleMicroService
+    properties:
+      label:
+        default: frontendservice
+      service-account:
+        default: frontend
+    capabilities:
+      deployment:
+        properties:
+          containers:
+            default:
+            - name: server
+              image: frontend:latest
+      service:
+        properties:
+          ports:
+            default:
+            - name: grpc
+              port: 8500
+              targetPort: 9555
+    requirements:
+    - checkout:
+        relationship: Connects
+        node: CheckoutService
+        capability: Service
+
+  CheckoutService:
+    derived_from: ms:SimpleMicroService
+    properties:
+      label:
+        default: checkoutservice
+      service-account:
+        default: checkout
+    capabilities:
+      deployment:
+        properties:
+          containers:
+            default:
+            - name: server
+              image: checkoutservice:latest
+      service:
+        properties:
+          ports:
+            default:
+            - name: grpc
+              port: 5050
+              targetPort: 5050
+    requirements:
+    - shipping:
+        relationship: Connects
+        node: ShippingService
+        capability: Service
+
+  ShippingService:
+    derived_from: ms:SimpleMicroService
+    properties:
+      label:
+        default: shippingservice
+      service-account:
+        default: shipping
+    capabilities:
+      deployment:
+        properties:
+          containers:
+            default:
+            - name: server
+              image: shippingservice:latest
+      service:
+        properties:
+          ports:
+            default:
+            - name: grpc
+              port: 5050
+              targetPort: 5050
+      service-account:
+        properties:
+          name:
+            default: shippingservice

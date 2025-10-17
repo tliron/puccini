@@ -1,6 +1,6 @@
 use super::super::super::data::*;
 
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
 /// Coerce a value to a schema.
 ///
@@ -8,7 +8,7 @@ use floria_plugin_sdk::{data::*, utils::*};
 ///
 /// If the value is valid, meaning that it adheres to the schema, will return a canonicalized
 /// version of the value, or [None] if already canonical. Otherwise, will return an error.
-pub fn schema(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+pub fn schema(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count_range(&arguments, 1, 2)?;
     let mut arguments = arguments.into_iter();
 

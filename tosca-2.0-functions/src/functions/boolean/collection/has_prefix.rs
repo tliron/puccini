@@ -1,13 +1,13 @@
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $has_prefix function takes two arguments. Both arguments are either of type string or of
 /// tpe list. It evaluates to true if the second argument is a prefix of the first argument. For
 /// lists this means that the values of the second list are the first values of the first list in
 /// the same order.
-pub fn has_prefix(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn has_prefix(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 2)?;
     let mut arguments = arguments.into_iter();
 

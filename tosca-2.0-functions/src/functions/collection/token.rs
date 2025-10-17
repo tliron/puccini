@@ -1,11 +1,11 @@
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $token function is used within a TOSCA service template on a string to parse out (tokenize)
 /// substrings separated by one or more token characters within a larger string.
-pub fn token(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn token(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 3)?;
     let mut arguments = arguments.into_iter();
 

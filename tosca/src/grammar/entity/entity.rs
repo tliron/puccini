@@ -1,10 +1,6 @@
-use super::{
-    super::{catalog::*, errors::*, source::*},
-    completion::*,
-    derivation_path::*,
-};
+use super::super::{complete::*, errors::*};
 
-use {compris::annotate::*, kutil::cli::depict::*, std::any::*};
+use {compris::annotate::*, depiction::*, std::any::*};
 
 //
 // Entity
@@ -18,17 +14,17 @@ pub trait Entity
 where
     Self: Any + DynDepict,
 {
-    /// The completion status.
-    fn completion(&self) -> Completion;
+    /// Completion state.
+    fn completion_state(&self) -> CompletionState;
 
     /// Whether the entity is complete.
     fn is_complete(&self) -> bool {
-        self.completion() == Completion::Complete
+        self.completion_state() == CompletionState::Complete
     }
 
     /// Whether the entity should be completed.
     fn should_complete(&self) -> bool {
-        self.completion() == Completion::Incomplete
+        self.completion_state() == CompletionState::Incomplete
     }
 
     /// Complete.
@@ -40,9 +36,7 @@ where
     /// [IntoAnnotated::into_annotated].
     fn complete(
         &mut self,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: ToscaErrorRecipientRef,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>>;
 }

@@ -1,6 +1,7 @@
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{cli::depict::*, std::error::*},
+    depiction::*,
+    kutil::std::error::*,
     std::{fmt, io},
 };
 
@@ -37,13 +38,13 @@ impl<AnnotatedT> Resolve<Range, AnnotatedT> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorRecipientT>(self, errors: &mut ErrorRecipientT) -> ResolveResult<Range, AnnotatedT>
+    fn resolve_with_errors<ErrorReceiverT>(self, errors: &mut ErrorReceiverT) -> ResolveResult<Range, AnnotatedT>
     where
-        ErrorRecipientT: ErrorRecipient<ResolveError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
     {
         let maybe_annotations = self.maybe_annotations();
 
-        let give = |errors: &mut ErrorRecipientT, message: &str| {
+        let give = |errors: &mut ErrorReceiverT, message: &str| {
             errors.give(MalformedError::new("range".into(), message.into()).with_annotations_from(&maybe_annotations))
         };
 
@@ -60,10 +61,9 @@ where
                             }
                         }
 
-                        _ => match upper_value.resolve_with_errors(errors)? {
-                            Some(upper) => Some(Range::new(lower, RangeUpperBound::Bounded(upper))),
-                            None => None,
-                        },
+                        _ => upper_value
+                            .resolve_with_errors(errors)?
+                            .and_then(|upper| Some(Range::new(lower, RangeUpperBound::Bounded(upper)))),
                     },
 
                     None => None,

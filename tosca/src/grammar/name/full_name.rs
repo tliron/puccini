@@ -1,29 +1,35 @@
-use super::{name::*, scope::*};
+use super::{name::*, namespace::*, to_namespace::*};
 
 use {
     compris::impl_resolve_from_str,
-    kutil::{cli::depict::*, std::string::*},
+    depiction::*,
+    kutil::std::string::*,
     std::{fmt, io, str::*},
 };
+
+/// Namespace delimiter.
+pub const NAMESPACE_DELIMITER: &str = ":";
 
 //
 // FullName
 //
 
-/// [Name] with [Scope].
+/// [Name] with [Namespace].
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct FullName {
-    /// Scope.
-    pub scope: Scope,
+    /// Namespace.
+    pub namespace: Namespace,
 
     /// Name.
     pub name: Name,
 }
 
+impl_resolve_from_str!(FullName);
+
 impl FullName {
     /// Constructor.
-    pub fn new(scope: Scope, name: Name) -> Self {
-        Self { scope, name }
+    pub fn new(namespace: Namespace, name: Name) -> Self {
+        Self { namespace, name }
     }
 
     /// True if name is empty.
@@ -31,18 +37,28 @@ impl FullName {
         self.name.is_empty()
     }
 
-    /// Add a prefix to the [Scope].
-    pub fn in_scope(self, mut prefix: Scope) -> Self {
-        prefix.segments.extend(self.scope.segments);
-        Self::new(prefix, self.name)
+    /// Put inside a [Namespace].
+    pub fn into_namespace(self, mut namespace: Namespace) -> Self {
+        namespace.segments.extend(self.namespace.segments);
+        Self::new(namespace, self.name)
     }
 
     /// To Floria class ID.
     pub fn to_floria_class_id(&self, prefix: &str) -> floria::ID {
-        let (mut directory, name) = (self.scope.to_floria_directory(), self.name.clone());
+        let (mut directory, name) = (self.namespace.to_floria_directory(), self.name.clone());
         directory.add_first_segment(prefix.into());
         directory.add_first_segment("tosca".into());
         floria::ID::new_for(floria::EntityKind::Class, directory, name.into())
+    }
+}
+
+impl ToNamespace<FullName> for FullName {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        let clone = self.clone();
+        match namespace {
+            Some(namespace) => clone.into_namespace(namespace.clone()),
+            None => clone,
+        }
     }
 }
 
@@ -52,14 +68,14 @@ impl Depict for FullName {
         WriteT: io::Write,
     {
         context.separate(writer)?;
-        self.scope.depict(writer, context)?;
+        self.namespace.depict(writer, context)?;
         self.name.depict(writer, &context.clone().with_separator(false))
     }
 }
 
 impl fmt::Display for FullName {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "{}{}", self.scope, self.name)
+        write!(formatter, "{}{}", self.namespace, self.name)
     }
 }
 
@@ -67,16 +83,16 @@ impl FromStr for FullName {
     type Err = ParseError;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let segments: Vec<&str> = string.split(":").collect();
+        let segments: Vec<&str> = string.split(NAMESPACE_DELIMITER).collect();
         let length = segments.len();
 
         Ok(if length > 0 {
-            let mut scope = Vec::with_capacity(length - 1);
+            let mut namespace = Vec::with_capacity(length - 1);
             for segment in &segments[..length - 1] {
-                scope.push(segment.parse()?);
+                namespace.push(segment.parse()?);
             }
 
-            Self::new(Scope::from(scope), segments[length - 1].parse()?)
+            Self::new(Namespace::from(namespace), segments[length - 1].parse()?)
         } else {
             Self::new(Default::default(), string.parse()?)
         })
@@ -89,4 +105,8 @@ impl From<Name> for FullName {
     }
 }
 
-impl_resolve_from_str!(FullName);
+impl From<&Name> for FullName {
+    fn from(name: &Name) -> Self {
+        Self::new(Default::default(), name.clone())
+    }
+}

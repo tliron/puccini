@@ -19,7 +19,7 @@ pub struct Source {
     pub dialect_id: DialectID,
 
     /// Dependencies.
-    pub dependencies: FastHashMap<SourceID, Scope>,
+    pub dependencies: FastHashMap<SourceID, Namespace>,
 
     /// Entities.
     pub entities: FastHashMap<WithEntityKind<Name>, EntityRef>,
@@ -45,8 +45,8 @@ impl Source {
     }
 
     /// Add a dependency.
-    pub fn add_dependency(&mut self, source_id: SourceID, scope: Scope) {
-        tracing::trace!(source = self.source_id.to_string(), "adding dependency: {} -> {}", source_id, scope);
-        self.dependencies.insert(source_id, scope);
+    pub fn add_dependency(&mut self, source_id: SourceID, namespace: Namespace) {
+        tracing::trace!(source = self.source_id.to_string(), "adding dependency: {} -> {}", source_id, namespace);
+        self.dependencies.insert(source_id, namespace);
     }
 }

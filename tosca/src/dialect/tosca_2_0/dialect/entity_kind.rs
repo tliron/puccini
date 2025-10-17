@@ -105,6 +105,12 @@ pub const ATTRIBUTE_NAME: &str = "attribute";
 /// Parameter name.
 pub const PARAMETER_NAME: &str = "parameter";
 
+/// Function.
+pub const FUNCTION: EntityKind = EntityKind(201);
+
+/// Function name.
+pub const FUNCTION_NAME: &str = "function";
+
 impl super::Dialect {
     /// TOSCA 2.0 supported entity kinds.
     pub fn entity_kinds() -> EntityKinds {
@@ -126,6 +132,7 @@ impl super::Dialect {
         entity_kinds.add(RELATIONSHIP_TEMPLATE, RELATIONSHIP_TEMPLATE_NAME.into());
 
         entity_kinds.add(REPOSITORY, REPOSITORY_NAME.into());
+        entity_kinds.add(FUNCTION, FUNCTION_NAME.into());
 
         entity_kinds
     }

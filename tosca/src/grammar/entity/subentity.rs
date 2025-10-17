@@ -1,4 +1,4 @@
-use super::super::{catalog::*, errors::*, name::*, source::*};
+use super::super::{complete::*, errors::*, name::*};
 
 use {compris::annotate::*, kutil::std::immutable::*};
 
@@ -10,14 +10,13 @@ use {compris::annotate::*, kutil::std::immutable::*};
 ///
 /// This trait is only used for *contained* entities. Named entities should implement
 /// [Entity](super::entity::Entity) instead.
-pub trait Subentity<ParentT> {
+pub trait Subentity<ParentSubentityT> {
     /// Complete.
     fn complete(
         &mut self,
         name: Option<ByteString>,
-        parent: Option<(&ParentT, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        parent: Option<&ParentSubentityT>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>>;
 }

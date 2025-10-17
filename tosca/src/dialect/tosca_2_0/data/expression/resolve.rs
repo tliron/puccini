@@ -1,4 +1,4 @@
-use super::{call::*, expression::*};
+use super::{super::super::super::super::grammar::*, call::*, expression::*};
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
@@ -10,13 +10,13 @@ use {
 pub const FUNCTION_PREFIX: &str = "$";
 
 impl<AnnotatedT> Expression<AnnotatedT> {
-    fn resolve_list<ErrorRecipientT>(
+    fn resolve_list<ErrorReceiverT>(
         list: List<AnnotatedT>,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> ResolveResult<Self, AnnotatedT>
     where
         AnnotatedT: Annotated + Clone + Default,
-        ErrorRecipientT: ErrorRecipient<ResolveError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
     {
         let mut expression_list = Vec::with_capacity(list.inner.len());
 
@@ -49,13 +49,10 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         }))
     }
 
-    fn resolve_map<ErrorRecipientT>(
-        map: Map<AnnotatedT>,
-        errors: &mut ErrorRecipientT,
-    ) -> ResolveResult<Self, AnnotatedT>
+    fn resolve_map<ErrorReceiverT>(map: Map<AnnotatedT>, errors: &mut ErrorReceiverT) -> ResolveResult<Self, AnnotatedT>
     where
         AnnotatedT: Annotated + Clone + Default,
-        ErrorRecipientT: ErrorRecipient<ResolveError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
     {
         let mut expression_map = BTreeMap::default();
 
@@ -94,12 +91,12 @@ impl<AnnotatedT> Resolve<Expression<AnnotatedT>, AnnotatedT> for Variant<Annotat
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorRecipientT>(
+    fn resolve_with_errors<ErrorReceiverT>(
         self,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> ResolveResult<Expression<AnnotatedT>, AnnotatedT>
     where
-        ErrorRecipientT: ErrorRecipient<ResolveError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
     {
         match self {
             Variant::Text(text) => {
@@ -114,13 +111,21 @@ where
                         return Ok(Some(unescaped.into()));
                     }
 
+                    let function: FullName = match string.parse() {
+                        Ok(function) => function,
+                        Err(error) => {
+                            errors.give(
+                                MalformedError::new("function name".into(), error.to_string())
+                                    .with_annotations_from(&text),
+                            )?;
+                            return Ok(None);
+                        }
+                    };
+
                     return Ok(Some(
-                        Call::new_native(
-                            Text::from(ByteString::from(string)).with_annotations_from(&text),
-                            Default::default(),
-                            floria::CallKind::Normal,
-                        )
-                        .into(),
+                        Call::new(function, Default::default(), floria::CallKind::Normal)
+                            .with_annotations_from(&text)
+                            .into(),
                     ));
                 }
 
@@ -160,13 +165,21 @@ where
                         arguments.push(argument);
                     }
 
+                    let function: FullName = match key_string.parse() {
+                        Ok(function) => function,
+                        Err(error) => {
+                            errors.give(
+                                MalformedError::new("function name".into(), error.to_string())
+                                    .with_annotations_from(&key_text),
+                            )?;
+                            return Ok(None);
+                        }
+                    };
+
                     return Ok(Some(
-                        Call::new_native(
-                            Text::from(ByteString::from(key_string)).with_annotations_from(&key_text),
-                            arguments,
-                            floria::CallKind::Normal,
-                        )
-                        .into(),
+                        Call::new(function, arguments, floria::CallKind::Normal)
+                            .with_annotations_from(&key_text)
+                            .into(),
                     ));
                 }
 

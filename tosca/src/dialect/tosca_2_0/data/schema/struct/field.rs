@@ -1,6 +1,6 @@
 use super::super::{super::expression::*, reference::*};
 
-use kutil::cli::depict::*;
+use depiction::*;
 
 //
 // StructSchemaField

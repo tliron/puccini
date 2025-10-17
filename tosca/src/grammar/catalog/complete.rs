@@ -1,5 +1,5 @@
 use super::{
-    super::{entity::*, errors::*, name::*, source::*},
+    super::{complete::*, entity::*, errors::*, name::*, source::*},
     catalog::*,
 };
 
@@ -20,13 +20,13 @@ impl Catalog {
     /// [should_complete](super::super::entity::Entity::should_complete) is true.
     ///
     /// Note that each entity is removed from the catalog while it is being completed.
-    pub fn complete_entities<AnnotatedT, ErrorRecipientT>(
+    pub fn complete_entities<AnnotatedT, ErrorReceiverT>(
         &mut self,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> Result<(), ToscaError<AnnotatedT>>
     where
         AnnotatedT: Annotated + Default,
-        ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
         let mut entities = self.entity_names();
         entities.sort();
@@ -72,18 +72,18 @@ impl Catalog {
         Ok(())
     }
 
-    pub(crate) fn complete_entity<AnnotatedT, ErrorRecipientT>(
+    pub(crate) fn complete_entity<AnnotatedT, ErrorReceiverT>(
         &mut self,
         entity: &mut EntityRef,
         entity_kind_name: &ByteString,
         name: &Name,
         source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> Result<bool, ToscaError<AnnotatedT>>
     where
         AnnotatedT: Annotated + Default,
-        ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
         Ok(if entity.should_complete() {
             tracing::debug!(
@@ -94,7 +94,10 @@ impl Catalog {
             );
 
             entity
-                .complete(self, source_id, derivation_path, errors.into_annotated().to_ref())
+                .complete(
+                    derivation_path,
+                    &mut CompletionContext::new(self, source_id, errors.into_annotated().to_ref()),
+                )
                 .map_err(|error| error.into_annotated())?;
 
             if entity.is_complete() {

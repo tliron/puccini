@@ -1,9 +1,6 @@
 use super::{super::entity::*, source::*};
 
-use {
-    kutil::{cli::depict::*, std::iter::*},
-    std::io,
-};
+use {depiction::*, kutil::std::iter::*, std::io};
 
 const PREFIX: char = '@';
 

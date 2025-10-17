@@ -8,22 +8,20 @@ use super::{
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // RelationshipDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The relationship keyname in a requirement definition specifies a relationship definition that
 /// provides information needed by TOSCA Orchestrators to construct a relationship to the TOSCA
 /// node that contains the matching target capability.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -72,54 +70,69 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<RelationshipDefinition<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for RelationshipDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        parent: Option<&Self>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
+        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_subentity_map_field!(property, properties, self, parent, parent_namespace, true, context);
+        complete_subentity_map_field!(attribute, attributes, self, parent, parent_namespace, true, context);
+        complete_subentity_map_field!(interface, interfaces, self, parent, parent_namespace, true, context);
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-        }
+        let (relationship_type, relationship_type_namespace) =
+            entity_from_full_name_field!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, context);
 
-        let relationship_type =
-            completed_entity!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, catalog, source_id, errors);
-
-        complete_map_field!("property", properties, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, parent, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, relationship_type, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, parent, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            self,
+            relationship_type,
+            relationship_type_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            self,
+            relationship_type,
+            relationship_type_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(
+            interface,
+            interfaces,
+            self,
+            relationship_type,
+            relationship_type_namespace,
+            true,
+            context
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RelationshipDefinition<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for RelationshipDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.to_namespace(namespace),
             description: self.description.clone(),
             metadata: self.metadata.clone(),
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            interfaces: self.interfaces.convert_into_scope(scope),
+            properties: self.properties.to_namespace(namespace),
+            attributes: self.attributes.to_namespace(namespace),
+            interfaces: self.interfaces.to_namespace(namespace),
             annotations: self.annotations.clone(),
         }
     }

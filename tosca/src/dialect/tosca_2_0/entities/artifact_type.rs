@@ -5,10 +5,8 @@ use super::{
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -16,11 +14,11 @@ use {
 // ArtifactType
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// An artifact type is a reusable entity that defines the type of one or more files that are used
 /// to define implementation or deployment artifacts that are referenced by nodes or relationships.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -51,7 +49,7 @@ where
     /// The optional mime type property for the artifact type.
     #[resolve]
     #[depict(option, style(string))]
-    pub mime_type: Option<Annotate<ByteString, AnnotatedT>>,
+    pub mime_type: Option<ByteString>,
 
     /// The optional file extension property for the artifact type.
     #[resolve]
@@ -63,46 +61,57 @@ where
     #[depict(iter(kv), as(depict), key_style(string))]
     pub properties: PropertyDefinitions<AnnotatedT>,
 
+    /// True if internal.
+    #[depict(style(symbol))]
+    pub internal: bool,
+
     #[resolve(annotations)]
     #[depict(skip)]
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(ArtifactType);
+
+impl<AnnotatedT> ArtifactType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    /// Constructor.
+    pub fn new_internal() -> Self {
+        Self { internal: true, ..Default::default() }
+    }
+}
 
 impl<AnnotatedT> Entity for ArtifactType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
         &mut self,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: ToscaErrorRecipientRef,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
-        let errors = &mut errors.to_error_recipient();
+        let (parent, parent_namespace) =
+            entity_from_name_field_checked!(ARTIFACT_TYPE, self, derived_from, derivation_path, context);
 
-        let parent = completed_parent!(ARTIFACT_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        complete_subentity_map_field!(property, properties, self, parent, parent_namespace, false, context);
 
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-
-        if let Some((parent, _scope)) = &parent {
-            if_none_clone!(mime_type, self, parent);
-            if_none_clone!(file_ext, self, parent);
+        if let Some(parent) = &parent {
+            complete_none_field!(mime_type, self, parent);
+            complete_none_field!(file_ext, self, parent);
         }
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

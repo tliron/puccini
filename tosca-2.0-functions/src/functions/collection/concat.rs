@@ -1,14 +1,14 @@
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $concat function takes one or more arguments of either the type string or the type list
 /// with the same type of their entry_schema. In the case of strings, it returns a string which is
 /// the concatenation of the argument strings. In the case of lists, it returns a list that
 /// contains all the entries of all the argument lists. Order is preserved both for strings and
 /// lists. This function does not recurse into the entries of the lists.
-pub fn concat(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn concat(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count_min(&arguments, 1)?;
     let mut arguments = arguments.into_iter();
 

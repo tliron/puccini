@@ -2,7 +2,8 @@ use super::super::{data_kind::*, expression::*};
 
 use {
     compris::{annotate::*, normal::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 

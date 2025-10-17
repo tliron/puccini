@@ -2,7 +2,7 @@ use super::comparator::*;
 
 use {
     chrono::*,
-    floria_plugin_sdk::{data::*, errors},
+    floria_plugin_sdk::{data::*, errors, *},
     std::{collections::*, fmt, str::*},
 };
 
@@ -41,7 +41,7 @@ impl Timestamp {
 }
 
 impl Comparator for Timestamp {
-    fn comparator(&self) -> Result<Expression, String> {
+    fn comparator(&self) -> Result<Expression, DispatchError> {
         Ok(self.datetime.timestamp_micros().into())
     }
 }
@@ -55,7 +55,7 @@ impl fmt::Display for Timestamp {
 // Conversions
 
 impl FromStr for Timestamp {
-    type Err = String;
+    type Err = DispatchError;
 
     fn from_str(representation: &str) -> Result<Self, Self::Err> {
         // Note: chrono treats "-00:00" as UTC, as expected by TOSCA
@@ -68,7 +68,7 @@ impl FromStr for Timestamp {
 }
 
 impl TryFrom<Expression> for Timestamp {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         match expression {
@@ -80,7 +80,7 @@ impl TryFrom<Expression> for Timestamp {
 }
 
 impl TryFrom<&Custom> for Timestamp {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(custom: &Custom) -> Result<Self, Self::Error> {
         custom.assert_kind(TIMESTAMP_CUSTOM_KIND, "timestamp")?;
@@ -130,14 +130,14 @@ impl Into<Expression> for Timestamp {
     }
 }
 
-fn get_integer(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<i32, String> {
+fn get_integer(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<i32, DispatchError> {
     match map.get(&name.into()) {
         Some(value) => Ok(value.cast_i32_integer(&format!("timestamp |meta|{}| key", name))?),
         None => Err(format!("timestamp missing |meta|{}| key", name)),
     }
 }
 
-fn get_unsigned_integer(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<u32, String> {
+fn get_unsigned_integer(map: &BTreeMap<Expression, Expression>, name: &'static str) -> Result<u32, DispatchError> {
     match map.get(&name.into()) {
         Some(value) => Ok(value.cast_u32_integer(&format!("timestamp |meta|{}| key", name))?),
         None => Err(format!("timestamp missing |meta|{}| key", name)),

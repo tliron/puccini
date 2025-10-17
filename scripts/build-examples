@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+cd "$ROOT"
+
+PACKAGE=puccini-plugin-kubernetes-functions
+TARGET=wasm32-wasip2
+
+export RUSTFLAGS="-Z threads=8"
+
+cargo +nightly build --package="$PACKAGE" --target="$TARGET"

@@ -3,8 +3,8 @@ edition = "2024"
 
 name = "puccini-plugin-tosca-2_0-functions"
 description = "TOSCA"
-version = "0.0.3"
-rust-version = "1.90"
+version = "0.0.4"
+rust-version = "1.91"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -25,12 +25,14 @@ keywords = [
 [dependencies]
 base64 = "0.22.1"
 chrono = "0.4.42"
-floria-plugin-sdk = "=0.0.4"
+floria-plugin-sdk = "=0.0.5"
 regex = "1.12.2"
-wit-bindgen = "0.46.0"
 
 [lib]
 crate-type = ["cdylib"]
+
+# [package.metadata.component]
+# package = "component:puccini-tosca"
 
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]

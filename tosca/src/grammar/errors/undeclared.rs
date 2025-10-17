@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -22,6 +22,8 @@ pub struct UndeclaredError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(UndeclaredError);
+
 impl<AnnotatedT> UndeclaredError<AnnotatedT> {
     /// Constructor.
     pub fn new(type_name: String, name: String) -> Self
@@ -30,18 +32,17 @@ impl<AnnotatedT> UndeclaredError<AnnotatedT> {
     {
         Self { type_name, name, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> UndeclaredError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<UndeclaredError<NewAnnotatedT>> for UndeclaredError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> UndeclaredError<NewAnnotatedT> {
         UndeclaredError::new(self.type_name, self.name).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(UndeclaredError);
 
 impl<AnnotatedT> Depict for UndeclaredError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

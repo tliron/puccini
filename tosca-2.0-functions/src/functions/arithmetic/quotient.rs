@@ -1,10 +1,7 @@
 use super::super::super::data::*;
 
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $quotient function takes two arguments where the first argument is of an integer, float, or
 /// scalar type and the second argument is of an integer or float type. The result is of
 ///
@@ -14,7 +11,10 @@ use floria_plugin_sdk::{data::*, utils::*};
 ///
 /// * A float if the first argument is an integer or a float. Note that to transform the float to
 ///   an integer a round or ceil or floor function must be used.
-pub fn quotient(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn quotient(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 2)?;
     let mut arguments = arguments.into_iter();
 

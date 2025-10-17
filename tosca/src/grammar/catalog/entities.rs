@@ -1,5 +1,5 @@
 use super::{
-    super::{entity::*, errors::*, name::*, source::*, utils::*},
+    super::{complete::*, entity::*, errors::*, name::*, source::*},
     catalog::*,
 };
 
@@ -73,18 +73,22 @@ impl Catalog {
     ///
     /// If not found (e.g. it is currently removed for its completion phase) will return the
     /// fallback if it exists.
-    pub fn completed_entity_ref<AnnotatedT, ErrorRecipientT>(
+    pub fn completed_entity_ref<AnnotatedT, ErrorReceiverT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> Result<Option<&EntityRef>, ToscaError<AnnotatedT>>
     where
         AnnotatedT: Annotated + Default,
-        ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
+        if full_name.is_empty() {
+            return Ok(None);
+        }
+
         let source = unwrap_or_give_and_return!(self.get_source(source_id), errors, Ok(None));
 
         let entity_kind_name =
@@ -191,7 +195,7 @@ impl Catalog {
         AnnotatedT: Default,
     {
         let entity = self.entity_ref(entity_kind, full_name, source_id)?;
-        Ok(entity.downcast_ref_or_error("entity", type_name::<EntityT>())?)
+        Ok(entity.into_any_ref_checked("entity", type_name::<EntityT>())?)
     }
 
     /// Get an [Entity],
@@ -204,19 +208,19 @@ impl Catalog {
     /// A [DerivationPath] is created in order to detect circular dependencies.
     ///
     /// Note that the entity is removed from the catalog while it is being completed.
-    pub fn completed_entity<EntityT, AnnotatedT, ErrorRecipientT>(
+    pub fn completed_entity<EntityT, AnnotatedT, ErrorReceiverT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> Result<Option<&EntityT>, ToscaError<AnnotatedT>>
     where
         EntityT: 'static,
         AnnotatedT: Annotated + Default,
-        ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
-        self.completed_entity_with_derivation_path(entity_kind, full_name, source_id, &mut Default::default(), errors)
+        self.completed_entity_checked(entity_kind, full_name, source_id, &mut Default::default(), errors)
     }
 
     /// Get an [Entity],
@@ -229,21 +233,21 @@ impl Catalog {
     /// The call is added to the derivation_path in order to detect circular dependencies.
     ///
     /// Note that the entity is removed from the catalog while it is being completed.
-    pub fn completed_entity_with_derivation_path<EntityT, AnnotatedT, ErrorRecipientT>(
+    pub fn completed_entity_checked<EntityT, AnnotatedT, ErrorReceiverT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> Result<Option<&EntityT>, ToscaError<AnnotatedT>>
     where
         EntityT: 'static,
         AnnotatedT: Annotated + Default,
-        ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
         Ok(match self.completed_entity_ref(entity_kind, full_name, source_id, derivation_path, errors)? {
-            Some(entity) => match entity.downcast_ref_or_error("entity", type_name::<EntityT>()) {
+            Some(entity) => match entity.into_any_ref_checked("entity", type_name::<EntityT>()) {
                 Ok(entity) => Some(entity),
                 Err(error) => {
                     errors.give(error)?;

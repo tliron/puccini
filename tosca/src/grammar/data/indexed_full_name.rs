@@ -2,7 +2,8 @@ use super::super::name::*;
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{cli::depict::*, std::error::*},
+    depiction::*,
+    kutil::std::error::*,
     std::{fmt, io},
 };
 
@@ -31,12 +32,12 @@ impl<AnnotatedT> Resolve<IndexedFullName, AnnotatedT> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorRecipientT>(
+    fn resolve_with_errors<ErrorReceiverT>(
         self,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> ResolveResult<IndexedFullName, AnnotatedT>
     where
-        ErrorRecipientT: ErrorRecipient<ResolveError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
     {
         let mut give =
             |message| errors.give(MalformedError::new("indexed name".into(), message).with_annotations_from(&self));

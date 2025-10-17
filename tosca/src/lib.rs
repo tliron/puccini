@@ -3,7 +3,11 @@
 #![warn(missing_docs)]
 
 /*!
-TOSCA.
+Tools for working with [TOSCA](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html)
+(Topology and Orchestration Specification for Cloud Applications).
+
+For documentation and usage examples see the
+[Puccini site](https://puccini.cloud).
 */
 
 /// Dialect.

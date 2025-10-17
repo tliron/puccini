@@ -1,6 +1,6 @@
 use super::{super::expression::*, coerce::*, schema::*};
 
-use floria_plugin_sdk::{data::*, errors};
+use floria_plugin_sdk::{data::*, errors, *};
 
 //
 // PrimitiveSchema
@@ -35,7 +35,12 @@ impl Coerce for PrimitiveSchema {
         self.validation.as_ref()
     }
 
-    fn coerce(&self, expression: Expression, _schema: &Schema, call_site: &CallSite) -> Result<Expression, String> {
+    fn coerce(
+        &self,
+        expression: Expression,
+        _schema: &Schema,
+        call_site: &CallSite,
+    ) -> Result<Expression, DispatchError> {
         let expression = expression.must_dispatch_if_call(call_site)?;
         let expression = expression.must_coerce(&self.data_kind)?;
         self.validate(&expression, call_site)?;
@@ -44,7 +49,7 @@ impl Coerce for PrimitiveSchema {
 }
 
 impl TryFrom<Expression> for PrimitiveSchema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         match expression {

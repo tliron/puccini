@@ -5,22 +5,23 @@ use super::{
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // ServiceTemplate
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// This section defines the service template of a TOSCA file. The main ingredients of the service
 /// template are node templates representing components of the application and relationship
 /// templates representing links between the components. These elements are defined in the nested
 /// node_templates section and the nested relationship_templates sections, respectively.
 /// Furthermore, a service template allows for defining input parameters, output parameters,
 /// workflows as well as grouping of node templates and associated policies.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -89,29 +90,27 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for ServiceTemplate<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
         &mut self,
-        _catalog: &mut Catalog,
-        _source_id: &SourceID,
         _derivation_path: &mut DerivationPath,
-        _errors: ToscaErrorRecipientRef,
+        _context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
+        assert!(self.completion_state == CompletionState::Incomplete);
 
         // TODO: inputs and outputs
 
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -22,6 +22,8 @@ pub struct UnknownTypeError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(UnknownTypeError);
+
 impl<AnnotatedT> UnknownTypeError<AnnotatedT> {
     /// Constructor.
     pub fn new(type_name: String, context: String) -> Self
@@ -30,18 +32,17 @@ impl<AnnotatedT> UnknownTypeError<AnnotatedT> {
     {
         Self { type_name, context, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> UnknownTypeError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<UnknownTypeError<NewAnnotatedT>> for UnknownTypeError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> UnknownTypeError<NewAnnotatedT> {
         UnknownTypeError::new(self.type_name, self.context).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(UnknownTypeError);
 
 impl<AnnotatedT> Depict for UnknownTypeError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

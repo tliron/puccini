@@ -38,34 +38,24 @@ impl DialectTrait for Dialect {
         &self,
         source: &mut Source,
         variant: Variant<WithAnnotations>,
-        errors: ToscaErrorRecipientRef,
+        errors: ToscaErrorReceiverRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.to_error_recipient().into_annotated())
+        self.initialize_source(source, variant, &mut errors.to_error_receiver().into_annotated())
     }
 
     fn initialize_source_without_annotations(
         &self,
         source: &mut Source,
         variant: Variant<WithoutAnnotations>,
-        errors: ToscaErrorRecipientRef,
+        errors: ToscaErrorReceiverRef,
     ) -> Result<(), ToscaError<WithoutAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.to_error_recipient().into_annotated())
+        self.initialize_source(source, variant, &mut errors.to_error_receiver().into_annotated())
     }
 
     fn compile_source(
         &self,
-        directory: &floria::Directory,
-        store: floria::StoreRef,
-        source_id: &SourceID,
-        catalog: &Catalog,
-        errors: ToscaErrorRecipientRef,
+        context: &mut CompilationContext<'_>,
     ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>> {
-        self.compile_service_template(
-            directory,
-            &store,
-            source_id,
-            catalog,
-            &mut errors.to_error_recipient().into_annotated(),
-        )
+        self.compile_service_template::<WithAnnotations>(context)
     }
 }

@@ -2,10 +2,8 @@ use super::{super::super::super::grammar::*, implementation_definition::*, param
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -13,11 +11,11 @@ use {
 // OperationDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// An operation definition defines a function or procedure to which an operation implementation
 /// can be bound.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -53,41 +51,34 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> Subentity<OperationDefinition<AnnotatedT>> for OperationDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for OperationDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&Self, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        parent: Option<&Self>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
-
-        complete_map_field!("input", inputs, self, parent, catalog, source_id, errors);
-        complete_map_field!("output", outputs, self, parent, catalog, source_id, errors);
-
-        if let Some((parent, _scope)) = parent {
-            if_none_clone!(implementation, self, parent);
-        }
-
+        complete_subentity_map_field!(input, inputs, self, parent, parent_namespace, true, context);
+        complete_subentity_map_field!(output, outputs, self, parent, parent_namespace, true, context);
+        complete_subentity_field!(implementation, self, parent, parent_namespace, context);
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<OperationDefinition<AnnotatedT>> for OperationDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for OperationDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
             description: self.description.clone(),
             implementation: self.implementation.clone(),
-            inputs: self.inputs.convert_into_scope(scope),
-            outputs: self.outputs.convert_into_scope(scope),
+            inputs: self.inputs.to_namespace(namespace),
+            outputs: self.outputs.to_namespace(namespace),
             annotations: self.annotations.clone(),
         }
     }

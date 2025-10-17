@@ -1,12 +1,12 @@
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $length function takes an argument of type string, list, or map. It returns the number of
 /// nicode characters in the string, or the numbers of values in the list, or the number of
 /// key-values pairs in the map.
-pub fn length(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn length(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 1)?;
     let mut arguments = arguments.into_iter();
 

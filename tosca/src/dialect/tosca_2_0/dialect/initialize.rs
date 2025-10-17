@@ -11,18 +11,17 @@ use {
 
 impl super::Dialect {
     /// Initialize source.
-    pub fn initialize_source<AnnotatedT, ErrorRecipientT>(
+    pub fn initialize_source<AnnotatedT, ErrorReceiverT>(
         &self,
         source: &mut Source,
         variant: Variant<AnnotatedT>,
-        errors: &mut ErrorRecipientT,
+        errors: &mut ErrorReceiverT,
     ) -> Result<(), ToscaError<AnnotatedT>>
     where
         AnnotatedT: 'static + Annotated + Default + Clone,
-        ErrorRecipientT: ErrorRecipient<ToscaError<AnnotatedT>>,
+        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
-        let file: Option<File<_>> =
-            variant.resolve_with_errors(&mut errors.into_annotated().to_resolve_error_recipient())?;
+        let file: Option<File<_>> = variant.resolve_with_errors(&mut errors.to_variant_error_receiver())?;
 
         let Some(file) = file else {
             return Ok(());
@@ -125,6 +124,10 @@ impl super::Dialect {
 
         for (name, repository) in file.repositories {
             unwrap_or_give_and_return!(source.add_entity(REPOSITORY, name, repository, false), errors, Ok(()));
+        }
+
+        for (name, function) in file.functions {
+            unwrap_or_give_and_return!(source.add_entity(FUNCTION, name, function, false), errors, Ok(()));
         }
 
         Ok(())

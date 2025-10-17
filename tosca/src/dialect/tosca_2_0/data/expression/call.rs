@@ -1,11 +1,9 @@
-use super::{super::super::dialect::*, expression::*};
+use super::{super::super::super::super::grammar::*, expression::*};
 
 use {
-    compris::{annotate::*, normal::*},
-    kutil::{
-        cli::depict::*,
-        std::{immutable::*, iter::*},
-    },
+    compris::annotate::*,
+    depiction::*,
+    kutil::std::iter::*,
     std::{cmp::*, fmt, hash::*, io},
 };
 
@@ -16,52 +14,41 @@ use {
 /// Call.
 #[derive(Clone, Debug)]
 pub struct Call<AnnotatedT> {
-    /// Plugin name.
-    pub plugin: ByteString,
-
     /// Function name.
-    pub function: Text<AnnotatedT>,
+    pub function: FullName,
 
     /// Arguments.
     pub arguments: Vec<Expression<AnnotatedT>>,
 
     /// Kind.
     pub kind: floria::CallKind,
+
+    annotated: AnnotatedT,
 }
+
+impl_annotated!(Call);
 
 impl<AnnotatedT> Call<AnnotatedT> {
     /// Constructor.
-    pub fn new(
-        plugin: ByteString,
-        function: Text<AnnotatedT>,
-        arguments: Vec<Expression<AnnotatedT>>,
-        kind: floria::CallKind,
-    ) -> Self {
-        Self { plugin, function, arguments, kind }
-    }
-
-    /// Constructor.
-    ///
-    /// Note that TOSCA 2.0 can only represent normal calls.
-    pub fn new_native(
-        function: Text<AnnotatedT>,
-        arguments: Vec<Expression<AnnotatedT>>,
-        kind: floria::CallKind,
-    ) -> Self {
-        Self::new(DIALECT_ID, function, arguments, kind)
-    }
-
-    /// Constructor.
-    pub fn new_native_static(function: &'static str, kind: floria::CallKind) -> Self
+    pub fn new(function: FullName, arguments: Vec<Expression<AnnotatedT>>, kind: floria::CallKind) -> Self
     where
         AnnotatedT: Default,
     {
-        Self::new(DIALECT_ID, ByteString::from_static(function).into(), Default::default(), kind)
+        Self { function, arguments, kind, annotated: Default::default() }
     }
 
-    /// True if in dialect's plugin.
+    /// Constructor.
+    pub fn new_native(function: &'static str, arguments: Vec<Expression<AnnotatedT>>, kind: floria::CallKind) -> Self
+    where
+        AnnotatedT: Default,
+    {
+        Self::new(Name::from_static(function).into(), arguments, kind)
+    }
+
+    /// True if native.
     pub fn is_native(&self) -> bool {
-        self.plugin == DIALECT_ID
+        // TODO
+        self.function.namespace.is_empty()
     }
 
     /// True if we already have the argument.
@@ -89,20 +76,16 @@ impl<AnnotatedT> Call<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> Annotated for Call<AnnotatedT>
+impl<AnnotatedT> RemoveAnnotations<Call<WithoutAnnotations>> for &Call<AnnotatedT>
 where
-    AnnotatedT: Annotated,
+    AnnotatedT: Clone,
 {
-    fn can_have_annotations() -> bool {
-        AnnotatedT::can_have_annotations()
-    }
-
-    fn annotations(&self) -> Option<&Annotations> {
-        self.function.annotated.annotations()
-    }
-
-    fn annotations_mut(&mut self) -> Option<&mut Annotations> {
-        self.function.annotated.annotations_mut()
+    fn remove_annotations(self) -> Call<WithoutAnnotations> {
+        Call::new(
+            self.function.clone(),
+            self.arguments.iter().map(|item| item.remove_annotations()).collect(),
+            self.kind,
+        )
     }
 }
 
@@ -119,7 +102,7 @@ impl<AnnotatedT> Depict for Call<AnnotatedT> {
             _ => {}
         }
 
-        context.theme.write_name(writer, &self.plugin)?;
+        self.function.depict(writer, context)?;
         context.theme.write_delimiter(writer, ':')?;
         context.theme.write_name(writer, &self.function)?;
         context.theme.write_delimiter(writer, '(')?;
@@ -144,7 +127,7 @@ impl<AnnotatedT> fmt::Display for Call<AnnotatedT> {
             _ => {}
         }
 
-        write!(formatter, "{}:{}(", self.plugin, self.function)?;
+        write!(formatter, "{}(", self.function)?;
 
         for (argument, last) in IterateWithLast::new(&self.arguments) {
             fmt::Display::fmt(argument, formatter)?;
@@ -159,7 +142,7 @@ impl<AnnotatedT> fmt::Display for Call<AnnotatedT> {
 
 impl<AnnotatedT> PartialEq for Call<AnnotatedT> {
     fn eq(&self, other: &Self) -> bool {
-        (self.plugin == other.plugin) && (self.function == other.function) && (self.arguments == other.arguments)
+        (self.function == other.function) && (self.arguments == other.arguments)
     }
 }
 
@@ -167,11 +150,8 @@ impl<AnnotatedT> Eq for Call<AnnotatedT> {}
 
 impl<AnnotatedT> PartialOrd for Call<AnnotatedT> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.plugin.partial_cmp(&other.plugin) {
-            Some(Ordering::Equal) => match self.function.partial_cmp(&other.function) {
-                Some(Ordering::Equal) => self.arguments.partial_cmp(&other.arguments),
-                ordering => ordering,
-            },
+        match self.function.partial_cmp(&other.function) {
+            Some(Ordering::Equal) => self.arguments.partial_cmp(&other.arguments),
             ordering => ordering,
         }
     }
@@ -179,11 +159,8 @@ impl<AnnotatedT> PartialOrd for Call<AnnotatedT> {
 
 impl<AnnotatedT> Ord for Call<AnnotatedT> {
     fn cmp(&self, other: &Self) -> Ordering {
-        match self.plugin.cmp(&other.plugin) {
-            Ordering::Equal => match self.function.cmp(&other.function) {
-                Ordering::Equal => self.arguments.cmp(&other.arguments),
-                ordering => ordering,
-            },
+        match self.function.cmp(&other.function) {
+            Ordering::Equal => self.arguments.cmp(&other.arguments),
             ordering => ordering,
         }
     }
@@ -194,21 +171,7 @@ impl<AnnotatedT> Hash for Call<AnnotatedT> {
     where
         HasherT: Hasher,
     {
-        self.plugin.hash(state);
         self.function.hash(state);
         self.arguments.hash(state);
-    }
-}
-
-impl<AnnotatedT> Into<floria::Call> for Call<AnnotatedT> {
-    fn into(self) -> floria::Call {
-        let arguments: Vec<_> = self.arguments.into_iter().map(|argument| argument.into()).collect();
-        floria::Call::new(self.plugin, self.function.inner, arguments, self.kind)
-    }
-}
-
-impl<AnnotatedT> Into<floria::Expression> for Call<AnnotatedT> {
-    fn into(self) -> floria::Expression {
-        floria::Expression::Call(self.into())
     }
 }

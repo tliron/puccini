@@ -1,23 +1,23 @@
-use super::{super::super::super::grammar::*, interface_assignment::*, relationship_definition::*, value::*};
+use super::{
+    super::super::super::grammar::*, interface_assignment::*, relationship_definition::*, value_assignment::*,
+};
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // RelationshipAssignment
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The relationship keyname in a requirement assignment typically specifies a relationship
 /// assignment that provides information needed by TOSCA Orchestrators to construct a relationship
 /// to the TOSCA node that is the target of the requirement.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -27,7 +27,7 @@ where
 {
     /// The optional keyname used to provide the name of the relationship type for the requirement
     /// assignment's relationship.
-    #[resolve(required, key = "type")]
+    #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
 
@@ -59,39 +59,55 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        relationship_definition: Option<(&RelationshipDefinition<AnnotatedT>, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        relationship_definition: Option<&RelationshipDefinition<AnnotatedT>>,
+        relationship_definition_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
+        complete_name_field!(type_name, self, relationship_definition, relationship_definition_namespace, context);
 
-        if let Some((relationship_definition, _scope)) = &relationship_definition {
-            validate_type_name(&self.type_name, &relationship_definition.type_name, catalog, errors)?;
-        }
-
-        complete_map_field!("property", properties, self, relationship_definition, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, relationship_definition, catalog, source_id, errors);
-        complete_map_field!("interface", interfaces, self, relationship_definition, catalog, source_id, errors);
+        complete_subentity_map_field!(
+            property,
+            properties,
+            self,
+            relationship_definition,
+            relationship_definition_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            self,
+            relationship_definition,
+            relationship_definition_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(
+            interface,
+            interfaces,
+            self,
+            relationship_definition,
+            relationship_definition_namespace,
+            true,
+            context
+        );
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RelationshipAssignment<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<RelationshipAssignment<AnnotatedT>> for RelationshipDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> RelationshipAssignment<AnnotatedT> {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> RelationshipAssignment<AnnotatedT> {
         RelationshipAssignment {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            interfaces: self.interfaces.convert_into_scope(scope),
-            annotations: clone_struct_annotations(
-                &self.annotations,
-                &["type_name", "properties", "attributes", "interfaces"],
-            ),
+            type_name: self.type_name.to_namespace(namespace),
+            properties: self.properties.to_namespace(namespace),
+            attributes: self.attributes.to_namespace(namespace),
+            interfaces: self.interfaces.to_namespace(namespace),
+            annotations: self.annotations.clone_fields(&["type_name", "properties", "attributes", "interfaces"]),
         }
     }
 }

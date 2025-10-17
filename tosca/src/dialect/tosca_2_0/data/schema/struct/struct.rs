@@ -6,11 +6,7 @@ use super::{
     field::*,
 };
 
-use {
-    compris::annotate::*,
-    kutil::{cli::depict::*, std::immutable::*},
-    std::collections::*,
-};
+use {compris::annotate::*, depiction::*, kutil::std::immutable::*, std::collections::*};
 
 //
 // StructSchema

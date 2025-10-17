@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -16,6 +16,8 @@ pub struct NumberOverflowError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(NumberOverflowError);
+
 impl<AnnotatedT> NumberOverflowError<AnnotatedT> {
     /// Constructor.
     pub fn new() -> Self
@@ -24,18 +26,17 @@ impl<AnnotatedT> NumberOverflowError<AnnotatedT> {
     {
         Self { annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> NumberOverflowError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<NumberOverflowError<NewAnnotatedT>> for NumberOverflowError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> NumberOverflowError<NewAnnotatedT> {
         NumberOverflowError::new().with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(NumberOverflowError);
 
 impl<AnnotatedT> Depict for NumberOverflowError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, _context: &DepictionContext) -> io::Result<()>

@@ -1,13 +1,13 @@
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $join function takes either one or two arguments where the first one is of type list of
 /// strings and the second (optional) argument is of type string. It returns a string that is the
 /// joining of the entries in the first argument while adding an optional delimiter between the
 /// strings.
-pub fn join(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn join(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count_range(&arguments, 1, 2)?;
     let mut arguments = arguments.into_iter();
 

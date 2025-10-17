@@ -1,14 +1,14 @@
 use super::super::super::data::*;
 
-use floria_plugin_sdk::{data::*, errors, utils::*};
+use floria_plugin_sdk::{data::*, errors, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $sum function takes one or more arguments of either integer, float, or scalar type. The
 /// result is of the same type as the arguments and its value is the arithmetic sum of the
 /// arguments' values.
-pub fn sum(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn sum(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count_min(&arguments, 1)?;
     let mut arguments = arguments.into_iter();
 

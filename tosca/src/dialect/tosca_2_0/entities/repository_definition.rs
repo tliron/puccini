@@ -2,7 +2,8 @@ use super::super::super::super::grammar::*;
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -10,11 +11,11 @@ use {
 // RepositoryDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A repository definition defines an external repository that contains TOSCA files and/or
 /// artifacts that are referenced or imported by this TOSCA file.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 pub struct RepositoryDefinition<AnnotatedT>
@@ -41,26 +42,24 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl<AnnotatedT> Entity for RepositoryDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
         &mut self,
-        _catalog: &mut Catalog,
-        _source_id: &SourceID,
         _derivation_path: &mut DerivationPath,
-        _errors: ToscaErrorRecipientRef,
+        _context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Complete;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }

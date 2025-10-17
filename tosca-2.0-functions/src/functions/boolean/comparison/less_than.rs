@@ -1,14 +1,14 @@
 use super::super::super::{super::data::*, puccini::*};
 
-use floria_plugin_sdk::{data::*, utils::*};
+use floria_plugin_sdk::{data::*, utils::*, *};
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The $less_than function takes two arguments of integer, float, string, timestamp, version, any
 /// scalar type, or their derivations. It evaluates to true if both arguments are of the same type,
 /// and if the first argument is less than the second argument and evaluates to false otherwise.
-pub fn less_than(arguments: Vec<Expression>, call_site: CallSite) -> Result<Option<Expression>, String> {
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn less_than(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
     assert_argument_count(&arguments, 2)?;
     let mut arguments = arguments.into_iter();
 

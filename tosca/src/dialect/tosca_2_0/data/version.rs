@@ -1,9 +1,7 @@
 use {
     compris::resolve::*,
-    kutil::{
-        cli::depict::*,
-        std::{immutable::*, string::*},
-    },
+    depiction::*,
+    kutil::std::{immutable::*, string::*},
     std::{fmt, io, str::*},
 };
 
@@ -11,12 +9,12 @@ use {
 // Version
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// The TOSCA version type represents a version string. TOSCA versions provide a normative means to
 /// represent a version string which enables the comparison and management of version information
 /// over time.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default)]
 pub struct Version {
     /// Major. A mandatory integer value greater than or equal to 0 (zero).
@@ -38,14 +36,14 @@ pub struct Version {
     pub build: Option<u64>,
 }
 
+impl_resolve_from_str!(Version);
+
 impl Version {
     /// Constructor.
     pub fn new(major: u64, minor: u64, fix: Option<u64>, qualifier: Option<ByteString>, build: Option<u64>) -> Self {
         Self { major, minor, fix, qualifier, build }
     }
 }
-
-impl_resolve_from_str!(Version);
 
 impl Depict for Version {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

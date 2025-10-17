@@ -1,24 +1,18 @@
 use super::{
     super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
-    schema::*,
 };
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
 };
 
 //
 // SchemaDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// All entries in a list or map for one property or parameter must be of the same type. Similarly,
 /// all keys for map entries for one property or parameter must be of the same type as well. A
 /// TOSCA schema definition must be used to specify the type (for simple entries) or schema (for
@@ -32,6 +26,9 @@ use {
 ///
 /// Schema definitions appear in data type definitions when derived_from a list or map type or in
 /// parameter, property, or attribute definitions of a list or map type.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -79,111 +76,51 @@ where
     pub(crate) annotations: StructAnnotations,
 }
 
-impl<AnnotatedT> SchemaDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    /// Initialize a schema.
-    pub fn initialize_schema(
-        &self,
-        schema: &mut Schema<AnnotatedT>,
-        source_id: &SourceID,
-        catalog: &Catalog,
-    ) -> Result<SchemaReference, ToscaError<WithAnnotations>>
-    where
-        AnnotatedT: 'static,
-    {
-        let data_type = catalog.entity::<DataType<AnnotatedT>, _>(DATA_TYPE, &self.type_name, source_id)?;
-        let reference = data_type.initialize_schema(&self.type_name, schema, self, source_id, catalog)?;
-        Ok(reference.into())
-    }
-}
-
-impl<AnnotatedT> Subentity<SchemaDefinition<AnnotatedT>> for SchemaDefinition<AnnotatedT>
+impl<AnnotatedT> Subentity<Self> for SchemaDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        parent: Option<(&SchemaDefinition<AnnotatedT>, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors_ref: ToscaErrorRecipientRef,
+        parent: Option<&SchemaDefinition<AnnotatedT>>,
+        parent_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors_ref.to_error_recipient();
+        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_boxed_subentity_field!(key_schema, self, parent, parent_namespace, context);
+        complete_boxed_subentity_field!(entry_schema, self, parent, parent_namespace, context);
 
-        if let Some((parent, _scope)) = &parent {
-            if self.type_name.is_empty() && !parent.type_name.is_empty() {
-                self.type_name = parent.type_name.clone();
-            } else {
-                validate_type_name(&self.type_name, &parent.type_name, catalog, errors)?;
-            }
-
+        if let Some(parent) = parent {
             complete_validation!(self, parent);
-
-            if self.data_kind.is_none() && parent.data_kind.is_some() {
-                self.data_kind = parent.data_kind;
-            }
+            complete_none_field!(data_kind, self, parent);
         }
 
-        let data_type = completed_entity!(DATA_TYPE, DataType, self, type_name, catalog, source_id, errors);
+        let (data_type, _data_type_namespace) =
+            entity_from_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
 
-        if let Some((data_type, _scope)) = data_type {
+        if let Some(data_type) = &data_type {
             complete_validation!(self, data_type);
-
-            if self.data_kind.is_none() && data_type.data_kind.is_some() {
-                self.data_kind = data_type.data_kind;
-            }
+            complete_none_field!(data_kind, self, data_type);
         }
-
-        complete_boxed_field!(key_schema, self, parent, catalog, source_id, errors_ref);
-        complete_boxed_field!(entry_schema, self, parent, catalog, source_id, errors_ref);
 
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<SchemaDefinition<AnnotatedT>> for SchemaDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<Self> for SchemaDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> Self {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            type_name: self.type_name.clone().in_scope(scope.clone()),
+            type_name: self.type_name.to_namespace(namespace),
             description: self.description.clone(),
             validation: self.validation.clone(),
-            key_schema: self
-                .key_schema
-                .as_ref()
-                .and_then(|key_schema| Some(key_schema.convert_into_scope(scope).into())),
-            entry_schema: self
-                .entry_schema
-                .as_ref()
-                .and_then(|entry_schema| Some(entry_schema.convert_into_scope(scope).into())),
+            key_schema: self.key_schema.to_namespace(namespace),
+            entry_schema: self.entry_schema.to_namespace(namespace),
             data_kind: self.data_kind,
             annotations: self.annotations.clone(),
         }
-    }
-}
-
-impl<AnnotatedT> SchemaDetails<AnnotatedT> for SchemaDefinition<AnnotatedT>
-where
-    AnnotatedT: Annotated + Clone + Default,
-{
-    fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
-        None
-    }
-
-    fn key_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.key_schema.as_ref().map(|key_schema| key_schema.as_ref())
-    }
-
-    fn entry_schema(&self) -> Option<&SchemaDefinition<AnnotatedT>> {
-        self.entry_schema.as_ref().map(|entry_schema| entry_schema.as_ref())
-    }
-
-    fn validation(&self) -> Option<&Expression<AnnotatedT>> {
-        self.validation.as_ref()
     }
 }

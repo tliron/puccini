@@ -2,7 +2,7 @@ use super::{comparator::*, kind::*, scalar::*, timestamp::*, version::*};
 
 use {
     base64::prelude::*,
-    floria_plugin_sdk::{data::*, utils::*},
+    floria_plugin_sdk::{data::*, utils::*, *},
 };
 
 //
@@ -14,10 +14,10 @@ pub trait ExpressionUtilities: Sized {
     /// Coerce into a data kind.
     ///
     /// Returns true if the expression was modified.
-    fn maybe_coerce(self, data_kind: &str) -> Result<(Expression, bool), String>;
+    fn maybe_coerce(self, data_kind: &str) -> Result<(Expression, bool), DispatchError>;
 
     /// Coerce into a data kind.
-    fn must_coerce(self, data_kind: &str) -> Result<Expression, String> {
+    fn must_coerce(self, data_kind: &str) -> Result<Expression, DispatchError> {
         self.maybe_coerce(data_kind).map(|(expression, _modified)| expression)
     }
 
@@ -25,14 +25,14 @@ pub trait ExpressionUtilities: Sized {
     ///
     /// This can be called before [comparator](ExpressionUtilities::comparator) in order to ensure
     /// compatibility between two expressions.
-    fn coerce_if_custom(self, other: &Expression) -> Result<Expression, String>;
+    fn coerce_if_custom(self, other: &Expression) -> Result<Expression, DispatchError>;
 
     /// Comparator.
-    fn comparator(self) -> Result<Expression, String>;
+    fn comparator(self) -> Result<Expression, DispatchError>;
 }
 
 impl ExpressionUtilities for Expression {
-    fn maybe_coerce(self, data_kind: &str) -> Result<(Expression, bool), String> {
+    fn maybe_coerce(self, data_kind: &str) -> Result<(Expression, bool), DispatchError> {
         match data_kind {
             STRING_DATA_KIND => {
                 if matches!(self, Expression::Text(_)) {
@@ -112,7 +112,7 @@ impl ExpressionUtilities for Expression {
         Err(format!("not |name|{}|: |error|{}|", data_kind, self.type_name()))
     }
 
-    fn coerce_if_custom(self, other: &Expression) -> Result<Expression, String> {
+    fn coerce_if_custom(self, other: &Expression) -> Result<Expression, DispatchError> {
         if let Expression::Custom(other) = other
             && !matches!(self, Expression::Custom(_))
         {
@@ -141,7 +141,7 @@ impl ExpressionUtilities for Expression {
         }
     }
 
-    fn comparator(self) -> Result<Expression, String> {
+    fn comparator(self) -> Result<Expression, DispatchError> {
         match self {
             Expression::Integer(_) | Expression::UnsignedInteger(_) | Expression::Float(_) | Expression::Text(_) => {
                 Ok(self)

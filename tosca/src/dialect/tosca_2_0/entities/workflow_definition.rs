@@ -1,8 +1,4 @@
-use {
-    compris::resolve::*,
-    kutil::{cli::depict::*, std::immutable::*},
-    std::collections::*,
-};
+use {compris::resolve::*, depiction::*, kutil::std::immutable::*, std::collections::*};
 
 //
 // WorkflowDefinition

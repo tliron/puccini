@@ -1,6 +1,6 @@
 use super::{coerce::*, schema::*, value::*};
 
-use floria_plugin_sdk::data::*;
+use floria_plugin_sdk::{data::*, *};
 
 //
 // ListSchema
@@ -35,7 +35,12 @@ impl Coerce for ListSchema {
         self.validation.as_ref()
     }
 
-    fn coerce(&self, expression: Expression, schema: &Schema, call_site: &CallSite) -> Result<Expression, String> {
+    fn coerce(
+        &self,
+        expression: Expression,
+        schema: &Schema,
+        call_site: &CallSite,
+    ) -> Result<Expression, DispatchError> {
         let expression = expression.must_dispatch_if_call(call_site)?;
 
         let list = expression.cast_list("list")?;
@@ -62,7 +67,7 @@ impl Coerce for ListSchema {
 }
 
 impl TryFrom<Expression> for ListSchema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         let map = expression.cast_map("list schema")?;
@@ -78,7 +83,7 @@ impl TryFrom<Expression> for ListSchema {
 
 // Utils
 
-fn get_unsigned_integer_option(map: &Map, name: &'static str) -> Result<Option<u64>, String> {
+fn get_unsigned_integer_option(map: &Map, name: &'static str) -> Result<Option<u64>, DispatchError> {
     Ok(match map.into_get(name) {
         Some(value) => Some(value.cast_u64(&format!("list schema |meta|{}| key", name))?),
         None => None,

@@ -6,7 +6,7 @@
 Puccini
 =======
 
-Tools for working with [TOSCA](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html) (Topology and Orchestration Specification for Cloud Applications) and CSAR (Cloud Service Archive).
+Tools for working with [TOSCA](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html) (Topology and Orchestration Specification for Cloud Applications) and [CSAR](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html#cloud-service-archive-csar-format) (Cloud Service Archive).
 
 It comprises:
 
@@ -28,17 +28,20 @@ For a Floria-based cloud orchestrator, see [Khutulun](https://khutulun.org).
 
 Can create compliant CSAR files, validate existing ones, extract contained artifacts, and query or modify the metadata.
 
-Supports both tarballs and zip files.
+Supports both tarballs and legacy ZIP files.
 
 Documentation
 -------------
 
 * [Installation Guide](https://puccini.cloud/documentation/install)
+* [puccini-tosca Guide](https://puccini.cloud/documentation/puccini-tosca)
+* [puccini-csar Guide](https://puccini.cloud/documentation/puccini-csar)
 * [Frequently Asked Questions](https://puccini.cloud/documentation/faq)
 * [Puccini and Floria](https://puccini.cloud/documentation/floria)
-* [puccini-tosca API Documentation](https://docs.rs/puccini-tosca/latest/puccini_tosca/)
-* [puccini-csar API Documentation](https://docs.rs/puccini-csar/latest/puccini_csar/)
-* [puccini-tosca examples](https://github.com/tliron/puccini/tree/main/tosca/examples)
+* [puccini-tosca API Documentation](https://docs.rs/puccini-tosca/latest/puccini_tosca/),
+  [examples](https://github.com/tliron/puccini/tree/main/tosca/examples)
+* [puccini-csar API Documentation](https://docs.rs/puccini-csar/latest/puccini_csar/),
+  [examples](https://github.com/tliron/puccini/tree/main/csar/examples)
 
 License
 -------

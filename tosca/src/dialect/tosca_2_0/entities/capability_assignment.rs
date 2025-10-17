@@ -1,11 +1,9 @@
-use super::{super::super::super::grammar::*, capability_definition::*, value::*};
+use super::{super::super::super::grammar::*, capability_definition::*, value_assignment::*};
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -13,11 +11,11 @@ use {
 // CapabilityAssignment
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A capability assignment allows node template authors to assign values to properties and
 /// attributes for a capability definition that is part of the node template's type definition.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -53,29 +51,41 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        capability_definition: Option<(&CapabilityDefinition<AnnotatedT>, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        capability_definition: Option<&CapabilityDefinition<AnnotatedT>>,
+        capability_definition_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
-
-        complete_map_field!("property", properties, self, capability_definition, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, capability_definition, catalog, source_id, errors);
-
+        complete_subentity_map_field!(
+            property,
+            properties,
+            self,
+            capability_definition,
+            capability_definition_namespace,
+            true,
+            context
+        );
+        complete_subentity_map_field!(
+            attribute,
+            attributes,
+            self,
+            capability_definition,
+            capability_definition_namespace,
+            true,
+            context
+        );
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<CapabilityAssignment<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<CapabilityAssignment<AnnotatedT>> for CapabilityDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> CapabilityAssignment<AnnotatedT> {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> CapabilityAssignment<AnnotatedT> {
         CapabilityAssignment {
-            properties: self.properties.convert_into_scope(scope),
-            attributes: self.attributes.convert_into_scope(scope),
-            annotations: clone_struct_annotations(&self.annotations, &["properties", "attributes"]),
+            properties: self.properties.to_namespace(namespace),
+            attributes: self.attributes.to_namespace(namespace),
+            annotations: self.annotations.clone_fields(&["properties", "attributes"]),
             ..Default::default()
         }
     }

@@ -2,7 +2,8 @@ use super::{super::super::super::grammar::*, function_signature::*};
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -10,9 +11,6 @@ use {
 // FunctionDefinition
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// TOSCA allows for the use of custom functions that extend the set of built-in functions
 /// documented in the previous section. TOSCA Processors use standard function parsing rules to
 /// detect the presence of a custom function.
@@ -25,6 +23,9 @@ use {
 /// associated function signatures and instead rely on support for those functions directly in the
 /// TOSCA orchestrator that will be used to process the TOSCA files. Of course, TOSCA processors
 /// may support custom functions that are not user-defined.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -33,7 +34,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The map of signature definitions.
-    #[depict(iter(kv), as(depict), key_style(string))]
+    #[resolve]
+    #[depict(iter(item), as(depict))]
     pub signatures: FunctionSignatures<AnnotatedT>,
 
     /// The description of the function.
@@ -46,9 +48,59 @@ where
     #[depict(iter(kv), as(depict), key_style(string))]
     pub metadata: Metadata<AnnotatedT>,
 
+    /// True if internal.
+    #[depict(style(symbol))]
+    pub internal: bool,
+
     #[resolve(annotations)]
     #[depict(skip)]
     pub(crate) annotations: StructAnnotations,
+
+    #[depict(skip)]
+    completion_state: CompletionState,
+}
+
+impl<AnnotatedT> FunctionDefinition<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    /// Constructor.
+    pub fn new_internal_plugin(plugin: ByteString) -> Self {
+        Self { signatures: vec![FunctionSignature::new_plugin(plugin)], internal: true, ..Default::default() }
+    }
+
+    /// Plugin file and prefix.
+    pub fn plugin(&self) -> Result<Option<(ByteString, Option<ByteString>)>, ToscaError<AnnotatedT>> {
+        match self.signatures.first() {
+            Some(signature) => signature.plugin(),
+            None => Ok(None),
+        }
+    }
+}
+
+impl<AnnotatedT> Entity for FunctionDefinition<AnnotatedT>
+where
+    AnnotatedT: 'static + Annotated + Clone + Default,
+{
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
+    }
+
+    fn complete(
+        &mut self,
+        _derivation_path: &mut DerivationPath,
+        context: &mut CompletionContext,
+    ) -> Result<(), ToscaError<WithAnnotations>> {
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
+
+        for signature in &mut self.signatures {
+            signature.complete(None, None, None, context)?;
+        }
+
+        self.completion_state = CompletionState::Complete;
+        Ok(())
+    }
 }
 
 //
@@ -56,4 +108,4 @@ where
 //
 
 /// Map of [FunctionDefinition].
-pub type FunctionDefinitions<AnnotatedT> = BTreeMap<ByteString, FunctionDefinition<AnnotatedT>>;
+pub type FunctionDefinitions<AnnotatedT> = BTreeMap<Name, FunctionDefinition<AnnotatedT>>;

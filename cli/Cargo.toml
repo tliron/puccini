@@ -3,12 +3,12 @@ edition = "2024"
 
 name = "puccini-cli"
 description = "Puccini TOSCA and CSAR CLI utilities"
-version = "0.0.3"
-rust-version = "1.90"
+version = "0.0.4"
+rust-version = "1.91"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
-documentation = "https://docs.rs/puccini"
+documentation = "https://puccini.cloud"
 authors = ["Tal Liron"]
 
 readme = "../README.md"
@@ -25,8 +25,8 @@ keywords = [
 [build-dependencies]
 # bindeps:
 # https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
-# puccini-plugin-tosca-2_0-functions = { version = "=0.0.1", artifact = "cdylib", target = "wasm32-wasip2" }
-wasmtime = { version = "37.0.2", default-features = false, features = [
+# puccini-plugin-tosca-2_0-functions = { version = "=0.0.4", artifact = "cdylib", target = "wasm32-wasip2" }
+wasmtime = { version = "38.0.4", default-features = false, features = [
     "cranelift",
     "parallel-compilation",
     "pooling-allocator",
@@ -35,24 +35,40 @@ wasmtime = { version = "37.0.2", default-features = false, features = [
 
 [dependencies]
 anstream = "0.6.21"
-compris = "=0.0.10"
-clap = { version = "4.5.49", features = ["derive"] }
-floria = "=0.0.4"
-floria-plugin-sdk = "=0.0.4" # unused; for patching
-kutil = { version = "=0.0.2", features = ["cli", "std", "clap", "derive"] }
-puccini-tosca = { version = "=0.0.3", default-features = false, features = ["tosca-2_0"] }
-read-url = { version = "=0.0.9", features = ["blocking"] }
+compris = "=0.0.11"
+clap = { version = "4.5.51", features = ["derive"] }
+clap-num = "1.2.0"
+ctrlc = "3.5.1"
+depiction = "=0.0.1"
+floria = "=0.0.5"
+indicatif = "0.18.3"
+kutil = { version = "=0.0.5", features = ["cli", "std", "clap"] }
+puccini-csar = { version = "=0.0.4", features = ["creator", "url"] }
+puccini-tosca = { version = "=0.0.4", default-features = false, features = ["tosca-2_0"] }
+read-url = { version = "=0.0.10", features = ["blocking"] }
 thiserror = "2.0.17"
 tracing = "0.1.41"
 
 [features]
-default = ["plugins", "filesystem", "http"]
+default = [
+    "plugins",
+    "filesystem",
+    "http",
+    "puccini-csar/tarball",
+    "puccini-csar/gzip",
+    "puccini-csar/zip",
+    "puccini-csar/zstandard",
+    "with-annotations",
+]
+
 plugins = ["floria/plugins", "puccini-tosca/plugins"]
 filesystem = ["puccini-tosca/filesystem"]
 http = ["puccini-tosca/http"]
+with-annotations = []
+without-annotations = []
 
 wasm-precompiled = []
-wasm-debug-info = []
+wasm-debug-info = ["floria/wasm-debug"]
 
 bindeps = []
 

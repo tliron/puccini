@@ -5,7 +5,6 @@ mod attribute_definition;
 mod capability_assignment;
 mod capability_definition;
 mod capability_type;
-mod compile;
 mod data_type;
 mod file;
 mod function_definition;
@@ -34,11 +33,10 @@ mod relationship_type;
 mod repository_definition;
 mod requirement_assignment;
 mod requirement_definition;
-mod schema;
 mod schema_definition;
 mod service_template;
 mod trigger_definition;
-mod value;
+mod value_assignment;
 mod workflow_definition;
 
 #[allow(unused_imports)]
@@ -50,6 +48,6 @@ pub use {
     notification_assignment::*, notification_definition::*, operation_assignment::*, operation_definition::*,
     parameter_definition::*, policy_template::*, policy_type::*, property_definition::*, relationship_assignment::*,
     relationship_definition::*, relationship_template::*, relationship_type::*, repository_definition::*,
-    requirement_assignment::*, requirement_definition::*, schema::*, schema_definition::*, service_template::*,
-    trigger_definition::*, value::*, workflow_definition::*,
+    requirement_assignment::*, requirement_definition::*, schema_definition::*, service_template::*,
+    trigger_definition::*, value_assignment::*, workflow_definition::*,
 };

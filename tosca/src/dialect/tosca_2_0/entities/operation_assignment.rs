@@ -1,11 +1,11 @@
-use super::{super::super::super::grammar::*, implementation_definition::*, operation_definition::*, value::*};
+use super::{
+    super::super::super::grammar::*, implementation_definition::*, operation_definition::*, value_assignment::*,
+};
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -13,9 +13,6 @@ use {
 // OperationAssignment
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// An operation assignment may be used to assign values for input parameters, specify attribute
 /// mappings for output parameters, and define/redefine the implementation definition of an already
 /// defined operation in the interface definition. An operation assignment may be used inside
@@ -31,6 +28,9 @@ use {
 /// previously defined in the operation definition. This is equivalent to an ad-hoc definition of
 /// a parameter, where the type is inferred from the assigned value (for input parameters) or from
 /// the attribute to map to (for output parameters).
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -67,34 +67,43 @@ where
     fn complete(
         &mut self,
         _name: Option<ByteString>,
-        operation_definition: Option<(&OperationDefinition<AnnotatedT>, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        operation_definition: Option<&OperationDefinition<AnnotatedT>>,
+        operation_definition_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        let errors = &mut errors.to_error_recipient();
-
-        complete_map_field!("input", inputs, self, operation_definition, catalog, source_id, errors);
-        complete_map_field!("output", outputs, self, operation_definition, catalog, source_id, errors);
-
-        if let Some((operation_definition, _scope)) = operation_definition {
-            if_none_clone!(implementation, self, operation_definition);
-        }
-
+        complete_subentity_map_field!(
+            input,
+            inputs,
+            self,
+            operation_definition,
+            operation_definition_namespace,
+            false,
+            context
+        );
+        complete_subentity_map_field!(
+            output,
+            outputs,
+            self,
+            operation_definition,
+            operation_definition_namespace,
+            false,
+            context
+        );
+        complete_subentity_field!(implementation, self, operation_definition, operation_definition_namespace, context);
         Ok(())
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<OperationAssignment<AnnotatedT>> for OperationDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<OperationAssignment<AnnotatedT>> for OperationDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> OperationAssignment<AnnotatedT> {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> OperationAssignment<AnnotatedT> {
         OperationAssignment {
             implementation: self.implementation.clone(),
-            inputs: self.inputs.convert_into_scope(scope),
-            outputs: self.outputs.convert_into_scope(scope),
-            annotations: clone_struct_annotations(&self.annotations, &["implementation", "inputs", "outputs"]),
+            inputs: self.inputs.to_namespace(namespace),
+            outputs: self.outputs.to_namespace(namespace),
+            annotations: self.annotations.clone_fields(&["implementation", "inputs", "outputs"]),
             ..Default::default()
         }
     }

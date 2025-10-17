@@ -1,55 +1,111 @@
 #!/bin/bash
 set -e
 
+#
+# Environment variables:
+#
+# NATIVE = release | dev
+# Profile for native code: puccini-tosca, puccini-csar
+#
+# LTO = true/fat | thin | false | off
+# Whether to enable LTO (only when NATIVE=release)
+#
+# WASM = release | dev
+# Profile for Wasm code: puccini_plugin_tosca_2_0_functions
+#
+# WASM_PRECOMPILE = true | false
+# Whether to precompile Wasm code to native (.wasm to .cwasm)
+#
+# WASM_DEBUG_INFO = true | false
+# Whether to include debug information in Wasm
+# This affects *both* .wasm and .cwasm building
+# *as well* as how the Wasm runtime defaults in native code
+# Note that this *does* work when WASM=release even though the debug info is empty
+#
+# BINDEPS = true | false
+# Experimental support for artifact dependencies:
+# https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
+# Currently only supported on NATIVE=dev
+
+# sudo dnf install clang
+# cargo install wild-linker
+
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
 cd "$ROOT"
 
-# sudo dnf install clang
-# cargo install wild-linker
-
+WASM_PRECOMPILE=${WASM_PRECOMPILE:-true}
 BINDEPS=${BINDEPS:-false}
 
 if [ "$1" == -r ]; then
     NATIVE=${NATIVE:-release}
+    LTO=${LTO:-true}
     WASM=${WASM:-release}
-	WASM_PRECOMPILE=${WASM_PRECOMPILE:-true}
 	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-false}
 else
     NATIVE=${NATIVE:-dev}
+    LTO=${LTO:-off}
     WASM=${WASM:-dev}
-	WASM_PRECOMPILE=${WASM_PRECOMPILE:-false}
 	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-true}
 fi
 
-# We won't need this with bindeps
 if [ "$BINDEPS" == false ]; then
+    # bindeps will handle this in build.rs
     WASM=$WASM \
     "$HERE/build-wasm"
 fi
 
-if [ "$WASM_PRECOMPILE" == true ]; then
-    NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-precompiled"
-   	if [ "$WASM_DEBUG_INFO" == true ]; then
-  		m "building ($NATIVE + cwasm with debug info)..." "$CYAN"
-        NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug-info"
-   	else
-  		m "building ($NATIVE + cwasm)..." "$CYAN"
-    fi
+# See build.rs for usage of WASM_PROFILE
+if [ "$WASM" == release ]; then
+    export WASM_PROFILE=release
 else
-    m "building ($NATIVE + wasm)..." "$CYAN"
+    export WASM_PROFILE=debug
+fi
+
+m "building native ($NATIVE)..." "$CYAN"
+
+if [ "$WASM_DEBUG_INFO" == true ]; then
+    m "  (enabling wasm debug info)" "$CYAN"
+    NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug-info --features=floria/wasm-debug"
+fi
+
+if [ "$WASM_PRECOMPILE" == true ]; then
+    m "  (precompiling wasm)" "$CYAN"
+    NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-precompiled"
 fi
 
 if [ "$NATIVE" == release ]; then
-	cargo install --path="$ROOT/cli" $NATIVE_FEATURES
+    m "  (LTO = $LTO)" "$CYAN"
+
+    CARGO_PROFILE_RELEASE_LTO=$LTO \
+	cargo install \
+	    --path="$ROOT/cli" \
+		$NATIVE_FEATURES
 else
+    RUSTFLAGS='-Z threads=8'
+
     if [ "$BINDEPS" == true ]; then
-        # wild can't link wasm (it's an artifact dependency)
-        RUSTFLAGS='-Z threads=8' \
-        cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=bindeps,floria/wasm_debug $NATIVE_FEATURES
+        NATIVE_FEATURES="$NATIVE_FEATURES --features=bindeps"
+        # Note that we can't use wild bindeps
+        # because it will also try to use wild to build the Wasm dependency
+        RUSTFLAGS="$RUSTFLAGS -Z bindeps"
     else
-        RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
-        cargo +nightly -Z bindeps install --path="$ROOT/cli" --debug --features=floria/wasm_debug $NATIVE_FEATURES
+        if command -v wild > /dev/null 2>&1; then
+            LINKER=wild
+        elif command -v mold > /dev/null 2>&1; then
+            LINKER=mold
+        fi
+
+        if [ -n "$LINKER" ]; then
+            m "  (linker = $LINKER)" "$CYAN"
+            RUSTFLAGS="$RUSTFLAGS --codegen linker=clang --codegen link-arg=--ld-path=$LINKER"
+        fi
     fi
+
+    RUSTFLAGS=$RUSTFLAGS \
+    cargo +nightly install \
+        --path="$ROOT/cli" \
+        --debug \
+        $NATIVE_FEATURES
 fi

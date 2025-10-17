@@ -1,5 +1,4 @@
 mod catalog;
-mod compile;
 mod complete;
 mod depict;
 mod dialects;

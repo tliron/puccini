@@ -2,10 +2,8 @@ use super::expression::*;
 
 use {
     compris::annotate::*,
-    kutil::{
-        cli::depict::{utils::*, *},
-        std::iter::*,
-    },
+    depiction::{utils::*, *},
+    kutil::std::iter::*,
     std::{cmp::*, fmt, hash::*, io},
 };
 

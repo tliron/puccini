@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -19,6 +19,8 @@ pub struct OverrideProhibitedError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(OverrideProhibitedError);
+
 impl<AnnotatedT> OverrideProhibitedError<AnnotatedT>
 where
     AnnotatedT: Default,
@@ -27,18 +29,18 @@ where
     pub fn new(name: String) -> Self {
         Self { name, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> OverrideProhibitedError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<OverrideProhibitedError<NewAnnotatedT>>
+    for OverrideProhibitedError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> OverrideProhibitedError<NewAnnotatedT> {
         OverrideProhibitedError::new(self.name).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(OverrideProhibitedError);
 
 impl<AnnotatedT> Depict for OverrideProhibitedError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

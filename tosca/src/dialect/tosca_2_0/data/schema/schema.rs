@@ -1,5 +1,6 @@
 use super::{
-    super::{super::super::super::grammar::*, data_kind::*, expression::*},
+    super::{data_kind::*, expression::*},
+    key::*,
     list::*,
     map::*,
     primitive::*,
@@ -9,11 +10,7 @@ use super::{
     value::*,
 };
 
-use {
-    compris::annotate::*,
-    kutil::{cli::depict::*, std::collections::*},
-    std::collections::*,
-};
+use {compris::annotate::*, depiction::*, kutil::std::collections::*, std::collections::*};
 
 //
 // Schema
@@ -30,8 +27,8 @@ pub struct Schema<AnnotatedT> {
     pub value_schemas: BTreeMap<SchemaReference, ValueSchema<AnnotatedT>>,
 
     /// Data type references.
-    #[depict(iter(kv), key_style(name), style(number))]
-    pub data_type_references: FastHashMap<FullName, SchemaReference>,
+    #[depict(iter(kv), key_as(depict), style(number))]
+    pub data_type_references: FastHashMap<SchemaKey, SchemaReference>,
 }
 
 impl<AnnotatedT> Schema<AnnotatedT> {

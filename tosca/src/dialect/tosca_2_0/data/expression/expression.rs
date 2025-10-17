@@ -29,23 +29,23 @@ impl<AnnotatedT> Expression<AnnotatedT> {
     /// True if a call.
     pub fn is_call(&self, function: &str) -> bool {
         match self {
-            Expression::Call(call) => call.function.inner == function,
+            Expression::Call(call) => call.function.name.0 == function,
             _ => false,
         }
     }
 
-    /// True if a call in dialect's plugin.
+    /// True if a native call.
     pub fn is_native_call(&self, function: &str) -> bool {
         match self {
-            Expression::Call(call) => call.is_native() && (call.function.inner == function),
+            Expression::Call(call) => call.is_native() && (call.function.name.0 == function),
             _ => false,
         }
     }
 
-    /// True if a non-internal call in dialect's plugin.
+    /// True if a non-internal native call.
     pub fn is_standard_call(&self) -> bool {
         match self {
-            Expression::Call(call) => call.is_native() && !call.function.as_str().starts_with('_'),
+            Expression::Call(call) => call.is_native() && !call.function.name.0.starts_with('_'),
             _ => true,
         }
     }
@@ -65,7 +65,8 @@ impl<AnnotatedT> Expression<AnnotatedT> {
     where
         AnnotatedT: Annotated + Clone + Default,
     {
-        Call::new_native(Text::from(function).with_annotations_from(&self), vec![self], call_kind).into()
+        let annotations = self.annotations().cloned();
+        Call::new_native(function.into(), vec![self], call_kind).with_annotations_option(annotations).into()
     }
 
     /// Embed after another expression in a call.
@@ -73,7 +74,8 @@ impl<AnnotatedT> Expression<AnnotatedT> {
     where
         AnnotatedT: Annotated + Clone + Default,
     {
-        Call::new_native(Text::from(function).with_annotations_from(&other), vec![other, self], call_kind).into()
+        let annotations = other.annotations().cloned();
+        Call::new_native(function, vec![other, self], call_kind).with_annotations_option(annotations).into()
     }
 
     /// Make the expression lazy and embed in `$_assert` if necessary.
@@ -82,5 +84,25 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         AnnotatedT: Annotated + Clone + Default,
     {
         if self.is_standard_call() { self.embed("_assert", floria::CallKind::Lazy) } else { self.into_lazy() }
+    }
+}
+
+impl<AnnotatedT> RemoveAnnotations<Expression<WithoutAnnotations>> for &Expression<AnnotatedT>
+where
+    AnnotatedT: Clone,
+{
+    fn remove_annotations(self) -> Expression<WithoutAnnotations> {
+        match self {
+            Expression::Simple(simple) => Expression::Simple(simple.clone().remove_annotations()),
+            Expression::List(list) => {
+                Expression::List(list.iter().map(|item| item.clone().remove_annotations()).collect())
+            }
+            Expression::Map(map) => Expression::Map(
+                map.iter()
+                    .map(|(key, value)| (key.clone().remove_annotations(), value.clone().remove_annotations()))
+                    .collect(),
+            ),
+            Expression::Call(call) => Expression::Call(call.remove_annotations()),
+        }
     }
 }

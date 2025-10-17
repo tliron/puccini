@@ -1,0 +1,40 @@
+tosca_definitions_version: tosca_2_0
+
+description: Kubernetes microservices
+
+imports:
+
+- url: krm.yaml
+  namespace: krm
+
+node_types:
+
+  MicroService:
+    derived_from: krm:Kubernetes
+    properties:
+      label:
+        type: string
+        #default: { $get_node_template_name: [] }
+
+  SimpleMicroService:
+    derived_from: MicroService
+    properties:
+      service-account:
+        type: string
+    capabilities:
+      deployment:
+        type: krm:Deployment
+      service:
+        type: krm:Service
+
+  ComplexMicroService:
+    derived_from: MicroService
+    capabilities:
+      deployment1:
+        type: krm:Deployment
+      deployment2:
+        type: krm:Deployment
+      service1:
+        type: krm:Service
+      service2:
+        type: krm:Service

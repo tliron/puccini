@@ -8,7 +8,7 @@ use super::{
     r#struct::*,
 };
 
-use {compris::annotate::*, kutil::cli::depict::*};
+use {compris::annotate::*, depiction::*};
 
 //
 // ValueSchema

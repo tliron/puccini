@@ -5,7 +5,10 @@ use super::{
     value::*,
 };
 
-use {floria_plugin_sdk::data::*, std::collections::*};
+use {
+    floria_plugin_sdk::{data::*, *},
+    std::collections::*,
+};
 
 //
 // MapSchema
@@ -48,7 +51,12 @@ impl Coerce for MapSchema {
         self.validation.as_ref()
     }
 
-    fn coerce(&self, expression: Expression, schema: &Schema, call_site: &CallSite) -> Result<Expression, String> {
+    fn coerce(
+        &self,
+        expression: Expression,
+        schema: &Schema,
+        call_site: &CallSite,
+    ) -> Result<Expression, DispatchError> {
         let expression = expression.must_dispatch_if_call(call_site)?;
 
         let map = expression.cast_map("map")?;
@@ -91,7 +99,7 @@ impl Coerce for MapSchema {
 }
 
 impl TryFrom<Expression> for MapSchema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         let map = expression.cast_map("map schema")?;
@@ -108,7 +116,7 @@ impl TryFrom<Expression> for MapSchema {
 
 // Utils
 
-fn get_unsigned_integer_option(map: &Map, name: &'static str) -> Result<Option<u64>, String> {
+fn get_unsigned_integer_option(map: &Map, name: &'static str) -> Result<Option<u64>, DispatchError> {
     Ok(match map.into_get(name) {
         Some(value) => Some(value.cast_u64(&format!("map schema |meta|{}| key", name))?),
         None => None,

@@ -1,5 +1,5 @@
 use super::{
-    super::{catalog::*, entity::*, errors::*, source::*},
+    super::{compile::*, entity::*, errors::*, source::*},
     id::*,
 };
 
@@ -28,7 +28,7 @@ where
         &self,
         source: &mut Source,
         variant: Variant<WithAnnotations>,
-        errors: ToscaErrorRecipientRef,
+        errors: ToscaErrorReceiverRef,
     ) -> Result<(), ToscaError<WithAnnotations>>;
 
     /// Initialize a source without annotations.
@@ -36,7 +36,7 @@ where
         &self,
         source: &mut Source,
         variant: Variant<WithoutAnnotations>,
-        errors: ToscaErrorRecipientRef,
+        errors: ToscaErrorReceiverRef,
     ) -> Result<(), ToscaError<WithoutAnnotations>>;
 
     /// Compile a source representing a TOSCA service template to a Floria
@@ -45,10 +45,6 @@ where
     /// Though only one Floria ID is returned, the implementation may create other Floria entities.
     fn compile_source(
         &self,
-        directory: &floria::Directory,
-        store: floria::StoreRef,
-        source_id: &SourceID,
-        catalog: &Catalog,
-        errors: ToscaErrorRecipientRef,
+        context: &mut CompilationContext<'_>,
     ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>>;
 }

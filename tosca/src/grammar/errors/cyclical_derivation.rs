@@ -1,6 +1,6 @@
 use {
     compris::annotate::*,
-    kutil::cli::depict::*,
+    depiction::*,
     std::{fmt, io},
     thiserror::*,
 };
@@ -19,6 +19,8 @@ pub struct CyclicalDerivationError<AnnotatedT> {
     pub annotated: AnnotatedT,
 }
 
+impl_annotated!(CyclicalDerivationError);
+
 impl<AnnotatedT> CyclicalDerivationError<AnnotatedT> {
     /// Constructor.
     pub fn new(parent_name: String) -> Self
@@ -27,18 +29,18 @@ impl<AnnotatedT> CyclicalDerivationError<AnnotatedT> {
     {
         Self { parent_name, annotated: Default::default() }
     }
+}
 
-    /// Into different [Annotated] implementation.
-    pub fn into_annotated<NewAnnotationsT>(self) -> CyclicalDerivationError<NewAnnotationsT>
-    where
-        AnnotatedT: Annotated,
-        NewAnnotationsT: Annotated + Default,
-    {
+impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<CyclicalDerivationError<NewAnnotatedT>>
+    for CyclicalDerivationError<AnnotatedT>
+where
+    AnnotatedT: Annotated,
+    NewAnnotatedT: Annotated + Default,
+{
+    fn into_annotated(self) -> CyclicalDerivationError<NewAnnotatedT> {
         CyclicalDerivationError::new(self.parent_name).with_annotations_from(&self.annotated)
     }
 }
-
-impl_dyn_annotated_error!(CyclicalDerivationError);
 
 impl<AnnotatedT> Depict for CyclicalDerivationError<AnnotatedT> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>

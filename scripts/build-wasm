@@ -1,15 +1,20 @@
 #!/bin/bash
 set -e
 
+#
+# Environment variables:
+#
+# WASM = release | dev
+# Build profile for Wasm code
+#
+
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
 cd "$ROOT"
 
-# # curl https://wasmtime.dev/install.sh -sSf | bash
-
-PLUGIN=puccini_plugin_tosca_2_0_functions
-WASM_ASSETS=$ROOT/assets/wasm
+PACKAGE=puccini-plugin-tosca-2_0-functions
+TARGET=wasm32-wasip2
 
 if [ "$1" == -r ]; then
 	WASM=${WASM:-release}
@@ -20,11 +25,16 @@ fi
 m "building wasm ($WASM)..." "$CYAN"
 
 if [ "$WASM" == release ]; then
-	cargo build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2 --release
+    # LTO and stripping debuginfo create smaller Wasm files
+    CARGO_PROFILE_RELEASE_LTO=true \
+    CARGO_PROFILE_RELEASE_STRIP=debuginfo \
+   	cargo build \
+		--package="$PACKAGE" \
+		--target="$TARGET" \
+		--release
 else
-    # Note: wild can't link wasm
-    # RUSTFLAGS='-Z threads=8 --codegen linker=clang --codegen link-arg=--ld-path=wild' \
-
-	RUSTFLAGS='-Z threads=8' \
-	cargo +nightly -Z bindeps build --package=puccini-plugin-tosca-2_0-functions --target=wasm32-wasip2
+    RUSTFLAGS='-Z threads=8' \
+	cargo +nightly build \
+		--package="$PACKAGE" \
+		--target="$TARGET"
 fi

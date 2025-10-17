@@ -5,7 +5,7 @@ use super::{
 };
 
 use {
-    floria_plugin_sdk::{data::*, utils::*},
+    floria_plugin_sdk::{data::*, utils::*, *},
     std::collections::*,
 };
 
@@ -53,7 +53,7 @@ impl ScalarSchema {
     }
 
     /// Unit factor.
-    pub fn unit_factor(&self, unit: &str) -> Result<Number, String> {
+    pub fn unit_factor(&self, unit: &str) -> Result<Number, DispatchError> {
         find_unit_factor(unit, &self.units, &self.prefixes)
     }
 
@@ -72,7 +72,12 @@ impl Coerce for ScalarSchema {
         self.validation.as_ref()
     }
 
-    fn coerce(&self, expression: Expression, _schema: &Schema, call_site: &CallSite) -> Result<Expression, String> {
+    fn coerce(
+        &self,
+        expression: Expression,
+        _schema: &Schema,
+        call_site: &CallSite,
+    ) -> Result<Expression, DispatchError> {
         let expression = expression.must_dispatch_if_call(call_site)?;
         let expression = Scalar::new_from_expression(expression, self)?.into();
         self.validate(&expression, call_site)?;
@@ -81,7 +86,7 @@ impl Coerce for ScalarSchema {
 }
 
 impl TryFrom<Expression> for ScalarSchema {
-    type Error = String;
+    type Error = DispatchError;
 
     fn try_from(expression: Expression) -> Result<Self, Self::Error> {
         let map = expression.cast_map("scalar schema")?;
@@ -124,14 +129,14 @@ impl Into<Expression> for ScalarSchema {
     }
 }
 
-fn get_string_option(map: &Map, name: &'static str) -> Result<Option<String>, String> {
+fn get_string_option(map: &Map, name: &'static str) -> Result<Option<String>, DispatchError> {
     Ok(match map.into_get(name) {
         Some(value) => Some(value.cast_string_clone(&format!("scalar schema |meta|{}| key", name))?),
         None => None,
     })
 }
 
-fn get_map(map: &Map, name: &'static str) -> Result<BTreeMap<String, Number>, String> {
+fn get_map(map: &Map, name: &'static str) -> Result<BTreeMap<String, Number>, DispatchError> {
     match map.into_get(name) {
         Some(value) => {
             let map = value.cast_map(&format!("scalar schema |meta|{}| key", name))?;
@@ -158,7 +163,7 @@ fn find_unit_factor(
     unit: &str,
     units: &BTreeMap<String, Number>,
     prefixes: &BTreeMap<String, Number>,
-) -> Result<Number, String> {
+) -> Result<Number, DispatchError> {
     if prefixes.is_empty() {
         for (unit_, unit_factor) in units {
             if unit == unit_ {
@@ -184,7 +189,7 @@ fn find_canonical_unit_and_factor(
     canonical_unit: Option<String>,
     units: &BTreeMap<String, Number>,
     prefixes: &BTreeMap<String, Number>,
-) -> Result<(String, Number), String> {
+) -> Result<(String, Number), DispatchError> {
     match canonical_unit {
         Some(canonical_unit) => {
             let factor = find_unit_factor(&canonical_unit, units, prefixes)?;

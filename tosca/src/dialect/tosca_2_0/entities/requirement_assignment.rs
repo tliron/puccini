@@ -2,7 +2,8 @@ use super::{super::super::super::grammar::*, relationship_assignment::*, require
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::{cli::depict::*, std::immutable::*},
+    depiction::*,
+    kutil::std::immutable::*,
     smart_default::*,
 };
 
@@ -10,9 +11,6 @@ use {
 // RequirementAssignment
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A requirement assignment is used by node template authors to provide assignments for the
 /// corresponding requirement definition in the node template's node type. This includes specifying
 /// target nodes, either by providing symbolic names of target nodes or by providing selection
@@ -22,6 +20,9 @@ use {
 /// values to properties and attributes defined in the relationship definition that is part of the
 /// requirement definition, and provide values for the input parameters defined by the relationship
 /// definition's interfaces.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Depict, Resolve, SmartDefault)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -120,31 +121,26 @@ where
     fn complete(
         &mut self,
         name: Option<ByteString>,
-        requirement_definition: Option<(&RequirementDefinition<AnnotatedT>, &Scope)>,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
-        errors: ToscaErrorRecipientRef,
+        requirement_definition: Option<&RequirementDefinition<AnnotatedT>>,
+        requirement_definition_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         // TODO: validate node (template) adheres to parent's node (type)
 
         // TODO: validate capability adheres to parent's capability type
 
-        if let Some((requirement_definition, scope)) = requirement_definition {
-            if_none_else!(
-                relationship,
-                self,
-                requirement_definition,
-                Some(requirement_definition.relationship.clone().convert_into_scope(scope))
-            );
+        if let Some(requirement_definition) = requirement_definition {
+            complete_none_field_to!(relationship, self, requirement_definition, || Some(
+                requirement_definition.relationship.to_namespace(requirement_definition_namespace)
+            ));
         }
 
         if let Some(relationship) = &mut self.relationship {
             relationship.complete(
                 name,
-                requirement_definition.map(|(parent, scope)| (&parent.relationship, scope)),
-                catalog,
-                source_id,
-                errors,
+                requirement_definition.map(|parent| &parent.relationship),
+                requirement_definition_namespace,
+                context,
             )?;
         }
 
@@ -152,24 +148,23 @@ where
     }
 }
 
-impl<AnnotatedT> ConvertIntoScope<RequirementAssignment<AnnotatedT>> for RequirementDefinition<AnnotatedT>
+impl<AnnotatedT> ToNamespace<RequirementAssignment<AnnotatedT>> for RequirementDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn convert_into_scope(&self, scope: &Scope) -> RequirementAssignment<AnnotatedT> {
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> RequirementAssignment<AnnotatedT> {
         RequirementAssignment {
             node: self.node.clone().map(|full_name| IndexedFullName::new(full_name, None)),
             capability: Some(self.capability.clone()),
-            relationship: Some(self.relationship.convert_into_scope(scope)),
+            relationship: Some(self.relationship.to_namespace(namespace)),
             node_filter: self.node_filter.clone(),
-            annotations: clone_struct_annotations(
-                &self.annotations,
-                &["node", "capability", "relationship", "node_filter"],
-            ),
+            annotations: self.annotations.clone_fields(&["node", "capability", "relationship", "node_filter"]),
             ..Default::default()
         }
     }
 }
+
+// TODO: unused
 
 //
 // RequirementAssignmentCapability
@@ -184,6 +179,10 @@ pub enum RequirementAssignmentCapability {
     Name(Name),
 }
 
+//
+// RequirementAssignmentNode
+//
+
 /// Requirement assignment node.
 pub enum RequirementAssignmentNode {
     /// Node type name.
@@ -197,5 +196,5 @@ pub enum RequirementAssignmentNode {
 // RequirementAssignments
 //
 
-/// [TaggedValues] of [RequirementAssignment].
-pub type RequirementAssignments<AnnotatedT> = TaggedValues<ByteString, RequirementAssignment<AnnotatedT>>;
+/// [Taxonomy] of [RequirementAssignment].
+pub type RequirementAssignments<AnnotatedT> = Taxonomy<ByteString, RequirementAssignment<AnnotatedT>>;

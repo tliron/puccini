@@ -6,10 +6,8 @@ use super::{
 
 use {
     compris::{annotate::*, resolve::*},
-    kutil::{
-        cli::depict::*,
-        std::{error::*, immutable::*},
-    },
+    depiction::*,
+    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -17,12 +15,12 @@ use {
 // CapabilityType
 //
 
-/// (Documentation copied from
-/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
-///
 /// A capability type is a reusable entity that describes the properties and attributes of a
 /// capability that a node type can declare to expose. Requirements that are declared as part of
 /// one node can be fulfilled by the capabilities declared by another node.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
 #[derive(Clone, Debug, Default, Depict, Resolve)]
 #[depict(tag = tag::source_and_span)]
 #[resolve(annotated_parameter=AnnotatedT)]
@@ -79,7 +77,7 @@ where
     pub(crate) annotations: StructAnnotations,
 
     #[depict(skip)]
-    completion: Completion,
+    completion_state: CompletionState,
 }
 
 impl_type_entity!(CapabilityType);
@@ -88,55 +86,27 @@ impl<AnnotatedT> Entity for CapabilityType<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn completion(&self) -> Completion {
-        self.completion
+    fn completion_state(&self) -> CompletionState {
+        self.completion_state
     }
 
     fn complete(
         &mut self,
-        catalog: &mut Catalog,
-        source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: ToscaErrorRecipientRef,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        assert!(self.completion == Completion::Incomplete);
-        self.completion = Completion::Cannot;
+        assert!(self.completion_state == CompletionState::Incomplete);
+        self.completion_state = CompletionState::Cannot;
 
-        let errors = &mut errors.to_error_recipient();
+        let (parent, parent_namespace) =
+            entity_from_name_field_checked!(CAPABILITY_TYPE, self, derived_from, derivation_path, context);
 
-        let parent =
-            completed_parent!(CAPABILITY_TYPE, self, derived_from, catalog, source_id, derivation_path, errors);
+        complete_subentity_map_field!(property, properties, self, parent, parent_namespace, true, context);
+        complete_subentity_map_field!(attribute, attributes, self, parent, parent_namespace, true, context);
+        complete_type_list_field!(valid_source_node_types, self, parent, context);
+        complete_type_list_field!(valid_relationship_types, self, parent, context);
 
-        complete_map_field!("property", properties, self, parent, catalog, source_id, errors);
-        complete_map_field!("attribute", attributes, self, parent, catalog, source_id, errors);
-
-        if let Some((parent, scope)) = parent {
-            errors_with_fallback_annotations_from_field!(
-                errors, self, "valid_source_node_types",
-                complete_types(
-                    &mut self.valid_source_node_types,
-                    &parent.valid_source_node_types,
-                    catalog,
-                    source_id,
-                    scope,
-                    errors,
-                )?;
-            );
-
-            errors_with_fallback_annotations_from_field!(
-                errors, self, "valid_relationship_types",
-                complete_types(
-                    &mut self.valid_relationship_types,
-                    &parent.valid_relationship_types,
-                    catalog,
-                    source_id,
-                    scope,
-                    errors,
-                )?;
-            );
-        }
-
-        self.completion = Completion::Complete;
+        self.completion_state = CompletionState::Complete;
         Ok(())
     }
 }
