@@ -87,7 +87,7 @@ where
         self.completion_state = CompletionState::Cannot;
 
         let (group_type, group_type_namespace) =
-            entity_from_full_name_field!(GROUP_TYPE, GroupType, self, type_name, context);
+            completed_entity_from_full_name_field!(GROUP_TYPE, GroupType, self, type_name, context);
 
         complete_subentity_map_field!(property, properties, self, group_type, group_type_namespace, true, context);
         complete_subentity_map_field!(attribute, attributes, self, group_type, group_type_namespace, true, context);

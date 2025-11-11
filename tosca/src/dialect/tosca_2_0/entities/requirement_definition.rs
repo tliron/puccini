@@ -77,7 +77,7 @@ where
 {
     fn complete(
         &mut self,
-        name: Option<ByteString>,
+        name: Option<&Name>,
         requirement_definition: Option<&Self>,
         requirement_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -90,10 +90,10 @@ where
         )?;
 
         if let Some(requirement_definition) = requirement_definition {
-            complete_none_field_to!(node, self, requirement_definition, || requirement_definition
+            complete_optional_field_to!(node, self, requirement_definition, || requirement_definition
                 .node
                 .to_namespace(requirement_definition_namespace));
-            complete_none_field!(node_filter, self, requirement_definition);
+            complete_optional_field!(node_filter, self, requirement_definition);
             validate_type_name(&self.capability, &requirement_definition.capability, context)?;
         }
 
@@ -126,4 +126,4 @@ where
 //
 
 /// [Taxonomy] of [RequirementDefinition].
-pub type RequirementDefinitions<AnnotatedT> = Taxonomy<ByteString, RequirementDefinition<AnnotatedT>>;
+pub type RequirementDefinitions<AnnotatedT> = Taxonomy<Name, RequirementDefinition<AnnotatedT>>;

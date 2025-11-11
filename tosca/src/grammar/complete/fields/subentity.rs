@@ -4,21 +4,21 @@ macro_rules! complete_subentity_field {
     (
         $field:tt,
         $self:expr,
-        $entity:expr,
-        $entity_namespace:expr,
+        $parent:expr,
+        $parent_namespace:expr,
         $context:expr $(,)?
     ) => {
-        match &$entity {
-            Some(entity) => match $self.$field.take() {
+        match &$parent {
+            Some(parent) => match $self.$field.take() {
                 Some(mut subentity) => {
-                    subentity.complete(None, entity.$field.as_ref(), $entity_namespace, $context)?;
+                    subentity.complete(None, parent.$field.as_ref(), $parent_namespace, $context)?;
                     $self.$field = Some(subentity);
                 }
 
                 None => {
-                    if let Some(subentity) = &entity.$field {
-                        let mut subentity = subentity.to_namespace($entity_namespace);
-                        subentity.complete(None, None, None, $context)?;
+                    if let Some(parent_subentity) = &parent.$field {
+                        let mut subentity = parent_subentity.to_namespace($parent_namespace);
+                        subentity.complete(None, Some(parent_subentity), $parent_namespace, $context)?;
                         $self.$field = Some(subentity);
                     }
                 }
@@ -39,27 +39,22 @@ macro_rules! complete_boxed_subentity_field {
     (
         $field:tt,
         $self:expr,
-        $entity:expr,
-        $entity_namespace:expr,
+        $parent:expr,
+        $parent_namespace:expr,
         $context:expr $(,)?
     ) => {
-        match &$entity {
-            Some(entity) => match $self.$field.take() {
+        match &$parent {
+            Some(parent) => match $self.$field.take() {
                 Some(mut subentity) => {
-                    subentity.complete(
-                        None,
-                        entity.$field.as_ref().map(|subentity| subentity.as_ref()),
-                        $entity_namespace,
-                        $context,
-                    )?;
-
+                    let parent_subentity = parent.$field.as_ref().map(|subentity| subentity.as_ref());
+                    subentity.complete(None, parent_subentity, $parent_namespace, $context)?;
                     $self.$field = Some(subentity);
                 }
 
                 None => {
-                    if let Some(subentity) = &entity.$field {
-                        let mut subentity = subentity.to_namespace($entity_namespace);
-                        subentity.complete(None, None, None, $context)?;
+                    if let Some(parent_subentity) = &parent.$field {
+                        let mut subentity = parent_subentity.to_namespace($parent_namespace);
+                        subentity.complete(None, Some(parent_subentity), $parent_namespace, $context)?;
                         $self.$field = Some(subentity.into());
                     }
                 }

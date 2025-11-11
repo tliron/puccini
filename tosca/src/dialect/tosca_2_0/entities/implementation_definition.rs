@@ -49,21 +49,11 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_plugin(plugin: ByteString) -> Self {
-        Self { primary: Some(ImplementationDefinitionArtifact::new_plugin(plugin)), ..Default::default() }
-    }
-
-    /// Plugin file and prefix.
-    pub fn plugin(&self) -> Result<Option<(ByteString, Option<ByteString>)>, ToscaError<AnnotatedT>> {
-        Ok(match &self.primary {
-            Some(artifact) => match artifact {
-                ImplementationDefinitionArtifact::Definition(artifact_definition) => {
-                    Some(artifact_definition.plugin()?)
-                }
-                ImplementationDefinitionArtifact::Name(_) => None,
-            },
-            None => None,
-        })
+    pub fn new_internal(namespace: Namespace, artifact_file: ByteString) -> Self {
+        Self {
+            primary: Some(ImplementationDefinitionArtifact::new_internal(namespace, artifact_file)),
+            ..Default::default()
+        }
     }
 }
 
@@ -73,7 +63,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -123,8 +113,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_plugin(plugin: ByteString) -> Self {
-        Self::Definition(ArtifactDefinition::new_plugin(plugin))
+    pub fn new_internal(namespace: Namespace, artifact_file: ByteString) -> Self {
+        Self::Definition(ArtifactDefinition::new_internal(namespace, artifact_file))
     }
 }
 
@@ -134,7 +124,7 @@ where
 {
     fn complete(
         &mut self,
-        name: Option<ByteString>,
+        name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,

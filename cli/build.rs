@@ -7,7 +7,7 @@ use std::{
     path::*,
 };
 
-const WASM: &str = "puccini_plugin_tosca_2_0_functions";
+const WASM: &str = "puccini_plugin_tosca_2_0";
 
 fn main() {
     #[cfg(not(feature = "_blanket"))]
@@ -20,7 +20,7 @@ fn build(name: &str) -> Result<(), String> {
     println!("cargo::rerun-if-env-changed=WASM_PROFILE");
 
     let source_file = source_file(name)?;
-    println!("cargo::warning=Wasm from {}", source_file.display());
+    println!("cargo::warning=Bundling Floria plugin: {}", source_file.display());
     println!("cargo::rerun-if-changed={}", source_file.display());
 
     let target_file = target_file(name)?;
@@ -29,7 +29,7 @@ fn build(name: &str) -> Result<(), String> {
     precompile_wasm_file(&source_file, &target_file)?;
 
     #[cfg(not(feature = "wasm-precompiled"))]
-    copy_file(&source_file, &target_file)?;
+    use_file(&source_file, &target_file)?;
 
     Ok(())
 }
@@ -45,10 +45,27 @@ fn read_file(path: &Path) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-fn copy_file(source_path: &Path, target_path: &Path) -> Result<(), String> {
-    println!("cargo::warning=Copying Wasm to {}", target_path.display());
+#[cfg(unix)]
+fn use_file(source_path: &Path, target_path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::*;
+
+    println!("cargo::warning=Linking plugin to: {}", target_path.display());
+
+    if let Err(error) = remove_file(&target_path)
+        && (error.kind() != io::ErrorKind::NotFound)
+    {
+        return Err(error.to_string());
+    }
+
+    symlink(&source_path, &target_path)
+        .map_err(|_| format!("cannot link {:?} to {:?}", source_path.display(), target_path.display()))
+}
+
+#[cfg(not(unix))]
+fn use_file(source_path: &Path, target_path: &Path) -> Result<(), String> {
+    println!("cargo::warning=Copying plugin to: {}", target_path.display());
     copy(&source_path, &target_path)
-        .map_err(|_| format!("copy: {:?} -> {:?}", source_path.display(), target_path.display()))?;
+        .map_err(|_| format!("cannot copy {:?} to {:?}", source_path.display(), target_path.display()))?;
     Ok(())
 }
 
@@ -115,7 +132,7 @@ fn dump_environment() {
 
 #[cfg(feature = "wasm-precompiled")]
 fn precompile_wasm_file(source_path: &Path, target_path: &Path) -> Result<(), String> {
-    println!("cargo::warning=Precompiling Wasm to {}", target_path.display());
+    println!("cargo::warning=Precompiling plugin to: {}", target_path.display());
     let wasm = read_file(&source_path)?;
     let cwasm = precompile_wasm(&wasm)?;
     write(&target_path, &cwasm).map_err(|_| format!("write: {}", target_path.display()))
@@ -123,15 +140,12 @@ fn precompile_wasm_file(source_path: &Path, target_path: &Path) -> Result<(), St
 
 #[cfg(feature = "wasm-precompiled")]
 fn precompile_wasm(wasm: &[u8]) -> Result<Vec<u8>, String> {
-    use wasmtime::*;
+    #[cfg(feature = "wasm-debug")]
+    let debug = true;
+    #[cfg(not(feature = "wasm-debug"))]
+    let debug = false;
 
-    #[allow(unused_mut)]
-    let mut config = Config::new();
-
-    #[cfg(feature = "wasm-debug-info")]
-    config.debug_info(true).wasm_backtrace_details(WasmBacktraceDetails::Enable);
-
-    let engine = Engine::new(&config).expect("wasmtime engine");
-    let precompiled = engine.precompile_component(wasm).map_err(|error| format!("wasmtime precompile: {}", error));
-    precompiled
+    let environment =
+        floria::plugins::PluginEnvironment::new(debug).map_err(|error| format!("wasmtime engine: {}", error))?;
+    environment.engine.precompile_component(wasm).map_err(|error| format!("wasmtime precompile: {}", error))
 }

@@ -30,7 +30,9 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the relationship type on which the relationship template is based.
-    #[resolve(required, key = "type")]
+    ///
+    /// Puccini note: *Not* mandatory, as it can be copied via "copy".
+    #[resolve(key = "type")]
     #[depict(option, as(depict))]
     pub type_name: Option<FullName>,
 
@@ -89,26 +91,29 @@ where
         assert!(self.completion_state == CompletionState::Incomplete);
         self.completion_state = CompletionState::Cannot;
 
-        let errors = &mut context.errors.to_error_receiver();
-
         if let Some(copy) =
-            entity_from_optional_name_field!(RELATIONSHIP_TEMPLATE, RelationshipTemplate, self, copy, context)
+            completed_entity_from_optional_name_field!(RELATIONSHIP_TEMPLATE, RelationshipTemplate, self, copy, context)
         {
-            complete_none_field!(type_name, self, copy);
-            complete_none_field!(description, self, copy);
-            complete_empty_field!(metadata, self, copy);
-            complete_empty_field!(properties, self, copy);
-            complete_empty_field!(attributes, self, copy);
-            complete_empty_field!(interfaces, self, copy);
+            complete_optional_field!(type_name, self, copy);
+            complete_optional_field!(description, self, copy);
+            complete_field!(metadata, self, copy);
+            complete_field!(properties, self, copy);
+            complete_field!(attributes, self, copy);
+            complete_field!(interfaces, self, copy);
         }
 
         if self.type_name.is_none() {
-            errors.give(MissingRequiredError::new("relationship type name".into(), Some("type_name".into())))?;
+            context.errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from(self))?;
             return Ok(());
         }
 
-        let (relationship_type, relationship_type_namespace) =
-            entity_from_optional_full_name_field!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, context);
+        let (relationship_type, relationship_type_namespace) = completed_entity_from_optional_full_name_field!(
+            RELATIONSHIP_TYPE,
+            RelationshipType,
+            self,
+            type_name,
+            context
+        );
 
         complete_subentity_map_field!(
             property,

@@ -86,7 +86,7 @@ impl<AnnotatedT> Schema<AnnotatedT> {
         AnnotatedT: Annotated + Clone + Default,
     {
         if !self.is_empty() {
-            Some(Call::new_native("_schema".into(), vec![self.into()], floria::CallKind::Normal).into())
+            Some(Call::new_implicit("schema".into(), true, vec![self.into()], floria::CallKind::Normal).into())
         } else {
             None
         }

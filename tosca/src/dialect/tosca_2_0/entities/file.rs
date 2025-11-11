@@ -45,6 +45,7 @@ where
 
     /// Defines reusable YAML aliases (i.e., YAML alias anchors) for use throughout this TOSCA
     /// file.
+    #[resolve]
     #[depict(option, as(depict))]
     pub dsl_definitions: Option<Variant<AnnotatedT>>,
 

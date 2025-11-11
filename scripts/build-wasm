@@ -13,7 +13,7 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 cd "$ROOT"
 
-PACKAGE=puccini-plugin-tosca-2_0-functions
+PACKAGE=puccini-plugin-tosca-2_0
 TARGET=wasm32-wasip2
 
 if [ "$1" == -r ]; then
@@ -22,7 +22,7 @@ else
 	WASM=${WASM:-dev}
 fi
 
-m "building wasm ($WASM)..." "$CYAN"
+m "building Wasm ($WASM)..." "$CYAN"
 
 if [ "$WASM" == release ]; then
     # LTO and stripping debuginfo create smaller Wasm files

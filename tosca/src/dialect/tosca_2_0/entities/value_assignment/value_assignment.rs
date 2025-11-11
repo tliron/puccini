@@ -1,5 +1,5 @@
 use super::super::{
-    super::{super::super::grammar::*, data::*, dialect::*, schema::*},
+    super::{super::super::grammar::*, data::*, dialect::*},
     data_type::*,
 };
 
@@ -51,51 +51,43 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
+        complete_optional_parent_type_name_field!(type_name, self, parent, parent_namespace, false, context);
+
         let Some(parent) = parent else {
             return Ok(());
         };
 
-        complete_optional_parent_name_field!(type_name, parent_namespace, self, Some(parent), context);
-        complete_none_field!(expression, self, parent);
+        complete_namespaced_field!(expression, self, parent, parent_namespace, context);
 
-        if let Some(type_name) = &self.type_name
-            && let Some(data_type) = context
-                .catalog
-                .completed_entity::<DataType<AnnotatedT>, _, _>(
-                    DATA_TYPE,
-                    type_name,
-                    context.source_id,
-                    &mut context.errors.with_fallback_annotations_from_field(self, "type_name"),
-                )?
-                .cloned()
-        {
+        let (data_type, _data_type_namespace) =
+            completed_entity_from_optional_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
+
+        if let Some(data_type) = data_type {
             if let Some(parent_data_type) = &parent.type_name {
                 validate_type(&data_type, parent_data_type, context)?;
             }
 
-            if let Some(validation) = &parent.validation {
-                // TODO: what does inheritance even mean here?
-                self.validation = Some(validation.clone());
-            } else if let Some(validation) = unwrap_or_give!(
-                data_type.schema_validation(
-                    &self.to_schema_key(parent.type_name.clone()),
-                    parent,
-                    context.source_id,
-                    context.catalog
-                ),
-                context.errors,
-                None
-            ) {
+            // if let Some(validation) = &parent.validation {
+            //     self.validation.join_apply(validation.to_namespace(parent_namespace));
+            //     // TODO: what does inheritance even mean here?
+            //     // if self.validation.is_none() {
+            //     //     todo!("can we even override this?");
+            //     // }
+            // } else
+
+            if let Some(validation) =
+                unwrap_or_give!(data_type.schema_validation(parent, parent_namespace, context), context.errors, None)
+            {
                 self.validation.join_apply(validation);
             }
         }
 
-        complete_none_field!(description, self, parent);
+        complete_optional_field!(description, self, parent);
 
         Ok(())
     }
@@ -108,7 +100,8 @@ where
 {
     fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
-            expression: self.expression.clone(),
+            // expression: self.expression.clone(),
+            expression: None,
             validation: None,
             type_name: self.type_name.to_namespace(namespace),
             metadata: self.metadata.clone(),
@@ -183,4 +176,46 @@ where
 //
 
 /// Map of [ValueAssignment].
-pub type ValueAssignments<AnnotatedT> = BTreeMap<ByteString, ValueAssignment<AnnotatedT>>;
+pub type ValueAssignments<AnnotatedT> = BTreeMap<Name, ValueAssignment<AnnotatedT>>;
+
+//
+// GetValueAssignment
+//
+
+/// Get value assignment.
+pub trait GetValueAssignment {
+    /// Get value assignment as boolean.
+    fn get_boolean_value_assignment(&self, name: &'static str) -> Option<bool>;
+
+    /// Get value assignment as text.
+    fn get_text_value_assignment(&self, name: &'static str) -> Option<ByteString>;
+}
+
+impl<AnnotatedT> GetValueAssignment for ValueAssignments<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    fn get_boolean_value_assignment(&self, name: &'static str) -> Option<bool> {
+        if let Some(value_assignment) = self.get(&Name::new_static_unchecked(name))
+            && let Some(expression) = &value_assignment.expression
+            && let Expression::Simple(simple) = expression
+            && let Variant::Boolean(boolean) = simple
+        {
+            Some(boolean.into())
+        } else {
+            None
+        }
+    }
+
+    fn get_text_value_assignment(&self, name: &'static str) -> Option<ByteString> {
+        if let Some(value_assignment) = self.get(&Name::new_static_unchecked(name))
+            && let Some(expression) = &value_assignment.expression
+            && let Expression::Simple(simple) = expression
+            && let Variant::Text(text) = simple
+        {
+            Some(text.inner.clone())
+        } else {
+            None
+        }
+    }
+}

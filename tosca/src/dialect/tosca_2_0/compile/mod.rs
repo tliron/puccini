@@ -1,9 +1,11 @@
 mod artifact_assignment;
 mod call;
 mod capability_assignment;
-mod dialect;
 mod expression;
+mod interface_assignment;
 mod node_template;
+mod operation_assignment;
+mod plugin;
 mod requirement_assignment;
 mod service_template;
 mod value_assignment;

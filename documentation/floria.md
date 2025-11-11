@@ -105,21 +105,27 @@ However, Floria classes are not meant to store data: they only have metadata. Th
 
 Thus we opted to *not* store schema information in the class and instead store it in the property. The disadvantage is that this data is duplicated for each property of that type. However, the important advantage is that we allow for properties to be self-contained, following the design principles discussed above. Individual property schemas can be modified, and indeed be moved between classes, without affecting other properties of that type. This also has a performance advantage as classes do not need to be retrieved from the Floria store in order to apply schemas.
 
-### `$_schema`
+### `$puccini:schema`
 
-Puccini implements the schema by introducing a handful of "internal" built-in functions, prefixed with `_`.
+Puccini implements the schema by introducing a handful of internal functions in a built-in `puccini` profile. You can import it explicitly:
 
-Central is the `$_apply` function, which applies a sequence of *coercion* expressions (which also, as a side effect, act as validators) to the familiar TOSCA `$value`.
+```
+imports:
+- profile: puccini
+  namespace: puccini
+```
 
-The most important coercion function is `$_schema`, which coerces any value to adhere to a schema descriptor. This descriptor contains all the TOSCA data type information: primitive type validation, required properties, default values, key and entry schema for collections, special types (timestamp, version, and scalar—which has its own special schema), and of course arbitrary function calls via the user-defined `validation` keyname. All of these can be nested, too, for lists, maps, and "structs" (data types with `properties`).
+Central is the `$puccini:apply` function, which applies a sequence of *coercion* expressions (which also, as a side effect, act as validators) to the familiar TOSCA `$value`.
 
-Note that for TOSCA parameters the `type` keyname is optional. In other words, they can be untyped, which simply means that they will not use the `$_schema` function. (They might still have `validation`, though; see below.)
+The most important coercion function is `$puccini:schema`, which coerces any value to adhere to a schema descriptor. This descriptor contains all the TOSCA data type information: primitive type validation, required properties, default values, key and entry schema for collections, special types (timestamp, version, and scalar—which has its own special schema), and of course arbitrary function calls via the user-defined `validation` keyname. All of these can be nested, too, for lists, maps, and "structs" (data types with `properties`).
+
+Note that for TOSCA parameters the `type` keyname is optional. In other words, they can be untyped, which simply means that they will not use the `$puccini:schema` function. (They might still have `validation`, though; see below.)
 
 The schema descriptor ends up having a non-trivial design because, unlike system programming languages, TOSCA allows for recursive data types. For example, a struct data type can have a field which is of the same type. If we were to naively nest these two schema descriptors we would hit infinite recursion, so instead Puccini's schema descriptor is organized as a list of descriptors, such that any descriptor can refer to another descriptor by a numerical index. This moves the application of nesting to runtime, where the bounds of recursion are limited by the (finite) size of the value itself.
 
-Note that because the TOSCA `validation` keyname expects a boolean expression, it must be turned into a coercion expression in order to be used in `$_apply`. We do this by wrapping it in an `$_assert` function, which simply raises an error if the expression does not evaluate to true.
+Note that because the TOSCA `validation` keyname expects a boolean expression, it must be turned into a coercion expression in order to be used in `$puccini:apply`. We do this by wrapping it in an `$puccini:assert` function, which simply raises an error if the expression does not evaluate to true.
 
-The final complex expression, which may combine `$_apply`, `$_schema`, and `$_assert` calls, is set as the Floria property's "preparer", which is evaluated whenever its value is updated.
+The final complex expression, which may combine `$puccini:apply`, `$puccini:schema`, and `$puccini:assert` calls, is set as the Floria property's "preparer", which is evaluated whenever its value is updated.
 
 When does an update happen? If you recall from discussion above, a TOSCA property, attribute, or parameter might have functions embedded in its value assignment, which will then be inserted in the Floria property "updater". This is the "pull" approach to update. However, various orchestration events can cause properties to be "pushed" in from external data. This is the intended use for TOSCA attributes, and indeed TOSCA provides another way of updating attributes: interface notifications (see below). Whatever the source of the update, the "preparer" will always be called to ensure that the value is valid.
 

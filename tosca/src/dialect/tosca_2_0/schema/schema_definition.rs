@@ -1,7 +1,4 @@
-use super::{
-    super::{super::super::grammar::*, data::*, dialect::*, entities::*},
-    details::*,
-};
+use super::super::{super::super::grammar::*, data::*, dialect::*, entities::*};
 
 use compris::annotate::*;
 
@@ -13,14 +10,19 @@ where
     pub fn initialize_schema(
         &self,
         schema: &mut Schema<AnnotatedT>,
-        source_id: &SourceID,
-        catalog: &Catalog,
-    ) -> Result<SchemaReference, ToscaError<WithAnnotations>>
+        context: &mut CompletionContext,
+    ) -> Result<Option<SchemaReference>, ToscaError<WithAnnotations>>
     where
         AnnotatedT: 'static,
     {
-        let data_type = catalog.entity::<DataType<AnnotatedT>, _>(DATA_TYPE, &self.type_name, source_id)?;
-        let reference = data_type.initialize_schema(&self.to_schema_key(None), schema, self, source_id, catalog)?;
-        Ok(reference.into())
+        let (data_type, data_type_namespace) =
+            completed_entity_from_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
+
+        let data_type = data_type.to_namespace(data_type_namespace);
+
+        Ok(match data_type {
+            Some(data_type) => data_type.initialize_schema(schema, self, None, context)?,
+            None => None,
+        })
     }
 }

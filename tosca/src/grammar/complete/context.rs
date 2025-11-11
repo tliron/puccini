@@ -28,7 +28,7 @@ impl<'own> CompletionContext<'own> {
 macro_rules! context_with_errors {
     ($context:expr, $errors:expr) => {{
         use ::kutil::std::error::*;
-        &mut $crate::grammar::CompletionContext::new($context.catalog, $context.source_id, $errors.to_ref())
+        &mut $crate::grammar::CompletionContext::new($context.catalog, $context.source_id, $errors.as_ref())
     }};
 }
 

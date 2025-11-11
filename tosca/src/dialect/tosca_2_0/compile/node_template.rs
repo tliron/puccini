@@ -3,7 +3,7 @@ use super::{
     value_assignment::*,
 };
 
-use {compris::annotate::*, kutil::std::immutable::*};
+use compris::annotate::*;
 
 impl<AnnotatedT> NodeTemplate<AnnotatedT>
 where
@@ -13,14 +13,14 @@ where
     pub fn compile(
         &self,
         vertex_template: &mut floria::VertexTemplate,
-        name: ByteString,
+        name: Name,
         context: &mut CompilationContext<'_>,
     ) -> Result<(), ToscaError<WithAnnotations>>
     where
         AnnotatedT: 'static,
     {
         if let Some(type_name) = &self.type_name {
-            vertex_template.template.class_ids.add_tosca_type(type_name, context)?;
+            vertex_template.template.class_ids.add_tosca_type(NODE_TYPE, NODE_TYPE_NAME, type_name, context)?;
         }
 
         vertex_template.template.metadata.set_tosca_entity_static(DIALECT_ID, NODE_TEMPLATE_NAME);
@@ -32,6 +32,7 @@ where
         compile_value_assignments(
             &mut vertex_template.template.property_templates,
             &self.properties,
+            "",
             PROPERTY_NAME,
             true,
             context,
@@ -42,6 +43,7 @@ where
         compile_value_assignments(
             &mut vertex_template.template.property_templates,
             &self.attributes,
+            "",
             ATTRIBUTE_NAME,
             false,
             context,

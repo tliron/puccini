@@ -6,6 +6,16 @@ use super::{
 use {kutil::std::immutable::*, std::any::*, std::collections::*};
 
 impl Source {
+    /// Find an entity by its reference.
+    pub fn find(&self, entity_ref: &EntityRef) -> Option<(EntityKind, Name)> {
+        for (name, self_entity_ref) in &self.entities {
+            if self_entity_ref as *const _ == entity_ref as *const _ {
+                return Some((name.entity_kind, name.inner.clone()));
+            }
+        }
+        None
+    }
+
     /// Entity names.
     pub fn entity_names(&self) -> Vec<(EntityKind, Name)> {
         self.entities.keys().map(|key| (key.entity_kind, key.inner.clone())).collect()
