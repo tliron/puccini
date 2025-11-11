@@ -6,9 +6,63 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 cd "$ROOT"
 
-PACKAGE=puccini-plugin-kubernetes-functions
+PACKAGE=puccini-plugin-kubernetes
 TARGET=wasm32-wasip2
 
-export RUSTFLAGS="-Z threads=8"
+if [ "$1" == -r ]; then
+	PROFILE=release
+else
+	PROFILE=debug
+fi
 
-cargo +nightly build --package="$PACKAGE" --target="$TARGET"
+m "building Wasm ($PROFILE)..." "$CYAN"
+
+if [ "$PROFILE" == release ]; then
+    # LTO and stripping debuginfo create smaller Wasm files
+    CARGO_PROFILE_RELEASE_LTO=true \
+    CARGO_PROFILE_RELEASE_STRIP=debuginfo \
+    cargo build --package="$PACKAGE" --target="$TARGET" --release
+else
+    RUSTFLAGS='-Z threads=8' \
+    cargo +nightly build --package="$PACKAGE" --target="$TARGET"
+fi
+
+m "gathering artifacts..." "$CYAN"
+
+mkdir --parents \
+    "$ROOT/examples/online-boutique/artifacts/wasm" \
+    "$ROOT/examples/online-boutique/artifacts/pem" \
+    "$ROOT/examples/online-boutique/profiles/platforms" \
+    "$ROOT/examples/csar"
+
+ln --symbolic --force \
+    "$ROOT/target/wasm32-wasip2/$PROFILE/puccini_plugin_kubernetes.wasm" \
+    "$ROOT/examples/online-boutique/artifacts/wasm/kubernetes-plugin.wasm"
+
+ln --symbolic --force \
+    "$ROOT/examples/profiles/platforms/kubernetes" \
+    "$ROOT/examples/online-boutique/profiles/platforms/"
+
+function kconfig () {
+    local ARTIFACT=$1
+    local JSON=$2
+    kubectl config view --raw=true --output=jsonpath="$JSON" \
+        | base64 --decode \
+        > "$ROOT/examples/online-boutique/artifacts/pem/$ARTIFACT.pem"
+}
+
+# kind create cluster
+
+CLUSTER=0
+USER=0
+
+kconfig root-certificates "{.clusters[$CLUSTER].cluster.certificate-authority-data}"
+kconfig user-certificates "{.users[$USER].user.client-certificate-data}"
+kconfig user-private-key "{.users[$USER].user.client-key-data}"
+
+# Another way:
+# kubectl get configmap kube-root-ca.crt --output=jsonpath="{['data']['ca\.crt']}" > /tmp/cacert.pem
+
+m "creating CSAR..." "$CYAN"
+
+puccini-csar create "$ROOT/examples/online-boutique" "$ROOT/examples/csar/online-boutique.tar.zst"

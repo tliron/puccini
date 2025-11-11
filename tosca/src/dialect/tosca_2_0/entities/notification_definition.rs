@@ -64,7 +64,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -96,4 +96,4 @@ where
 //
 
 /// Map of [NotificationDefinition].
-pub type NotificationDefinitions<AnnotatedT> = BTreeMap<ByteString, NotificationDefinition<AnnotatedT>>;
+pub type NotificationDefinitions<AnnotatedT> = BTreeMap<Name, NotificationDefinition<AnnotatedT>>;

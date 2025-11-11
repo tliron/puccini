@@ -70,7 +70,7 @@ impl CsarCreator {
 
         if tosca_meta.entry_definitions.is_none() {
             let entry_definitions = path_to_name(
-                &unwrap_or_give_and_return!(entry_definitions_in_directory(directory), errors, Ok(None)),
+                &must_unwrap_give!(entry_definitions_in_directory(directory), errors),
                 directory_components,
             );
 
@@ -87,8 +87,8 @@ impl CsarCreator {
 
         if write_tosca_meta {
             let location = directory.join(locations.get(0).expect("not empty"));
-            let mut file = unwrap_or_give_and_return!(File::create_new(location), errors, Ok(None));
-            unwrap_or_give_and_return!(file.write_all(tosca_meta_string.as_bytes()), errors, Ok(None));
+            let mut file = must_unwrap_give!(File::create_new(location), errors);
+            must_unwrap_give!(file.write_all(tosca_meta_string.as_bytes()), errors);
             return Ok(Some(CreatedCsar::new(tosca_meta, Format::Tarball, None, None)));
         }
 
@@ -116,11 +116,7 @@ impl CsarCreator {
         let mut archive: Option<ArchiveRef> = if dry_run {
             None
         } else {
-            Some(unwrap_or_give_and_return!(
-                create_archive_file_or_stdout(file, format, self.compression_level),
-                errors,
-                Ok(None)
-            ))
+            Some(must_unwrap_give!(create_archive_file_or_stdout(file, format, self.compression_level), errors))
         };
 
         // Initialize read tracker and size
@@ -154,28 +150,24 @@ impl CsarCreator {
         // Add directory to CSAR
 
         for entry in files_in_directory(&directory, true) {
-            match entry {
-                Ok(entry) => {
-                    if entry.file_type().is_dir() {
-                        continue;
-                    }
-
-                    let path = entry.path();
-                    let name = path_to_name(path, directory_components);
-
-                    if locations.contains(&name) {
-                        tracing::debug!("skipping: {:?}", path.display());
-                        continue;
-                    }
-
-                    tracing::debug!("adding: {:?}", path.display());
-
-                    if let Some(archive) = &mut archive {
-                        unwrap_or_give!(archive.add_file(name, path, self.compression_level, read_tracker), errors);
-                    }
+            if let Some(entry) = ok_give!(entry, errors) {
+                if entry.file_type().is_dir() {
+                    continue;
                 }
 
-                Err(error) => errors.give(error)?,
+                let path = entry.path();
+                let name = path_to_name(path, directory_components);
+
+                if locations.contains(&name) {
+                    tracing::debug!("skipping: {:?}", path.display());
+                    continue;
+                }
+
+                tracing::debug!("adding: {:?}", path.display());
+
+                if let Some(archive) = &mut archive {
+                    unwrap_or_give!(archive.add_file(name, path, self.compression_level, read_tracker), errors);
+                }
             }
         }
 
@@ -202,24 +194,19 @@ where
     let mut size = 0;
 
     for entry in files_in_directory(&directory, false) {
-        match entry {
-            Ok(entry) => {
-                if entry.file_type().is_dir() {
-                    continue;
-                }
-
-                let name = path_to_name(entry.path(), directory_components);
-                if locations.contains(&name) {
-                    continue;
-                }
-
-                match entry.metadata() {
-                    Ok(metadata) => size += metadata.len(),
-                    Err(error) => errors.give(error)?,
-                }
+        if let Some(entry) = ok_give!(entry, errors) {
+            if entry.file_type().is_dir() {
+                continue;
             }
 
-            Err(error) => errors.give(error)?,
+            let name = path_to_name(entry.path(), directory_components);
+            if locations.contains(&name) {
+                continue;
+            }
+
+            if let Some(metadata) = ok_give!(entry.metadata(), errors) {
+                size += metadata.len();
+            }
         }
     }
 

@@ -56,7 +56,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         _parent: Option<&Self>,
         _parent_namespace: Option<&Namespace>,
         _context: &mut CompletionContext,
@@ -80,4 +80,4 @@ where
 //
 
 /// Map of [TriggerDefinition].
-pub type TriggerDefinitions<AnnotatedT> = BTreeMap<ByteString, TriggerDefinition<AnnotatedT>>;
+pub type TriggerDefinitions<AnnotatedT> = BTreeMap<Name, TriggerDefinition<AnnotatedT>>;

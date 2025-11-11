@@ -1,5 +1,11 @@
 use {
-    compris::ser::*, floria::*, kutil::cli::run::*, puccini_csar::*, puccini_tosca::grammar::*, read_url::*, std::io,
+    compris::{parse::*, ser::*},
+    floria::*,
+    kutil::cli::run::*,
+    puccini_csar::*,
+    puccini_tosca::grammar::*,
+    read_url::*,
+    std::io,
     thiserror::*,
 };
 
@@ -17,7 +23,7 @@ pub enum MainError {
     #[error("I/O: {0}")]
     IO(#[from] io::Error),
 
-    #[error("puccini: {0}")]
+    #[error("Puccini: {0}")]
     Puccini(String),
 
     #[error("CSAR: {0}")]
@@ -35,6 +41,9 @@ pub enum MainError {
 
     #[error("store: {0}")]
     Store(#[from] StoreError),
+
+    #[error("parse: {0}")]
+    Parse(#[from] ParseError),
 
     #[error("serialize: {0}")]
     Serialize(#[from] SerializeError),

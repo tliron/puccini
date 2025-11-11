@@ -77,7 +77,7 @@ where
 {
     fn complete(
         &mut self,
-        name: Option<ByteString>,
+        name: Option<&Name>,
         requirement_definition: Option<&Self>,
         requirement_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -126,4 +126,4 @@ where
 //
 
 /// [Taxonomy] of [RequirementDefinition].
-pub type RequirementDefinitions<AnnotatedT> = Taxonomy<ByteString, RequirementDefinition<AnnotatedT>>;
+pub type RequirementDefinitions<AnnotatedT> = Taxonomy<Name, RequirementDefinition<AnnotatedT>>;

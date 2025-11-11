@@ -1,6 +1,6 @@
 use super::{
     super::super::super::grammar::*, group_template::*, node_template::*, parameter_definition::*, policy_template::*,
-    relationship_template::*, workflow_definition::*,
+    relationship_template::*, value_assignment::*, workflow_definition::*,
 };
 
 use {
@@ -85,6 +85,14 @@ where
     #[depict(iter(kv), as(depict), key_style(string))]
     pub workflows: WorkflowDefinitions,
 
+    /// Input assignments.
+    #[depict(skip)]
+    pub input_assignments: ValueAssignments<AnnotatedT>,
+
+    /// Output assignments.
+    #[depict(skip)]
+    pub output_assignments: ValueAssignments<AnnotatedT>,
+
     #[resolve(annotations)]
     #[depict(skip)]
     pub(crate) annotations: StructAnnotations,
@@ -104,11 +112,32 @@ where
     fn complete(
         &mut self,
         _derivation_path: &mut DerivationPath,
-        _context: &mut CompletionContext,
+        context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
         assert!(self.completion_state == CompletionState::Incomplete);
 
-        // TODO: inputs and outputs
+        complete_subentity_map_field!(
+            parameter,
+            inputs,
+            self,
+            Option::<ServiceTemplate<_>>::None,
+            None,
+            false,
+            context
+        );
+
+        complete_subentity_map_field!(
+            parameter,
+            outputs,
+            self,
+            Option::<ServiceTemplate<_>>::None,
+            None,
+            false,
+            context
+        );
+
+        complete_subentity_map("input", &mut self.input_assignments, Some(&self.inputs), None, false, context)?;
+        complete_subentity_map("output", &mut self.output_assignments, Some(&self.outputs), None, false, context)?;
 
         self.completion_state = CompletionState::Complete;
         Ok(())

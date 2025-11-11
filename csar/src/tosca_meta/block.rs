@@ -54,14 +54,7 @@ impl ToscaMetaBlock {
         ErrorReceiverT: ErrorReceiver<CsarError>,
     {
         Ok(match self.must_get(keyname, errors)? {
-            Some(value) => match Version::parse(keyname, value) {
-                Ok(version) => Some(version),
-                Err(error) => {
-                    errors.give(error)?;
-                    None
-                }
-            },
-
+            Some(value) => ok_give!(Version::parse(keyname, value), errors),
             None => None,
         })
     }
@@ -76,14 +69,7 @@ impl ToscaMetaBlock {
         ErrorReceiverT: ErrorReceiver<CsarError>,
     {
         Ok(match self.values.get(keyname) {
-            Some(value) => match string_list_from_tosca_meta(keyname, value) {
-                Ok(strings) => Some(strings),
-                Err(error) => {
-                    errors.give(error)?;
-                    None
-                }
-            },
-
+            Some(value) => ok_give!(string_list_from_tosca_meta(keyname, value), errors),
             None => None,
         })
     }

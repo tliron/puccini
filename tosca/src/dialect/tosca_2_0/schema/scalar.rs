@@ -15,14 +15,15 @@ where
         &self,
         schema: &mut Schema<AnnotatedT>,
         reference: SchemaReference,
-        definition: &SchemaDetailsT,
-    ) -> Result<SchemaReference, ToscaError<WithAnnotations>>
+        details: &SchemaDetailsT,
+        details_namespace: Option<&Namespace>,
+    ) -> SchemaReference
     where
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
     {
         let mut scalar_schema: ScalarSchema<_> = self.into();
-        complete_schema_default_and_validation!(scalar_schema, self, definition);
-        Ok(schema.add_unique(reference, scalar_schema.into()))
+        complete_schema_default_and_validation!(scalar_schema, self, details, details_namespace);
+        schema.add_unique(reference, scalar_schema.into())
     }
 }
 

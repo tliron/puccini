@@ -57,7 +57,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -89,4 +89,4 @@ where
 //
 
 /// Map of [OperationDefinition].
-pub type OperationDefinitions<AnnotatedT> = BTreeMap<ByteString, OperationDefinition<AnnotatedT>>;
+pub type OperationDefinitions<AnnotatedT> = BTreeMap<Name, OperationDefinition<AnnotatedT>>;

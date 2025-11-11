@@ -84,13 +84,13 @@ impl Compile {
     pub fn output_floria_template<StoreT>(
         &self,
         floria_service_template_id: Option<ID>,
-        store: &StoreT,
+        store: StoreT,
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
     ) -> Result<(), MainError>
     where
-        StoreT: Store,
+        StoreT: Clone + Store,
     {
         if *output_floria
             && let Some(floria_service_template_id) = floria_service_template_id
@@ -103,7 +103,7 @@ impl Compile {
 
                 None => {
                     if Self::print_next(print_first, root) {
-                        floria_service_template.to_depict(store).print_default_depiction();
+                        floria_service_template.as_depict(&store).print_default_depiction();
                     }
                 }
             }
@@ -116,13 +116,13 @@ impl Compile {
     pub fn output_floria_instance<StoreT>(
         &self,
         floria_instance: Option<Vertex>,
-        store: &StoreT,
+        store: StoreT,
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
     ) -> Result<(), MainError>
     where
-        StoreT: Store,
+        StoreT: Clone + Store,
     {
         if *output_floria
             && !matches!(self.debug, Some(Debug::Compiled))
@@ -135,7 +135,7 @@ impl Compile {
 
                 None => {
                     if Self::print_next(print_first, root) {
-                        floria_instance.to_depict(store).print_default_depiction();
+                        floria_instance.as_depict(&store).print_default_depiction();
                     }
                 }
             }
