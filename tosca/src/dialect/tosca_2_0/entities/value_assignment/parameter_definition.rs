@@ -23,7 +23,7 @@ where
         paremeter_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_optional_parent_name_field!(
+        complete_optional_parent_type_name_field!(
             type_name,
             paremeter_definition_namespace,
             self,

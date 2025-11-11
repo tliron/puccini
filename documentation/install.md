@@ -19,52 +19,66 @@ Building Puccini from Source
 
 If you need a build for other architectures or targets, with debug information, or with features other than the defaults, then you can build it yourself.
 
-| We assume Linux for the build environment. Note that you can crosscompile from Linux to all supported architectures and targets.
-
 ### Prerequisites
+
+We assume Linux for the build environment. Note that you can crosscompile from Linux to all of Rust's supported architectures and targets.
 
 You need the [Rust](https://rust-lang.org) compiler and standard library as well as its [Cargo](https://doc.rust-lang.org/cargo/) build system. You can get everything at once via [rustup](https://rustup.rs). Note that by default built binaries will be located in `$HOME/.cargo/bin/`, so you may want to add it to your execution `PATH`.
 
-We'll also need the WASI (preview 2) platform for building our Wasm plugins. We recommend installing the [Wild linker](https://github.com/davidlattimore/wild) (only available for Linux), which Puccini can use for faster building of debug builds:
+We'll also need the [WASI](https://wasi.dev) (preview 2) platform libraries for Rust in order to build our Wasm plugins.
+
+Finally, we recommend installing the [Wild linker](https://github.com/davidlattimore/wild) (only available for Linux), which Puccini can use for faster building of debug builds. To install everything:
 
 ```
+# install rustup
 rustup target add wasm32-wasip2
 rustup +nightly target add wasm32-wasip2
 cargo install --locked wild-linker
+export PATH=$PATH:$HOME/.cargo/bin
 ```
 
-### Build!
+### Build Puccini CLI Tools
 
 ```
 git clone https://github.com/tliron/puccini.git
 cd puccini
 
-# You may want to checkout a specific release tag, for example:
-git checkout v0.0.3
+# You may want to checkout a specific release tag; for example:
+git checkout v0.0.4
 
 # Build!
 scripts/build
 
 # Verify it
-~/.cargo/bin/puccini-tosca version --build
+puccini-tosca version --build
+
+# Test it
+puccini-tosca compile \
+  examples/tour/data-types.yaml \
+  --instantiate \
+  --update
 ```
 
 The default for `scripts/build` is a debug build:
 
 * builds faster
 * slow runtime performance: *no* optimizations enabled
-* includes debug information (larger binaries)
+* includes debug information (for error backtraces and interaction with debuggers)
+* thus produces larger binaries
 
-Unless you're developing Puccini, you'll want a release:
+| Note that for debug builds only are using the compiler from the nightly channel of Rust. The only reason is that it's faster! It supports parallel builds and alternative (faster) linkers. Eventually these features will make it into stable Rust and we'll stop using nightly.
+
+Unless you're developing Puccini, you'll likely prefer to use a release build:
 
 * very slow to build, beware!
 * best runtime performance: *all* optimizations enabled
+* small binaries
 
 ```
 scripts/build -r
 
 # Verify it
-~/.cargo/bin/puccini-tosca version --build
+puccini-tosca version --build
 ```
 
 The build script can be configured with several environment variables. See its source for documentation. Example:

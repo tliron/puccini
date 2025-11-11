@@ -9,8 +9,8 @@ TOSCA 2.0 built-in functions.
 /// Data.
 pub mod data;
 
-/// Dispatcher.
-pub mod dispatcher;
+/// Dispatch.
+pub mod dispatch;
 
 /// Entities.
 pub mod entities;

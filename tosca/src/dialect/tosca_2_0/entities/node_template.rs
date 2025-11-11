@@ -33,6 +33,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the node type on which the node template is based.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be copied via "copy".
     #[resolve(key = "type")]
     #[depict(option, as(display), style(name))]
     pub type_name: Option<FullName>,
@@ -143,7 +145,7 @@ where
         }
 
         if self.type_name.is_none() {
-            errors.give(MissingRequiredError::new("node type name".into(), Some("type_name".into())))?;
+            errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from(self))?;
             return Ok(());
         }
 

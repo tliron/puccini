@@ -6,7 +6,7 @@ use {
 };
 
 /// Scalar custom kind.
-pub const SCALAR_CUSTOM_KIND: &str = "tosca_2_0:scalar";
+pub const SCALAR_CUSTOM_KIND: &str = "tosca:2.0:scalar";
 
 const NOTATION_ERROR: &str = "scalar not \"<number> <unit>\"";
 

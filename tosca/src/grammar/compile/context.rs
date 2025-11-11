@@ -16,7 +16,7 @@ pub struct CompilationContext<'own> {
     pub directory: &'own floria::Directory,
 
     /// Floria store.
-    pub store: floria::StoreRef<'own>,
+    pub store: floria::StoreRef,
 
     /// Errors.
     pub errors: ToscaErrorReceiverRef<'own>,
@@ -28,9 +28,17 @@ impl<'own> CompilationContext<'own> {
         source_id: &'own SourceID,
         catalog: &'own Catalog,
         directory: &'own floria::Directory,
-        store: floria::StoreRef<'own>,
+        store: floria::StoreRef,
         errors: ToscaErrorReceiverRef<'own>,
     ) -> Self {
         Self { source_id, catalog, directory, store, errors }
+    }
+
+    /// Get the source.
+    pub fn source<AnnotatedT>(&self) -> Result<&Source, SourceNotLoadedError<AnnotatedT>>
+    where
+        AnnotatedT: Default,
+    {
+        self.catalog.source(self.source_id)
     }
 }

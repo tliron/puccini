@@ -1,7 +1,7 @@
 [package]
 edition = "2024"
 
-name = "puccini-plugin-kubernetes-functions"
+name = "puccini-plugin-kubernetes"
 description = "TOSCA"
 version = "0.0.3"
 rust-version = "1.91"
@@ -11,7 +11,7 @@ repository = "https://github.com/tliron/puccini"
 
 [dependencies]
 floria-plugin-sdk = "=0.0.5"
-puccini-plugin-tosca-2_0-functions = "=0.0.4"
+puccini-plugin-tosca-2_0 = "=0.0.4"
 
 [lib]
 crate-type = ["cdylib"]

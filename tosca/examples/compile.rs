@@ -33,7 +33,7 @@ service_template:
 
     let mut catalog = Catalog::default();
     catalog.add_dialect_ref(tosca_2_0::Dialect::default().into());
-    catalog.add_source(tosca_2_0::Dialect::implicit_source::<WithAnnotations>()); // TODO: without?
+    catalog.add_source(tosca_2_0::Dialect::implicit_source::<WithAnnotations>().expect("implicit_source")); // TODO: without?
 
     // Load our source
 
@@ -51,7 +51,8 @@ service_template:
 
     let mut errors = FailFastErrorReceiver;
     let directory = Directory::default();
-    let mut context = CompilationContext::new(&source_id, &catalog, &directory, store.to_ref(), errors.to_ref());
+    let mut context =
+        CompilationContext::new(&source_id, &catalog, &directory, store.clone().to_ref(), errors.to_ref());
 
     let service_template_id =
         catalog.compile_service_template(&mut context).unwrap().expect("compile_service_template");

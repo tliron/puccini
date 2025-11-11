@@ -108,7 +108,7 @@ where
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_optional_parent_name_field!(type_name, parent_namespace, self, parent, context);
+        complete_optional_parent_type_name_field!(type_name, parent_namespace, self, parent, context);
         complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
         complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
 

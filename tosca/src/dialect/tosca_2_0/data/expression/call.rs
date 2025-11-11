@@ -42,7 +42,7 @@ impl<AnnotatedT> Call<AnnotatedT> {
     where
         AnnotatedT: Default,
     {
-        Self::new(Name::from_static(function).into(), arguments, kind)
+        Self::new(Name::new_static_unchecked(function).into(), arguments, kind)
     }
 
     /// True if native.
@@ -68,6 +68,11 @@ impl<AnnotatedT> Call<AnnotatedT> {
         if !self.has_argument(&argument) {
             self.arguments.push(argument);
         }
+    }
+
+    /// Make it eager.
+    pub fn make_eager(&mut self) {
+        self.kind = floria::CallKind::Eager;
     }
 
     /// Make it lazy.

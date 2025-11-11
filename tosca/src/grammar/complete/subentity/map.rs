@@ -46,6 +46,12 @@ where
                     }
                 }
             }
+
+            for (name, subentity) in map {
+                if !parent_map.contains_key(name) {
+                    subentity.complete(Some(name.clone()), None, None, context)?;
+                }
+            }
         }
 
         None => {

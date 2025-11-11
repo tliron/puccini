@@ -19,13 +19,12 @@ where
     where
         AnnotatedT: 'static,
     {
-        // TODO: get type name?
-        // floria_node_template.template.group_ids.add_tosca_type(
-        //     &self.type_name,
-        //     floria_directory,
-        //     floria_store.clone(),
-        //     errors,
-        // )?;
+        vertex_template.template.class_ids.add_tosca_type(
+            CAPABILITY_TYPE,
+            CAPABILITY_TYPE_NAME,
+            &self.type_name,
+            context,
+        )?;
 
         vertex_template.template.metadata.set_tosca_entity_static(DIALECT_ID, CAPABILITY_NAME);
         vertex_template.template.metadata.set_tosca_name(name);

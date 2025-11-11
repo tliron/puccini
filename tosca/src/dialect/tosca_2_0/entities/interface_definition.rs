@@ -32,6 +32,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the interface type on which this interface definition is based.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be inherited from parent.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -81,7 +83,7 @@ where
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(input, inputs, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(operation, operations, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(notification, notifications, self, parent, parent_namespace, true, context);

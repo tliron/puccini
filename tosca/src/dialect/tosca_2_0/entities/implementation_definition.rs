@@ -49,16 +49,16 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_plugin(plugin: ByteString) -> Self {
-        Self { primary: Some(ImplementationDefinitionArtifact::new_plugin(plugin)), ..Default::default() }
+    pub fn new_with_plugin_implementation(file: ByteString) -> Self {
+        Self { primary: Some(ImplementationDefinitionArtifact::new_plugin(file)), ..Default::default() }
     }
 
-    /// Plugin file and prefix.
-    pub fn plugin(&self) -> Result<Option<(ByteString, Option<ByteString>)>, ToscaError<AnnotatedT>> {
+    /// Plugin URL.
+    pub fn plugin_url(&self) -> Result<Option<(ByteString, bool)>, ToscaError<AnnotatedT>> {
         Ok(match &self.primary {
             Some(artifact) => match artifact {
                 ImplementationDefinitionArtifact::Definition(artifact_definition) => {
-                    Some(artifact_definition.plugin()?)
+                    Some(artifact_definition.plugin_url()?)
                 }
                 ImplementationDefinitionArtifact::Name(_) => None,
             },
@@ -123,8 +123,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_plugin(plugin: ByteString) -> Self {
-        Self::Definition(ArtifactDefinition::new_plugin(plugin))
+    pub fn new_plugin(file: ByteString) -> Self {
+        Self::Definition(ArtifactDefinition::new_plugin(file))
     }
 }
 

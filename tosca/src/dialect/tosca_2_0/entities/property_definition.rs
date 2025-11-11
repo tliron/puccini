@@ -32,6 +32,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory data type for the property.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be inherited from parent.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -101,7 +103,7 @@ where
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
         complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
 

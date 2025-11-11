@@ -156,7 +156,7 @@ where
         let (parent, parent_namespace) =
             entity_from_name_field_checked!(DATA_TYPE, self, derived_from, derivation_path, context);
 
-        complete_optional_parent_name_field!(scalar_data_type, parent_namespace, self, parent, context);
+        complete_optional_parent_type_name_field!(scalar_data_type, parent_namespace, self, parent, context);
 
         if let Some(parent) = &parent {
             complete_none_field!(scalar_canonical_unit, self, parent);

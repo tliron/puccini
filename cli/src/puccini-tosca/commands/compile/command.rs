@@ -57,9 +57,9 @@ pub struct Compile {
     #[arg(long, short = 'd', value_enum)]
     pub debug: Option<Debug>,
 
-    /// path to plugin override
+    /// URL to plugin override
     #[arg(long = "plugin")]
-    pub plugin: Option<PathBuf>,
+    pub plugin: Option<String>,
 
     /// plugin override is precompiled for this platform (.cwasm file)
     #[arg(long = "plugin-precompiled")]
@@ -97,13 +97,10 @@ impl Compile {
         }
     }
 
-    pub fn floria_directory(&self) -> floria::Directory {
-        self.directory
-            .as_ref()
-            .map(|directory| {
-                let Ok(directory) = directory.parse();
-                directory
-            })
-            .unwrap_or_else(|| Default::default())
+    pub fn floria_directory(&self) -> Result<floria::Directory, floria::MalformedError> {
+        match &self.directory {
+            Some(directory) => directory.parse(),
+            None => Ok(Default::default()),
+        }
     }
 }

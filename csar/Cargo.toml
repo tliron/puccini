@@ -38,7 +38,7 @@ thiserror = "2.0.17"
 self_cell = { optional = true, version = "1.2.1" }
 tar = { optional = true, version = "0.4.44" }
 tracing = "0.1.41"
-utf8-chars = "3.0.5"
+utf8-chars = "3.0.6"
 walkdir = "2.5.0"
 zip = { optional = true, version = "6.0.0", default-features = false, features = ["deflate-flate2", "chrono"] }
 zstd = { optional = true, version = "0.13.3" }

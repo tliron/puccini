@@ -6,7 +6,7 @@ use {
 };
 
 /// Version custom kind.
-pub const VERSION_CUSTOM_KIND: &str = "tosca_2_0:version";
+pub const VERSION_CUSTOM_KIND: &str = "tosca:2.0:version";
 
 //
 // Version

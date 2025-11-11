@@ -39,6 +39,10 @@ where
     #[depict(iter(item), style(symbol))]
     pub directives: Vec<ByteString>,
 
+    /// Type name.
+    #[depict(skip)]
+    pub type_name: FullName,
+
     #[resolve(annotations)]
     #[depict(skip)]
     pub(crate) annotations: StructAnnotations,
@@ -55,6 +59,7 @@ where
         capability_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
+        complete_type_name_field!(self, capability_definition, capability_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,
             properties,
@@ -85,6 +90,7 @@ where
         CapabilityAssignment {
             properties: self.properties.to_namespace(namespace),
             attributes: self.attributes.to_namespace(namespace),
+            type_name: self.type_name.to_namespace(namespace),
             annotations: self.annotations.clone_fields(&["properties", "attributes"]),
             ..Default::default()
         }

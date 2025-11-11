@@ -20,7 +20,7 @@ where
         AnnotatedT: 'static,
     {
         if let Some(type_name) = &self.type_name {
-            vertex_template.template.class_ids.add_tosca_type(type_name, context)?;
+            vertex_template.template.class_ids.add_tosca_type(NODE_TYPE, NODE_TYPE_NAME, type_name, context)?;
         }
 
         vertex_template.template.metadata.set_tosca_entity_static(DIALECT_ID, NODE_TEMPLATE_NAME);

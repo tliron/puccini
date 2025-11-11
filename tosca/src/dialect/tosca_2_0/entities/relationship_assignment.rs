@@ -63,8 +63,7 @@ where
         relationship_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, relationship_definition, relationship_definition_namespace, context);
-
+        complete_type_name_field!(self, relationship_definition, relationship_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,
             properties,

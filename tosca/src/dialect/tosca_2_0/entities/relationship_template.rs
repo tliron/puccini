@@ -30,7 +30,9 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the relationship type on which the relationship template is based.
-    #[resolve(required, key = "type")]
+    ///
+    /// Puccini note: *Not* mandatory, as it can be copied via "copy".
+    #[resolve(key = "type")]
     #[depict(option, as(depict))]
     pub type_name: Option<FullName>,
 
@@ -103,7 +105,7 @@ where
         }
 
         if self.type_name.is_none() {
-            errors.give(MissingRequiredError::new("relationship type name".into(), Some("type_name".into())))?;
+            errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from(self))?;
             return Ok(());
         }
 

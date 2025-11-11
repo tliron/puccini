@@ -7,7 +7,7 @@ use std::{
     path::*,
 };
 
-const WASM: &str = "puccini_plugin_tosca_2_0_functions";
+const WASM: &str = "puccini_plugin_tosca_2_0";
 
 fn main() {
     #[cfg(not(feature = "_blanket"))]

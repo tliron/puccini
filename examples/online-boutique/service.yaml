@@ -18,7 +18,7 @@ service_template:
     frontend1:
       type: boutique:FrontendService
       properties:
-        label: { $boutique:ms:krm:kubernetes: [] }
+        label: { $boutique:ms:krm:kubernetes: [1] }
         #label: adservice1
 
     frontend2:

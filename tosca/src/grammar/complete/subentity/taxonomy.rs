@@ -49,6 +49,12 @@ where
                     }
                 }
             }
+
+            for (name, subentity) in taxonomy {
+                if !parent_taxonomy.contains_name(name) {
+                    subentity.complete(Some(name.clone()), None, None, context)?;
+                }
+            }
         }
 
         None => {

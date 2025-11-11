@@ -23,7 +23,7 @@ where
         attribute_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_optional_name_field!(type_name, self, attribute_definition, attribute_definition_namespace, context);
+        complete_optional_type_name_field!(self, attribute_definition, attribute_definition_namespace, context);
 
         let Some(attribute_definition) = attribute_definition else {
             return Ok(());

@@ -21,7 +21,7 @@ where
 {
     /// The mandatory artifact type for the artifact definition.
     ///
-    /// Puccini note: Should not be mandatory for assignments.
+    /// Puccini note: *Not* mandatory, as it can be inherited from definition.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -29,7 +29,7 @@ where
     /// The mandatory URI string (relative or absolute) that can be used to locate the artifact's
     /// file.
     ///
-    /// Puccini note: Should not be mandatory for assignments.
+    /// Puccini note: *Not* mandatory, as it can be inherited from definition.
     #[depict(option, style(string))]
     pub file: Option<ByteString>,
 
@@ -91,7 +91,7 @@ where
         artifact_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, artifact_definition, artifact_definition_namespace, context);
+        complete_type_name_field!(self, artifact_definition, artifact_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,
             properties,

@@ -8,7 +8,7 @@ use {
 };
 
 /// Namespace delimiter.
-pub const NAMESPACE_DELIMITER: &str = ":";
+pub const NAMESPACE_DELIMITER: char = ':';
 
 //
 // FullName
@@ -43,13 +43,13 @@ impl FullName {
         Self::new(namespace, self.name)
     }
 
-    /// To Floria class ID.
-    pub fn to_floria_class_id(&self, prefix: &str) -> floria::ID {
-        let (mut directory, name) = (self.namespace.to_floria_directory(), self.name.clone());
-        directory.add_first_segment(prefix.into());
-        directory.add_first_segment("tosca".into());
-        floria::ID::new_for(floria::EntityKind::Class, directory, name.into())
-    }
+    // /// To Floria class ID.
+    // pub fn to_floria_class_id(&self, prefix: &str) -> Result<floria::ID, floria::MalformedError> {
+    //     let (mut directory, name) = (self.namespace.to_floria_directory(), self.name.clone());
+    //     directory.add_first_segment(prefix.into());
+    //     directory.add_first_segment("tosca".into());
+    //     floria::ID::new_for(floria::EntityKind::Class, directory, name.into())
+    // }
 }
 
 impl ToNamespace<FullName> for FullName {

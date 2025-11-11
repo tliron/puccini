@@ -1,14 +1,14 @@
 [package]
 edition = "2024"
 
-name = "puccini-plugin-tosca-2_0-functions"
-description = "TOSCA"
+name = "puccini-plugin-tosca-2_0"
+description = "Floria plugin for TOSCA 2.0 built-in functions"
 version = "0.0.4"
 rust-version = "1.91"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
-documentation = "https://docs.rs/puccini-plugin-tosca-2_0-functions"
+documentation = "https://docs.rs/puccini-plugin-tosca-2_0"
 authors = ["Tal Liron"]
 
 readme = "../README.md"

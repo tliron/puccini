@@ -60,7 +60,7 @@ where
             return Ok(());
         };
 
-        complete_optional_parent_name_field!(type_name, parent_namespace, self, Some(parent), context);
+        complete_optional_parent_type_name_field!(type_name, parent_namespace, self, Some(parent), context);
         complete_none_field!(expression, self, parent);
 
         if let Some(type_name) = &self.type_name

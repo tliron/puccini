@@ -66,12 +66,12 @@ fi
 m "building native ($NATIVE)..." "$CYAN"
 
 if [ "$WASM_DEBUG_INFO" == true ]; then
-    m "  (enabling wasm debug info)" "$CYAN"
+    m "  (enabling Wasm debug info)" "$CYAN"
     NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug-info --features=floria/wasm-debug"
 fi
 
 if [ "$WASM_PRECOMPILE" == true ]; then
-    m "  (precompiling wasm)" "$CYAN"
+    m "  (precompiling Wasm)" "$CYAN"
     NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-precompiled"
 fi
 

@@ -22,10 +22,10 @@ impl Namespace {
         self.segments.is_empty()
     }
 
-    /// To Floria directory.
-    pub fn to_floria_directory(&self) -> floria::Directory {
-        self.segments.iter().map(|segment| segment.clone().into()).collect()
-    }
+    // /// To Floria directory.
+    // pub fn to_floria_directory(&self) -> Result<floria::Directory, floria::MalformedError> {
+    //     floria::Directory::new(self.segments.iter().map(|segment| segment.clone().into()).collect())
+    // }
 }
 
 impl Depict for Namespace {

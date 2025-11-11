@@ -7,7 +7,7 @@ use {
 };
 
 /// Timestamp custom kind.
-pub const TIMESTAMP_CUSTOM_KIND: &str = "tosca_2_0:timestamp";
+pub const TIMESTAMP_CUSTOM_KIND: &str = "tosca:2.0:timestamp";
 
 //
 // Timestamp

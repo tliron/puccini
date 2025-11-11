@@ -2,8 +2,8 @@
 Kubernetes resource model functions.
 */
 
-/// Dispatcher.
-pub mod dispatcher;
+/// Dispatch.
+pub mod dispatch;
 
 /// Functions.
 pub mod functions;

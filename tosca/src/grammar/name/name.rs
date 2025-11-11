@@ -7,6 +7,9 @@ use {
     std::{fmt, io, str::*},
 };
 
+/// Invalid name characters.
+pub const INVALID_NAME_CHARACTERS: [char; 1] = [NAMESPACE_DELIMITER];
+
 //
 // Name
 //
@@ -21,7 +24,7 @@ impl Name {
     /// Constructor.
     ///
     /// Note that it does not validate the name!
-    pub const fn from_static(name: &'static str) -> Self {
+    pub const fn new_static_unchecked(name: &'static str) -> Self {
         Self(ByteString::from_static(name))
     }
 
@@ -49,11 +52,14 @@ impl Depict for Name {
 impl FromStr for Name {
     type Err = ParseError;
 
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        if string.contains(NAMESPACE_DELIMITER) {
-            return Err("contains invalid characters".into());
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        for c in INVALID_NAME_CHARACTERS {
+            if name.contains(c) {
+                return Err(format!("name contains invalid character: {}", c).into());
+            }
         }
-        Ok(Name(ByteString::from(string)))
+
+        Ok(Name(ByteString::from(name)))
     }
 }
 
@@ -81,7 +87,7 @@ impl AsRef<str> for Name {
 
 impl From<&'static str> for Name {
     fn from(string: &'static str) -> Self {
-        Name::from_static(string)
+        Name::new_static_unchecked(string)
     }
 }
 

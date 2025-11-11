@@ -50,6 +50,16 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         }
     }
 
+    /// If it's a call then make it eager.
+    pub fn into_eager(self) -> Self {
+        if let Expression::Call(mut call) = self {
+            call.make_eager();
+            call.into()
+        } else {
+            self
+        }
+    }
+
     /// If it's a call then make it lazy.
     pub fn into_lazy(self) -> Self {
         if let Expression::Call(mut call) = self {

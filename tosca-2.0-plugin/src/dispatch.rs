@@ -2,7 +2,7 @@ use super::functions::*;
 
 use floria_plugin_sdk::*;
 
-impl_dispatcher!("tosca_2_0", arguments, call_site, {
+impl_dispatch!(arguments, call_site, {
     // Graph
     "get_input" => get_input(arguments, call_site),
     "get_property" => get_property(arguments, call_site),
