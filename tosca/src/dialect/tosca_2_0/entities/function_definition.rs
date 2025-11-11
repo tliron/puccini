@@ -65,15 +65,11 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_internal_plugin(plugin: ByteString) -> Self {
-        Self { signatures: vec![FunctionSignature::new_plugin(plugin)], internal: true, ..Default::default() }
-    }
-
-    /// Plugin file and prefix.
-    pub fn plugin(&self) -> Result<Option<(ByteString, Option<ByteString>)>, ToscaError<AnnotatedT>> {
-        match self.signatures.first() {
-            Some(signature) => signature.plugin(),
-            None => Ok(None),
+    pub fn new_internal(namespace: Namespace, artifact_file: ByteString) -> Self {
+        Self {
+            signatures: vec![FunctionSignature::new_internal(namespace, artifact_file)],
+            internal: true,
+            ..Default::default()
         }
     }
 }

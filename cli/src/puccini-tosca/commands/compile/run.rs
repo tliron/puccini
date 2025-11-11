@@ -23,8 +23,22 @@ impl Compile {
             );
         }
 
-        if self.update && !self.instantiate {
-            return Err(ExitError::from("cannot use `--update` without `--instantiate`").into());
+        if !self.instantiate {
+            if !self.events.is_empty() || self.update {
+                return Err(ExitError::from("cannot use `--event` without `--instantiate`").into());
+            }
+
+            if !self.inputs.is_empty() {
+                return Err(ExitError::from("cannot use `--inputs` without `--instantiate`").into());
+            }
+
+            if !self.inputs_from.is_empty() {
+                return Err(ExitError::from("cannot use `--inputs-from` without `--instantiate`").into());
+            }
+
+            if !self.outputs.is_empty() {
+                return Err(ExitError::from("cannot use `--output` without `--instantiate`").into());
+            }
         }
 
         #[allow(unreachable_code)]
@@ -56,24 +70,26 @@ impl Compile {
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default + Send + Sync,
     {
-        let url_context = Self::url_context()?;
-
+        let mut url_context = Self::url_context()?;
         let mut csar_errors = Errors::<CsarError>::default();
 
         let source_id = self.source_id(&url_context, &mut csar_errors)?;
-        let mut catalog = Self::catalog::<AnnotatedT>();
+        let mut catalog = Self::catalog::<AnnotatedT>()?;
 
         let mut tosca_errors = Errors::<ToscaError<AnnotatedT>>::default();
 
-        #[cfg(feature = "plugins")]
-        let mut floria_errors = Errors::<FloriaError>::default();
+        // Inputs
+
+        let inputs = self.inputs::<AnnotatedT>(&url_context)?;
 
         // Load
 
-        if self.no_annotations {
-            catalog.load_source_without_annotations(&source_id, &url_context, &mut tosca_errors)?;
+        if let Some(new_url_context) = if self.no_annotations {
+            catalog.load_source_without_annotations(&source_id, &url_context, &mut tosca_errors)?
         } else {
-            catalog.load_source_with_annotations(&source_id, &url_context, &mut tosca_errors)?;
+            catalog.load_source_with_annotations(&source_id, &url_context, &mut tosca_errors)?
+        } {
+            url_context = new_url_context;
         }
 
         // Complete
@@ -87,22 +103,32 @@ impl Compile {
         let store = InMemoryStore::default();
         let mut floria_service_template_id = None;
 
-        let directory = self.floria_directory();
+        let directory = self.floria_directory().map_err(floria::StoreError::from)?;
 
         if self.should_compile() {
             let mut errors = tosca_errors.into_annotated();
             let mut context =
-                CompilationContext::new(&source_id, &catalog, &directory, store.to_ref(), errors.to_ref());
+                CompilationContext::new(&source_id, &catalog, &directory, store.clone().into_ref(), errors.as_ref());
             floria_service_template_id = catalog.compile_service_template(&mut context)?;
         }
 
         // Instantiate
 
         #[cfg(feature = "plugins")]
+        let mut floria_errors = Errors::<FloriaError>::default();
+
+        #[cfg(feature = "plugins")]
         let floria_instance = if self.instantiate
             && let Some(floria_service_template_id) = &floria_service_template_id
         {
-            self.instantiate(floria_service_template_id, &directory, &store, &mut floria_errors)?
+            self.instantiate(
+                floria_service_template_id,
+                inputs,
+                &directory,
+                store.clone(),
+                &url_context,
+                &mut floria_errors,
+            )?
         } else {
             None
         };
@@ -117,9 +143,9 @@ impl Compile {
         self.depict_debug(&catalog, &mut print_first, &mut output_floria, root);
 
         #[cfg(feature = "plugins")]
-        self.output_floria_instance(floria_instance, &store, &mut print_first, &mut output_floria, root)?;
+        self.output_floria_instance(floria_instance, store.clone(), &mut print_first, &mut output_floria, root)?;
 
-        self.output_floria_template(floria_service_template_id, &store, &mut print_first, &mut output_floria, root)?;
+        self.output_floria_template(floria_service_template_id, store, &mut print_first, &mut output_floria, root)?;
 
         #[cfg(not(feature = "plugins"))]
         let no_errors = csar_errors.is_empty() && tosca_errors.is_empty();

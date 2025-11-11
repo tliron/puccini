@@ -33,17 +33,17 @@ service_template:
 
     let mut catalog = Catalog::default();
     catalog.add_dialect_ref(tosca_2_0::Dialect::default().into());
-    catalog.add_source(tosca_2_0::Dialect::implicit_source::<WithAnnotations>()); // TODO: without?
+    catalog.add_sources(tosca_2_0::Dialect::built_in_sources::<WithAnnotations>().expect("built_in_sources"));
 
     // Load our source
 
     catalog
         .load_source_with_annotations::<WithAnnotations, _>(&source_id, &url_context, &mut FailFastErrorReceiver)
-        .unwrap();
+        .expect("load_source_with_annotations");
 
     // Complete
 
-    catalog.complete_entities::<WithAnnotations, _>(&mut FailFastErrorReceiver).unwrap();
+    catalog.complete_entities::<WithAnnotations, _>(&mut FailFastErrorReceiver).expect("complete_entities");
 
     // Compile service template into Floria in-memory store
 
@@ -51,13 +51,17 @@ service_template:
 
     let mut errors = FailFastErrorReceiver;
     let directory = Directory::default();
-    let mut context = CompilationContext::new(&source_id, &catalog, &directory, store.to_ref(), errors.to_ref());
+    let mut context =
+        CompilationContext::new(&source_id, &catalog, &directory, store.clone().into_ref(), errors.as_ref());
 
-    let service_template_id =
-        catalog.compile_service_template(&mut context).unwrap().expect("compile_service_template");
+    let service_template_id = catalog
+        .compile_service_template(&mut context)
+        .expect("compile_service_template")
+        .expect("compile_service_template");
 
     // Print service template
 
-    let service_template = store.get_vertex_template(&service_template_id).unwrap().expect("get_vertex_template");
-    service_template.to_depict(&store).print_default_depiction();
+    let service_template =
+        store.get_vertex_template(&service_template_id).expect("get_vertex_template").expect("get_vertex_template");
+    service_template.as_depict(&store).print_default_depiction();
 }

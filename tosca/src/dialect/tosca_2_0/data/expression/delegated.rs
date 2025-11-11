@@ -93,10 +93,10 @@ impl<AnnotatedT> fmt::Display for Expression<AnnotatedT> {
 impl<AnnotatedT> PartialEq for Expression<AnnotatedT> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Simple(simple), Self::Simple(other_simple)) => simple == other_simple,
-            (Self::List(list), Self::List(other_list)) => list == other_list,
-            (Self::Map(map), Self::Map(other_map)) => map == other_map,
-            (Self::Call(call), Self::Call(other_call)) => call == other_call,
+            (Self::Simple(left), Self::Simple(right)) => left == right,
+            (Self::List(left), Self::List(right)) => left == right,
+            (Self::Map(left), Self::Map(right)) => left == right,
+            (Self::Call(left), Self::Call(right)) => left == right,
             _ => false,
         }
     }
@@ -107,10 +107,10 @@ impl<AnnotatedT> Eq for Expression<AnnotatedT> {}
 impl<AnnotatedT> PartialOrd for Expression<AnnotatedT> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (Self::Simple(simple), Self::Simple(other_simple)) => simple.partial_cmp(other_simple),
-            (Self::List(list), Self::List(other_list)) => list.partial_cmp(other_list),
-            (Self::Map(map), Self::Map(other_map)) => map.partial_cmp(other_map),
-            (Self::Call(call), Self::Call(other_call)) => call.partial_cmp(other_call),
+            (Self::Simple(left), Self::Simple(right)) => left.partial_cmp(right),
+            (Self::List(left), Self::List(right)) => left.partial_cmp(right),
+            (Self::Map(left), Self::Map(right)) => left.partial_cmp(right),
+            (Self::Call(left), Self::Call(right)) => left.partial_cmp(right),
             _ => None,
         }
     }
@@ -119,10 +119,10 @@ impl<AnnotatedT> PartialOrd for Expression<AnnotatedT> {
 impl<AnnotatedT> Ord for Expression<AnnotatedT> {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (Self::Simple(simple), Self::Simple(other_simple)) => simple.cmp(other_simple),
-            (Self::List(list), Self::List(other_list)) => list.cmp(other_list),
-            (Self::Map(map), Self::Map(other_map)) => map.cmp(other_map),
-            (Self::Call(call), Self::Call(other_call)) => call.cmp(other_call),
+            (Self::Simple(left), Self::Simple(right)) => left.cmp(right),
+            (Self::List(left), Self::List(right)) => left.cmp(right),
+            (Self::Map(left), Self::Map(right)) => left.cmp(right),
+            (Self::Call(left), Self::Call(right)) => left.cmp(right),
 
             (Self::Simple(_), _) => Ordering::Less,
 

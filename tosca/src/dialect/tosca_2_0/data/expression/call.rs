@@ -1,4 +1,7 @@
-use super::{super::super::super::super::grammar::*, expression::*};
+use super::{
+    super::super::{super::super::grammar::*, dialect::*},
+    expression::*,
+};
 
 use {
     compris::annotate::*,
@@ -38,17 +41,18 @@ impl<AnnotatedT> Call<AnnotatedT> {
     }
 
     /// Constructor.
-    pub fn new_native(function: &'static str, arguments: Vec<Expression<AnnotatedT>>, kind: floria::CallKind) -> Self
+    pub fn new_implicit(
+        function: &'static str,
+        internal: bool,
+        arguments: Vec<Expression<AnnotatedT>>,
+        kind: floria::CallKind,
+    ) -> Self
     where
         AnnotatedT: Default,
     {
-        Self::new(Name::from_static(function).into(), arguments, kind)
-    }
-
-    /// True if native.
-    pub fn is_native(&self) -> bool {
-        // TODO
-        self.function.namespace.is_empty()
+        let function = Name::new_static_unchecked(function);
+        let function = if internal { FullName::new(internal_namespace(), function) } else { function.into() };
+        Self::new(function, arguments, kind)
     }
 
     /// True if we already have the argument.
@@ -70,6 +74,11 @@ impl<AnnotatedT> Call<AnnotatedT> {
         }
     }
 
+    /// Make it eager.
+    pub fn make_eager(&mut self) {
+        self.kind = floria::CallKind::Eager;
+    }
+
     /// Make it lazy.
     pub fn make_lazy(&mut self) {
         self.kind = floria::CallKind::Lazy;
@@ -84,6 +93,19 @@ where
         Call::new(
             self.function.clone(),
             self.arguments.iter().map(|item| item.remove_annotations()).collect(),
+            self.kind,
+        )
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for Call<AnnotatedT>
+where
+    AnnotatedT: Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self::new(
+            self.function.to_namespace(namespace),
+            self.arguments.iter().map(|item| item.to_namespace(namespace)).collect(),
             self.kind,
         )
     }

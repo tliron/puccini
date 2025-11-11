@@ -4,6 +4,7 @@ members = [
     "cli",
     "csar",
     "tosca",
-    "tosca-2.0-functions",
-    "examples/kubernetes",
+    "sdk",
+    "plugin",
+    "examples/plugins/kubernetes",
 ]

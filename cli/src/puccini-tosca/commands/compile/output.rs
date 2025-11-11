@@ -5,14 +5,14 @@ use super::{
 };
 
 use {
-    anstream::println,
+    anstream::{println, stdout},
     compris::{annotate::*, normal::*, ser::*},
     depiction::*,
     floria::*,
     kutil::{cli::run::*, std::error::*},
     puccini_csar::*,
     puccini_tosca::grammar::*,
-    std::fmt,
+    std::{collections::*, fmt},
 };
 
 impl Compile {
@@ -84,13 +84,13 @@ impl Compile {
     pub fn output_floria_template<StoreT>(
         &self,
         floria_service_template_id: Option<ID>,
-        store: &StoreT,
+        store: StoreT,
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
     ) -> Result<(), MainError>
     where
-        StoreT: Store,
+        StoreT: Clone + Store,
     {
         if *output_floria
             && let Some(floria_service_template_id) = floria_service_template_id
@@ -103,7 +103,7 @@ impl Compile {
 
                 None => {
                     if Self::print_next(print_first, root) {
-                        floria_service_template.to_depict(store).print_default_depiction();
+                        floria_service_template.as_depict(&store).print_default_depiction();
                     }
                 }
             }
@@ -116,13 +116,13 @@ impl Compile {
     pub fn output_floria_instance<StoreT>(
         &self,
         floria_instance: Option<Vertex>,
-        store: &StoreT,
+        store: StoreT,
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
     ) -> Result<(), MainError>
     where
-        StoreT: Store,
+        StoreT: Clone + Store,
     {
         if *output_floria
             && !matches!(self.debug, Some(Debug::Compiled))
@@ -130,12 +130,46 @@ impl Compile {
         {
             *output_floria = false;
 
-            match self.compris_format()? {
-                Some(format) => self.output_compris(floria_instance.into_expression(true, store)?, format, root)?,
+            let format = self.compris_format()?;
 
-                None => {
-                    if Self::print_next(print_first, root) {
-                        floria_instance.to_depict(store).print_default_depiction();
+            if !self.outputs.is_empty() {
+                let mut outputs = BTreeMap::<Expression, Expression>::default();
+                for name in &self.outputs {
+                    match floria_instance.instance.properties.get(format!("output:{}", name).as_str()) {
+                        Some(output) => {
+                            outputs.insert(
+                                name.clone().into(),
+                                output.value.clone().unwrap_or_else(|| {
+                                    // We can't serialize Undefined, so we'll use Null
+                                    if format.is_some() { Expression::Null } else { Expression::Undefined }
+                                }),
+                            );
+                        }
+
+                        None => return Err(ExitError::from(format!("undefined output: {}", name)).into()),
+                    }
+                }
+
+                let outputs = Expression::Map(outputs);
+                match format {
+                    Some(format) => self.output_compris(outputs, format, root)?,
+
+                    None => {
+                        if Self::print_next(print_first, root) {
+                            DEFAULT_THEME.write_heading(&mut stdout(), "Service Outputs")?;
+                            println!();
+                            outputs.print_default_depiction();
+                        }
+                    }
+                }
+            } else {
+                match format {
+                    Some(format) => self.output_compris(floria_instance.into_expression(true, store)?, format, root)?,
+
+                    None => {
+                        if Self::print_next(print_first, root) {
+                            floria_instance.as_depict(&store).print_default_depiction();
+                        }
                     }
                 }
             }

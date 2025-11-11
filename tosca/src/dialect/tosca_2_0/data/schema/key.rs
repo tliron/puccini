@@ -15,6 +15,10 @@ pub struct SchemaKey {
     #[depict(option)]
     pub data_type: Option<FullName>,
 
+    /// Default.
+    #[depict(option, as(depict))]
+    pub default: Option<Expression<WithoutAnnotations>>,
+
     /// Validation.
     #[depict(option, as(depict))]
     pub validation: Option<Expression<WithoutAnnotations>>,
@@ -26,16 +30,22 @@ pub struct SchemaKey {
     /// Entry schema.
     #[depict(option, as(depict))]
     pub entry_schema: Option<Box<SchemaKey>>,
+
+    /// Schema details.
+    #[depict(option, as(depict))]
+    pub details: Option<Box<SchemaKey>>,
 }
 
 impl SchemaKey {
     /// Constructor.
     pub fn new(
         data_type: Option<FullName>,
+        default: Option<Expression<WithoutAnnotations>>,
         validation: Option<Expression<WithoutAnnotations>>,
         key_schema: Option<Box<SchemaKey>>,
         entry_schema: Option<Box<SchemaKey>>,
+        details: Option<Box<SchemaKey>>,
     ) -> Self {
-        Self { data_type, validation, key_schema, entry_schema }
+        Self { data_type, default, validation, key_schema, entry_schema, details }
     }
 }

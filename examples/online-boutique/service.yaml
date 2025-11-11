@@ -13,18 +13,31 @@ imports:
 
 service_template:
 
+  inputs:
+    kubernetes:
+      type: boutique:ms:krm:KubernetesClient
+      required: false
+
+  outputs:
+    frontend:
+      value:
+        $boutique:ms:krm:get_kubernetes:
+        - { $get_input: [ kubernetes ] }
+        - kind: deployment
+          name: frontendservice1
+          namespace: boutique
+
   node_templates:
 
     frontend1:
       type: boutique:FrontendService
       properties:
-        label: { $boutique:ms:krm:kubernetes: [] }
-        #label: adservice1
+        label: frontendservice1
 
     frontend2:
       type: boutique:FrontendService
       properties:
-        label: adservice2
+        label: frontendservice2
 
     checkout:
       type: boutique:CheckoutService

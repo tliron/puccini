@@ -17,7 +17,7 @@ pub struct Compile {
 
     /// output file path;
     /// when absent will write to stdout
-    #[arg(long = "output", short = 'o', verbatim_doc_comment)]
+    #[arg(long = "output-file", short = 'o', verbatim_doc_comment)]
     pub output_file: Option<PathBuf>,
 
     /// output format;
@@ -39,13 +39,36 @@ pub struct Compile {
     #[arg(long = "directory")]
     pub directory: Option<String>,
 
+    /// set the TOSCA service inputs as a YAML or JSON map;
+    /// when used multiple times the maps will be merged;
+    /// requires `--instantiate`
+    #[arg(long = "inputs", verbatim_doc_comment)]
+    pub inputs: Vec<String>,
+
+    /// load the TOSCA service inputs as a YAML or JSON map;
+    /// can be a file path or a URL;
+    /// when used multiple times the maps will be merged;
+    /// requires `--instantiate`
+    #[arg(long = "inputs-from", verbatim_doc_comment)]
+    pub inputs_from: Vec<String>,
+
+    /// output a TOSCA service output;
+    /// can be used multiple times;
+    /// requires `--instantiate`
+    #[arg(long = "output", verbatim_doc_comment)]
+    pub outputs: Vec<String>,
+
     /// simulate instantiation into Floria directory;
     /// only if there are no compilation errors
     #[arg(long = "instantiate", short = 'i', verbatim_doc_comment)]
     pub instantiate: bool,
 
-    /// simulate update of the Floria instance;
+    /// propagate an event on the Floria instance;
     /// requires `--instantiate`
+    #[arg(long = "event", verbatim_doc_comment)]
+    pub events: Vec<String>,
+
+    /// alias for `--event=floria:update`
     #[arg(long = "update", short = 'u', verbatim_doc_comment)]
     pub update: bool,
 
@@ -57,21 +80,21 @@ pub struct Compile {
     #[arg(long, short = 'd', value_enum)]
     pub debug: Option<Debug>,
 
-    /// path to plugin override
+    /// URL to plugin override
     #[arg(long = "plugin")]
-    pub plugin: Option<PathBuf>,
+    pub plugin: Option<String>,
 
     /// plugin override is precompiled for this platform (.cwasm file)
     #[arg(long = "plugin-precompiled")]
     pub plugin_precompiled: bool,
 
     /// enable support for plugin debug information in Wasm
-    #[cfg(feature = "wasm-debug-info")]
+    #[cfg(feature = "wasm-debug")]
     #[arg(long = "plugin-debug", default_value_t = true, hide = true)]
     pub plugin_debug: bool,
 
     /// enable support for plugin debug information in Wasm
-    #[cfg(not(feature = "wasm-debug-info"))]
+    #[cfg(not(feature = "wasm-debug"))]
     #[arg(long = "plugin-debug")]
     pub plugin_debug: bool,
 
@@ -97,13 +120,10 @@ impl Compile {
         }
     }
 
-    pub fn floria_directory(&self) -> floria::Directory {
-        self.directory
-            .as_ref()
-            .map(|directory| {
-                let Ok(directory) = directory.parse();
-                directory
-            })
-            .unwrap_or_else(|| Default::default())
+    pub fn floria_directory(&self) -> Result<floria::Directory, floria::MalformedError> {
+        match &self.directory {
+            Some(directory) => directory.parse(),
+            None => Ok(Default::default()),
+        }
     }
 }

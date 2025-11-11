@@ -1,4 +1,4 @@
-use super::call::*;
+use super::{super::super::super::super::grammar::*, call::*};
 
 use {
     compris::{annotate::*, normal::*},
@@ -34,19 +34,29 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         }
     }
 
-    /// True if a native call.
-    pub fn is_native_call(&self, function: &str) -> bool {
-        match self {
-            Expression::Call(call) => call.is_native() && (call.function.name.0 == function),
-            _ => false,
-        }
-    }
+    // /// True if an implicit call.
+    // pub fn is_implicit_call(&self, function: &str) -> bool {
+    //     match self {
+    //         Expression::Call(call) => call.implicit && (call.function.name.0 == function),
+    //         _ => false,
+    //     }
+    // }
 
-    /// True if a non-internal native call.
-    pub fn is_standard_call(&self) -> bool {
-        match self {
-            Expression::Call(call) => call.is_native() && !call.function.name.0.starts_with('_'),
-            _ => true,
+    // /// True if a non-internal implicit call.
+    // pub fn is_implicit_non_internal_call(&self) -> bool {
+    //     match self {
+    //         Expression::Call(call) => call.implicit && !call.function.name.0.starts_with('_'),
+    //         _ => true,
+    //     }
+    // }
+
+    /// If it's a call then make it eager.
+    pub fn into_eager(self) -> Self {
+        if let Expression::Call(mut call) = self {
+            call.make_eager();
+            call.into()
+        } else {
+            self
         }
     }
 
@@ -60,22 +70,22 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         }
     }
 
-    /// Embed the expression in a call.
-    pub fn embed(self, function: &'static str, call_kind: floria::CallKind) -> Self
+    /// Embed the expression in a call call.
+    pub fn embed(self, function: &'static str, internal: bool, call_kind: floria::CallKind) -> Self
     where
         AnnotatedT: Annotated + Clone + Default,
     {
         let annotations = self.annotations().cloned();
-        Call::new_native(function.into(), vec![self], call_kind).with_annotations_option(annotations).into()
+        Call::new_implicit(function, internal, vec![self], call_kind).with_annotations_option(annotations).into()
     }
 
     /// Embed after another expression in a call.
-    pub fn embed_after(self, other: Self, function: &'static str, call_kind: floria::CallKind) -> Self
+    pub fn embed_after(self, other: Self, function: &'static str, internal: bool, call_kind: floria::CallKind) -> Self
     where
         AnnotatedT: Annotated + Clone + Default,
     {
         let annotations = other.annotations().cloned();
-        Call::new_native(function, vec![other, self], call_kind).with_annotations_option(annotations).into()
+        Call::new_implicit(function, internal, vec![other, self], call_kind).with_annotations_option(annotations).into()
     }
 
     /// Make the expression lazy and embed in `$_assert` if necessary.
@@ -83,7 +93,7 @@ impl<AnnotatedT> Expression<AnnotatedT> {
     where
         AnnotatedT: Annotated + Clone + Default,
     {
-        if self.is_standard_call() { self.embed("_assert", floria::CallKind::Lazy) } else { self.into_lazy() }
+        if true { self.embed("assert", true, floria::CallKind::Lazy) } else { self.into_lazy() }
     }
 }
 
@@ -103,6 +113,22 @@ where
                     .collect(),
             ),
             Expression::Call(call) => Expression::Call(call.remove_annotations()),
+        }
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for Expression<AnnotatedT>
+where
+    AnnotatedT: Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        match self {
+            Self::Simple(simple) => Self::Simple(simple.clone()),
+            Self::List(list) => Expression::List(list.iter().map(|item| item.to_namespace(namespace)).collect()),
+            Self::Map(map) => Expression::Map(
+                map.iter().map(|(key, value)| (key.to_namespace(namespace), value.to_namespace(namespace))).collect(),
+            ),
+            Self::Call(call) => Self::Call(call.to_namespace(namespace)),
         }
     }
 }

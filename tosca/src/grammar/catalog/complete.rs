@@ -28,10 +28,10 @@ impl Catalog {
         AnnotatedT: Annotated + Default,
         ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
     {
-        let mut entities = self.entity_names();
-        entities.sort();
+        let mut entity_names = self.entity_names();
+        entity_names.sort();
 
-        for (source_id, entity_kind, name) in entities {
+        for (source_id, entity_kind, name) in entity_names {
             let entity_kinds = unwrap_or_give!(self.source_entity_kinds(&source_id), errors, &EntityKinds::default());
             let entity_kind_name = entity_kinds.represent(entity_kind);
 
@@ -96,7 +96,7 @@ impl Catalog {
             entity
                 .complete(
                     derivation_path,
-                    &mut CompletionContext::new(self, source_id, errors.into_annotated().to_ref()),
+                    &mut CompletionContext::new(self, source_id, errors.into_annotated().as_ref()),
                 )
                 .map_err(|error| error.into_annotated())?;
 

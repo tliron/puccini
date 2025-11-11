@@ -1,6 +1,6 @@
-use super::namespace::*;
+use super::{super::data::*, name::*, namespace::*};
 
-use {kutil::std::immutable::*, std::collections::*};
+use std::collections::*;
 
 //
 // ToNamespace
@@ -17,11 +17,7 @@ where
     IntoNamespaceT: Clone + ToNamespace<IntoNamespaceT>,
 {
     fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
-        let mut clone = self.clone();
-        if namespace.is_some() {
-            clone = clone.map(|clone| clone.to_namespace(namespace));
-        }
-        clone
+        self.as_ref().map(|inner| inner.to_namespace(namespace))
     }
 }
 
@@ -30,11 +26,7 @@ where
     IntoNamespaceT: Clone + ToNamespace<IntoNamespaceT>,
 {
     fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
-        let mut clone = self.clone();
-        if namespace.is_some() {
-            clone = Box::leak(clone).to_namespace(namespace).into();
-        }
-        clone
+        self.as_ref().to_namespace(namespace).into()
     }
 }
 
@@ -43,15 +35,24 @@ where
     IntoNamespaceT: ToNamespace<IntoT>,
 {
     fn to_namespace(&self, namespace: Option<&Namespace>) -> Vec<IntoT> {
-        self.iter().map(|entry| entry.to_namespace(namespace)).collect()
+        self.iter().map(|item| item.to_namespace(namespace)).collect()
     }
 }
 
-impl<IntoNamespaceT, IntoT> ToNamespace<BTreeMap<ByteString, IntoT>> for BTreeMap<ByteString, IntoNamespaceT>
+impl<IntoNamespaceT, IntoT> ToNamespace<BTreeMap<Name, IntoT>> for BTreeMap<Name, IntoNamespaceT>
 where
     IntoNamespaceT: ToNamespace<IntoT>,
 {
-    fn to_namespace(&self, namespace: Option<&Namespace>) -> BTreeMap<ByteString, IntoT> {
-        self.iter().map(|(name, value)| (name.clone(), value.to_namespace(namespace))).collect()
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> BTreeMap<Name, IntoT> {
+        self.iter().map(|(key, value)| (key.clone(), value.to_namespace(namespace))).collect()
+    }
+}
+
+impl<IntoNamespaceT, IntoT> ToNamespace<Taxonomy<Name, IntoT>> for Taxonomy<Name, IntoNamespaceT>
+where
+    IntoNamespaceT: ToNamespace<IntoT>,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Taxonomy<Name, IntoT> {
+        self.iter().map(|(key, value)| (key.clone(), value.to_namespace(namespace))).collect()
     }
 }

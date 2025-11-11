@@ -15,7 +15,7 @@ pub struct Inspect {
 
     /// output file path;
     /// when absent will write to stdout
-    #[arg(long = "output", short = 'o', verbatim_doc_comment)]
+    #[arg(long = "output-file", short = 'o', verbatim_doc_comment)]
     pub output_file: Option<PathBuf>,
 
     /// output format;

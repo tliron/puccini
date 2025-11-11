@@ -15,7 +15,7 @@ impl ToscaMeta {
     where
         ErrorReceiverT: ErrorReceiver<CsarError>,
     {
-        Ok(if let Some(path) = unwrap_or_give_and_return!(tosca_meta_path_in_directory(directory), errors, Ok(None)) {
+        Ok(if let Some(path) = must_unwrap_give!(tosca_meta_path_in_directory(directory), errors) {
             Some(ToscaMeta::read_path(&path, errors)?)
         } else {
             None

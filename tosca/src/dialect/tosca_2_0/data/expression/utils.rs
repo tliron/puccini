@@ -17,31 +17,32 @@ pub trait ExpressionUtilities<AnnotatedT> {
         &mut self,
         other: Expression<AnnotatedT>,
         function: &'static str,
+        internal: bool,
         call_kind: floria::CallKind,
         always: bool,
     ) where
         AnnotatedT: Annotated + Clone + Default;
 
-    /// Joins the expressions with "_apply"".
+    /// Joins the expressions with `$_apply`.
     ///
-    /// If self or other are already "_apply" then will flatten as a single "_apply".
+    /// If self or other are already `$_apply` then will flatten as a single `$_apply`.
     ///
-    /// If it's just one expression will wrap in "_apply".
+    /// If it's just one expression will wrap in `$_apply`.
     fn join_apply(&mut self, other: Expression<AnnotatedT>)
     where
         AnnotatedT: Annotated + Clone + Default,
     {
-        self.join(other, "_apply", floria::CallKind::Eager, true)
+        self.join(other, "apply", true, floria::CallKind::Eager, true)
     }
 
-    /// Joins the expressions with "and"".
+    /// Joins the expressions with `$and`.
     ///
-    /// If self or other are already "and" then will flatten as a single "and".
+    /// If self or other are already `$and` then will flatten as a single `$and`.
     fn join_and(&mut self, other: Expression<AnnotatedT>)
     where
         AnnotatedT: Annotated + Clone + Default,
     {
-        self.join(other, "and", floria::CallKind::Normal, false)
+        self.join(other, "and", false, floria::CallKind::Normal, false)
     }
 
     /// Complete validation as a flattened `$and`.
@@ -57,13 +58,19 @@ pub trait ExpressionUtilities<AnnotatedT> {
 }
 
 impl<AnnotatedT> ExpressionUtilities<AnnotatedT> for Option<Expression<AnnotatedT>> {
-    fn join(&mut self, other: Expression<AnnotatedT>, function: &'static str, call_kind: floria::CallKind, always: bool)
-    where
+    fn join(
+        &mut self,
+        other: Expression<AnnotatedT>,
+        function: &'static str,
+        internal: bool,
+        call_kind: floria::CallKind,
+        always: bool,
+    ) where
         AnnotatedT: Annotated + Clone + Default,
     {
         *self = match self.take() {
             Some(expression) => {
-                if expression.is_native_call(function) {
+                if expression.is_call(function) {
                     // Prepend to existing function
                     if let Expression::Call(mut function) = expression {
                         function.prepend_unique_argument(other);
@@ -71,7 +78,7 @@ impl<AnnotatedT> ExpressionUtilities<AnnotatedT> for Option<Expression<Annotated
                     } else {
                         panic!("should be a call");
                     }
-                } else if other.is_native_call(function) {
+                } else if other.is_call(function) {
                     // Append to existing function
                     if let Expression::Call(mut function) = other {
                         function.append_unique_argument(expression);
@@ -81,17 +88,17 @@ impl<AnnotatedT> ExpressionUtilities<AnnotatedT> for Option<Expression<Annotated
                     }
                 } else {
                     // Join with function
-                    Some(expression.embed_after(other, function, call_kind))
+                    Some(expression.embed_after(other, function, internal, call_kind))
                 }
             }
 
             None => {
-                if !always || other.is_native_call(function) {
+                if !always || other.is_call(function) {
                     // As is
                     Some(other)
                 } else {
                     // Embed in function
-                    Some(other.embed(function, call_kind))
+                    Some(other.embed(function, internal, call_kind))
                 }
             }
         };

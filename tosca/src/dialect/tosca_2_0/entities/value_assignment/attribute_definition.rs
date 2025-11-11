@@ -1,16 +1,13 @@
 use super::{
     super::{
-        super::{super::super::grammar::*, data::*, dialect::*, schema::*},
+        super::{super::super::grammar::*, data::*, dialect::*},
         attribute_definition::*,
         data_type::*,
     },
     value_assignment::*,
 };
 
-use {
-    compris::annotate::*,
-    kutil::std::{error::*, immutable::*},
-};
+use {compris::annotate::*, kutil::std::error::*};
 
 impl<AnnotatedT> Subentity<AttributeDefinition<AnnotatedT>> for ValueAssignment<AnnotatedT>
 where
@@ -18,45 +15,29 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         attribute_definition: Option<&AttributeDefinition<AnnotatedT>>,
         attribute_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_optional_name_field!(type_name, self, attribute_definition, attribute_definition_namespace, context);
+        complete_optional_type_name_field!(self, attribute_definition, attribute_definition_namespace, true, context);
 
         let Some(attribute_definition) = attribute_definition else {
             return Ok(());
         };
 
         if self.expression.is_none() && attribute_definition.default.is_some() {
-            self.expression = attribute_definition.default.clone();
+            self.expression = attribute_definition.default.to_namespace(attribute_definition_namespace);
         }
 
-        complete_none_field_to!(type_name, self, attribute_definition, || Some(
-            attribute_definition.type_name.to_namespace(attribute_definition_namespace)
-        ));
+        let (data_type, _data_type_namespace) =
+            completed_entity_from_optional_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
 
-        if let Some(type_name) = &self.type_name
-            && let Some(data_type) = context
-                .catalog
-                .completed_entity::<DataType<AnnotatedT>, _, _>(
-                    DATA_TYPE,
-                    type_name,
-                    context.source_id,
-                    &mut context.errors.with_fallback_annotations_from_field(self, "type_name"),
-                )?
-                .cloned()
-        {
+        if let Some(data_type) = data_type {
             validate_type(&data_type, &attribute_definition.type_name, context)?;
 
             if let Some(validation) = unwrap_or_give!(
-                data_type.schema_validation(
-                    &self.to_schema_key(Some(attribute_definition.type_name.clone())),
-                    attribute_definition,
-                    context.source_id,
-                    context.catalog
-                ),
+                data_type.schema_validation(attribute_definition, attribute_definition_namespace, context),
                 context.errors,
                 None
             ) {
@@ -64,7 +45,7 @@ where
             }
         }
 
-        complete_none_field!(description, self, attribute_definition);
+        complete_optional_field!(description, self, attribute_definition);
 
         Ok(())
     }
@@ -76,7 +57,8 @@ where
 {
     fn to_namespace(&self, namespace: Option<&Namespace>) -> ValueAssignment<AnnotatedT> {
         ValueAssignment {
-            expression: if self.default.is_some() { self.default.clone() } else { None },
+            // expression: if self.default.is_some() { self.default.clone() } else { None },
+            expression: None,
             validation: None,
             type_name: Some(self.type_name.to_namespace(namespace)),
             metadata: self.metadata.clone(),

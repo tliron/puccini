@@ -1,0 +1,36 @@
+use super::super::super::internal::*;
+
+use {
+    floria_plugin_sdk::{data::*, utils::*, *},
+    puccini_plugin_sdk_tosca_2_0::data::*,
+};
+
+/// The $equal function takes two arguments that have the same type. It evaluates to true if the
+/// arguments are equal. An $equal function that uses arguments of different types SHOULD be
+/// flagged as an error.
+///
+/// (Documentation copied from
+/// [TOSCA specification 2.0](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html))
+pub fn equal(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult {
+    assert_argument_count(&arguments, 2)?;
+    let mut arguments = arguments.into_iter();
+
+    let left = arguments.next().unwrap().must_evaluate(&call_site)?;
+    let right = arguments.next().unwrap().must_evaluate(&call_site)?;
+
+    let left = left.coerce_if_custom(&right)?;
+    let right = right.coerce_if_custom(&left)?;
+    left.assert_same_type(&right, "=")?;
+
+    // Note: equal can work directly on any type (we don't need comparators)
+
+    Ok(Some(
+        if left == right {
+            true
+        } else {
+            set_assert_reason(Some(format!("{} = {}", left, right)))?;
+            false
+        }
+        .into(),
+    ))
+}

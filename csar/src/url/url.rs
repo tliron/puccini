@@ -43,7 +43,7 @@ impl CsarUrl {
     {
         Ok(match self.tosca_meta_url(validate_location, errors)? {
             Some(tosca_meta_url) => {
-                let reader = unwrap_or_give_and_return!(tosca_meta_url.open(), errors, Ok(None));
+                let reader = must_unwrap_give!(tosca_meta_url.open(), errors);
                 let mut reader = io::BufReader::new(reader);
                 Some(ToscaMeta::read(&mut reader, errors)?)
             }

@@ -10,7 +10,10 @@ mod run;
 
 use run::*;
 
-use std::process::*;
+use {mimalloc::*, std::process::*};
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 /// Main.
 pub fn main() -> ExitCode {

@@ -45,6 +45,18 @@ where
     #[depict(iter(kv), as(depict), key_style(string))]
     pub notifications: NotificationAssignments<AnnotatedT>,
 
+    /// Type name.
+    #[depict(skip)]
+    pub type_name: FullName,
+
+    /// Description.
+    #[depict(skip)]
+    pub description: Option<ByteString>,
+
+    /// Metadata.
+    #[depict(skip)]
+    pub metadata: Metadata<AnnotatedT>,
+
     #[resolve(annotations)]
     #[depict(skip)]
     pub(crate) annotations: StructAnnotations,
@@ -56,11 +68,12 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         interface_definition: Option<&InterfaceDefinition<AnnotatedT>>,
         interface_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
+        complete_type_name_field!(self, interface_definition, interface_definition_namespace, false, context);
         complete_subentity_map_field!(
             input,
             inputs,
@@ -101,8 +114,10 @@ where
             inputs: self.inputs.to_namespace(namespace),
             operations: self.operations.to_namespace(namespace),
             notifications: self.notifications.to_namespace(namespace),
-            annotations: self.annotations.clone_fields(&["inputs", "operations", "notifications"]),
-            ..Default::default()
+            type_name: self.type_name.to_namespace(namespace),
+            description: self.description.clone(),
+            metadata: self.metadata.clone(),
+            annotations: self.annotations.clone_fields(&["inputs", "operations", "notifications", "type_name"]),
         }
     }
 }
@@ -112,4 +127,4 @@ where
 //
 
 /// Map of [InterfaceAssignment].
-pub type InterfaceAssignments<AnnotatedT> = BTreeMap<ByteString, InterfaceAssignment<AnnotatedT>>;
+pub type InterfaceAssignments<AnnotatedT> = BTreeMap<Name, InterfaceAssignment<AnnotatedT>>;

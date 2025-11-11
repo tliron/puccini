@@ -21,7 +21,7 @@ where
 {
     /// The mandatory artifact type for the artifact definition.
     ///
-    /// Puccini note: Should not be mandatory for assignments.
+    /// Puccini note: *Not* mandatory, as it can be inherited from definition.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -29,7 +29,7 @@ where
     /// The mandatory URI string (relative or absolute) that can be used to locate the artifact's
     /// file.
     ///
-    /// Puccini note: Should not be mandatory for assignments.
+    /// Puccini note: *Not* mandatory, as it can be inherited from definition.
     #[depict(option, style(string))]
     pub file: Option<ByteString>,
 
@@ -86,12 +86,12 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         artifact_definition: Option<&ArtifactDefinition<AnnotatedT>>,
         artifact_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, artifact_definition, artifact_definition_namespace, context);
+        complete_type_name_field!(self, artifact_definition, artifact_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,
             properties,
@@ -103,7 +103,7 @@ where
         );
 
         if let Some(artifact_definition) = artifact_definition {
-            complete_none_field_to!(file, self, artifact_definition, || Some(artifact_definition.file.clone()));
+            complete_optional_field_to!(file, self, artifact_definition, || Some(artifact_definition.file.clone()));
 
             // if_none_call(
             //     &mut self.file,
@@ -113,10 +113,10 @@ where
             //     "file",
             // );
 
-            complete_none_field!(repository, self, artifact_definition);
-            complete_none_field!(artifact_version, self, artifact_definition);
-            complete_none_field!(checksum, self, artifact_definition);
-            complete_none_field!(checksum_algorithm, self, artifact_definition);
+            complete_optional_field!(repository, self, artifact_definition);
+            complete_optional_field!(artifact_version, self, artifact_definition);
+            complete_optional_field!(checksum, self, artifact_definition);
+            complete_optional_field!(checksum_algorithm, self, artifact_definition);
         }
 
         Ok(())
@@ -148,4 +148,4 @@ where
 //
 
 /// Map of [ArtifactAssignment].
-pub type ArtifactAssignments<AnnotatedT> = BTreeMap<ByteString, ArtifactAssignment<AnnotatedT>>;
+pub type ArtifactAssignments<AnnotatedT> = BTreeMap<Name, ArtifactAssignment<AnnotatedT>>;

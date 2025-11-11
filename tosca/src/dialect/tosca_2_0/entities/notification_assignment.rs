@@ -5,7 +5,6 @@ use super::{
 use {
     compris::{annotate::*, resolve::*},
     depiction::*,
-    kutil::std::immutable::*,
     std::collections::*,
 };
 
@@ -64,7 +63,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         notification_definition: Option<&NotificationDefinition<AnnotatedT>>,
         notification_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -104,7 +103,7 @@ where
 {
     fn to_namespace(&self, namespace: Option<&Namespace>) -> NotificationAssignment<AnnotatedT> {
         NotificationAssignment {
-            implementation: self.implementation.clone(),
+            implementation: self.implementation.to_namespace(namespace),
             inputs: self.inputs.to_namespace(namespace),
             outputs: self.outputs.to_namespace(namespace),
             annotations: self.annotations.clone_fields(&["implementation", "inputs", "outputs"]),
@@ -118,4 +117,4 @@ where
 //
 
 /// Map of [NotificationAssignment].
-pub type NotificationAssignments<AnnotatedT> = BTreeMap<ByteString, NotificationAssignment<AnnotatedT>>;
+pub type NotificationAssignments<AnnotatedT> = BTreeMap<Name, NotificationAssignment<AnnotatedT>>;

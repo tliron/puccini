@@ -43,6 +43,11 @@ Documentation
 * [puccini-csar API Documentation](https://docs.rs/puccini-csar/latest/puccini_csar/),
   [examples](https://github.com/tliron/puccini/tree/main/csar/examples)
 
+Acknowledgments
+---------------
+
+This work is partially supported by the C3OP (Cognitive Computing Continuum Orchestration Platform), part of [AVANT](https://www.eng.it/en/insights/stories/research-projects/ipcei-cis-avant) (dAta and infrastructural serVices for the digitAl coNTinuum), in turn part of [IPCEI CIS](https://commission.europa.eu/projects/ipcei-next-generation-cloud-infrastructure-and-services-ipcei-cis-secunet-secunetedgecloud-essen_en) (Next Generation Cloud Infrastructure and Services), an [IPCEI](https://competition-policy.ec.europa.eu/state-aid/ipcei_en) (Important Project of Common European Interest); IPCEI-CL_0000005: application protocol 108421, 5/14/2024; Italy CUP (Codice Unico di Progetto): [B89J24002920005](https://www.opencup.gov.it/portale/it/web/opencup/home/progetto/-/cup/B89J24002920005).
+
 License
 -------
 
