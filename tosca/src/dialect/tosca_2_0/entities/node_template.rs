@@ -33,6 +33,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the node type on which the node template is based.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be copied via "copy".
     #[resolve(key = "type")]
     #[depict(option, as(display), style(name))]
     pub type_name: Option<FullName>,
@@ -127,7 +129,8 @@ where
 
         let errors = &mut context.errors.to_error_receiver();
 
-        if let Some(copy) = entity_from_optional_name_field!(NODE_TEMPLATE, NodeTemplate, self, copy, context) {
+        if let Some(copy) = completed_entity_from_optional_name_field!(NODE_TEMPLATE, NodeTemplate, self, copy, context)
+        {
             complete_none_field!(type_name, self, copy);
             complete_none_field!(description, self, copy);
             complete_empty_field!(metadata, self, copy);
@@ -143,12 +146,12 @@ where
         }
 
         if self.type_name.is_none() {
-            errors.give(MissingRequiredError::new("node type name".into(), Some("type_name".into())))?;
+            errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from(self))?;
             return Ok(());
         }
 
         let (node_type, node_type_namespace) =
-            entity_from_optional_full_name_field!(NODE_TYPE, NodeType, self, type_name, context);
+            completed_entity_from_optional_full_name_field!(NODE_TYPE, NodeType, self, type_name, context);
 
         complete_subentity_map_field!(property, properties, self, node_type, node_type_namespace, true, context);
         complete_subentity_map_field!(attribute, attributes, self, node_type, node_type_namespace, true, context);

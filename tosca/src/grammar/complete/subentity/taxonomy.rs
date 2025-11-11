@@ -3,17 +3,14 @@ use super::super::{
     context::*,
 };
 
-use {
-    compris::annotate::*,
-    kutil::std::{error::*, immutable::*},
-};
+use {compris::annotate::*, kutil::std::error::*};
 
 /// Complete a [Taxonomy] of [Subentity].
 #[allow(unused_variables)]
 pub fn complete_subentity_taxonomy<SubentityT, ParentSubentityT>(
     type_name: &str,
-    taxonomy: &mut Taxonomy<ByteString, SubentityT>,
-    parent_taxonomy: Option<&Taxonomy<ByteString, ParentSubentityT>>,
+    taxonomy: &mut Taxonomy<Name, SubentityT>,
+    parent_taxonomy: Option<&Taxonomy<Name, ParentSubentityT>>,
     parent_namespace: Option<&Namespace>,
     must_be_declared: bool,
     context: &mut CompletionContext,
@@ -39,21 +36,27 @@ where
             for (name, parent_subentity) in parent_taxonomy {
                 match taxonomy.first_mut(name) {
                     Some(subentity) => {
-                        subentity.complete(Some(name.clone()), Some(parent_subentity), parent_namespace, context)?;
+                        subentity.complete(Some(name), Some(parent_subentity), parent_namespace, context)?;
                     }
 
                     None => {
                         let mut subentity = parent_subentity.to_namespace(parent_namespace);
-                        subentity.complete(Some(name.clone()), None, None, context)?;
+                        subentity.complete(Some(name), Some(parent_subentity), parent_namespace, context)?;
                         taxonomy.add(name.clone(), subentity);
                     }
+                }
+            }
+
+            for (name, subentity) in taxonomy {
+                if !parent_taxonomy.contains_name(name) {
+                    subentity.complete(Some(name), None, None, context)?;
                 }
             }
         }
 
         None => {
             for (name, subentity) in taxonomy {
-                subentity.complete(Some(name.clone()), None, parent_namespace, context)?;
+                subentity.complete(Some(name), None, None, context)?;
             }
         }
     }

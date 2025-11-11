@@ -31,6 +31,8 @@ where
 {
     /// The mandatory keyname used to provide the name of the relationship type used for the
     /// relationship.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be inherited from parent.
     #[resolve(single, key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -76,18 +78,18 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(property, properties, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(attribute, attributes, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(interface, interfaces, self, parent, parent_namespace, true, context);
 
         let (relationship_type, relationship_type_namespace) =
-            entity_from_full_name_field!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, context);
+            completed_entity_from_full_name_field!(RELATIONSHIP_TYPE, RelationshipType, self, type_name, context);
 
         complete_subentity_map_field!(
             property,

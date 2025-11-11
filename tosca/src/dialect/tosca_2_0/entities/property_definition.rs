@@ -32,6 +32,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory data type for the property.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be inherited from parent.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -96,12 +98,12 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
         complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
 
@@ -113,7 +115,7 @@ where
         }
 
         let (data_type, _data_type_namespace) =
-            entity_from_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
+            completed_entity_from_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
 
         if let Some(data_type) = data_type {
             complete_validation!(self, data_type);
@@ -144,11 +146,11 @@ where
             description: self.description.clone(),
             metadata: self.metadata.clone(),
             required: self.required,
-            default: self.default.clone(),
-            value: self.value.clone(),
-            validation: self.validation.clone(),
-            key_schema: self.key_schema.as_ref().map(|schema_definition| schema_definition.to_namespace(namespace)),
-            entry_schema: self.entry_schema.as_ref().map(|schema_definition| schema_definition.to_namespace(namespace)),
+            default: self.default.to_namespace(namespace),
+            value: self.value.to_namespace(namespace),
+            validation: self.validation.to_namespace(namespace),
+            key_schema: self.key_schema.to_namespace(namespace),
+            entry_schema: self.entry_schema.to_namespace(namespace),
             annotations: self.annotations.clone(),
         }
     }
@@ -159,4 +161,4 @@ where
 //
 
 /// Map of [PropertyDefinition].
-pub type PropertyDefinitions<AnnotatedT> = BTreeMap<ByteString, PropertyDefinition<AnnotatedT>>;
+pub type PropertyDefinitions<AnnotatedT> = BTreeMap<Name, PropertyDefinition<AnnotatedT>>;

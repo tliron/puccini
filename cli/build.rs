@@ -7,7 +7,7 @@ use std::{
     path::*,
 };
 
-const WASM: &str = "puccini_plugin_tosca_2_0_functions";
+const WASM: &str = "puccini_plugin_tosca_2_0";
 
 fn main() {
     #[cfg(not(feature = "_blanket"))]
@@ -128,8 +128,22 @@ fn precompile_wasm(wasm: &[u8]) -> Result<Vec<u8>, String> {
     #[allow(unused_mut)]
     let mut config = Config::new();
 
-    #[cfg(feature = "wasm-debug-info")]
-    config.debug_info(true).wasm_backtrace_details(WasmBacktraceDetails::Enable);
+    #[cfg(feature = "wasm-debug")]
+    let debug = true;
+    #[cfg(not(feature = "wasm-debug"))]
+    let debug = false;
+
+    // https://fitzgen.com/2025/11/19/inliner.html
+    config.compiler_inlining(!debug);
+
+    config.guest_debug(debug);
+
+    // This *must* be enabled just to load Wasm with debug info, even if we don't use a debugger
+    config.debug_info(debug);
+
+    // This *must* be enabled just to load Wasm with backtrace info
+    // (The default is to check WASMTIME_BACKTRACE_DETAILS env var)
+    config.wasm_backtrace_details(if debug { WasmBacktraceDetails::Enable } else { WasmBacktraceDetails::Disable });
 
     let engine = Engine::new(&config).expect("wasmtime engine");
     let precompiled = engine.precompile_component(wasm).map_err(|error| format!("wasmtime precompile: {}", error));

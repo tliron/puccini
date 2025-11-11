@@ -42,7 +42,7 @@ impl<AnnotatedT> Call<AnnotatedT> {
     where
         AnnotatedT: Default,
     {
-        Self::new(Name::from_static(function).into(), arguments, kind)
+        Self::new(Name::new_static_unchecked(function).into(), arguments, kind)
     }
 
     /// True if native.
@@ -70,6 +70,11 @@ impl<AnnotatedT> Call<AnnotatedT> {
         }
     }
 
+    /// Make it eager.
+    pub fn make_eager(&mut self) {
+        self.kind = floria::CallKind::Eager;
+    }
+
     /// Make it lazy.
     pub fn make_lazy(&mut self) {
         self.kind = floria::CallKind::Lazy;
@@ -84,6 +89,19 @@ where
         Call::new(
             self.function.clone(),
             self.arguments.iter().map(|item| item.remove_annotations()).collect(),
+            self.kind,
+        )
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for Call<AnnotatedT>
+where
+    AnnotatedT: Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self::new(
+            self.function.to_namespace(namespace),
+            self.arguments.iter().map(|item| item.to_namespace(namespace)).collect(),
             self.kind,
         )
     }

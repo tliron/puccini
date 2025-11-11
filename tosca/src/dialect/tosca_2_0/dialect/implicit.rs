@@ -4,30 +4,30 @@ use super::{
     entity_kind::*,
 };
 
-use {compris::annotate::*, kutil::std::immutable::*, std::fmt};
+use {compris::annotate::*, std::fmt};
 
 /// Wasm artifact type.
 pub const WASM_ARTIFACT_TYPE: &str = "_Wasm";
 
-/// Plugin artifact type.
-pub const PLUGIN_ARTIFACT_TYPE: &str = "_Plugin";
+/// Wasm plugin artifact type.
+pub const WASM_PLUGIN_ARTIFACT_TYPE: &str = "_WasmPlugin";
 
 impl super::Dialect {
     /// Create the implicit source.
-    pub fn implicit_source<AnnotatedT>() -> Source
+    pub fn implicit_source<AnnotatedT>() -> Result<Source, ToscaError<AnnotatedT>>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
     {
         let mut source = Source::new(SourceID::Internal(DIALECT_ID), DIALECT_ID);
 
-        Self::add_data_types::<AnnotatedT>(&mut source);
-        Self::add_artifact_types::<AnnotatedT>(&mut source);
-        Self::add_functions::<AnnotatedT>(&mut source);
+        Self::add_data_types::<AnnotatedT>(&mut source)?;
+        Self::add_artifact_types::<AnnotatedT>(&mut source)?;
+        Self::add_functions::<AnnotatedT>(&mut source)?;
 
-        source
+        Ok(source)
     }
 
-    fn add_data_types<AnnotatedT>(source: &mut Source)
+    fn add_data_types<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
     {
@@ -44,42 +44,42 @@ impl super::Dialect {
             DataKind::List,
             DataKind::Map,
         ] {
-            source
-                .add_entity::<_, AnnotatedT>(
-                    DATA_TYPE,
-                    data_kind.into(),
-                    DataType::<AnnotatedT>::new_internal(data_kind),
-                    true,
-                )
-                .expect("add_entity");
+            source.add_entity::<_, AnnotatedT>(
+                DATA_TYPE,
+                data_kind.into(),
+                DataType::<AnnotatedT>::new_internal(data_kind),
+                false,
+            )?;
         }
+        Ok(())
     }
 
-    fn add_artifact_types<AnnotatedT>(source: &mut Source)
+    fn add_artifact_types<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
     {
         let mut wasm = ArtifactType::<AnnotatedT>::new_internal();
 
         wasm.mime_type = Some("application/wasm".into());
-        wasm.file_ext = Some(vec!["wasm".into()]);
+        wasm.file_ext = Some(vec!["wasm".into(), "cwasm".into()]);
 
-        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_ARTIFACT_TYPE.into(), wasm, true).expect("add_entity");
+        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_ARTIFACT_TYPE.into(), wasm, true)?;
 
-        let mut plugin = ArtifactType::<AnnotatedT>::new_internal();
+        let mut wasm_plugin = ArtifactType::<AnnotatedT>::new_internal();
 
-        let mut floria_prefix = PropertyDefinition::<AnnotatedT>::default();
-        floria_prefix.type_name = Name::from("string").into();
+        let mut global = PropertyDefinition::<AnnotatedT>::default();
+        global.type_name = Name::new_static_unchecked("boolean").into();
+        global.required = Some(false);
 
-        plugin.derived_from = Some(Name::from(WASM_ARTIFACT_TYPE).into());
-        plugin.properties.insert(ByteString::from_static("floria-prefix"), floria_prefix);
+        wasm_plugin.derived_from = Some(Name::from(WASM_ARTIFACT_TYPE).into());
+        wasm_plugin.properties.insert("global".into(), global);
 
-        source
-            .add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, PLUGIN_ARTIFACT_TYPE.into(), plugin, true)
-            .expect("add_entity");
+        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_PLUGIN_ARTIFACT_TYPE.into(), wasm_plugin, false)?;
+
+        Ok(())
     }
 
-    fn add_functions<AnnotatedT>(source: &mut Source)
+    fn add_functions<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
     {
@@ -131,14 +131,14 @@ impl super::Dialect {
             "_schema",
             "_select_capability",
         ] {
-            source
-                .add_entity::<_, AnnotatedT>(
-                    FUNCTION,
-                    function.into(),
-                    FunctionDefinition::<AnnotatedT>::new_internal_plugin(DIALECT_ID),
-                    true,
-                )
-                .expect("add_entity");
+            source.add_entity::<_, AnnotatedT>(
+                FUNCTION,
+                function.into(),
+                FunctionDefinition::<AnnotatedT>::new_internal_variadic_with_plugin_implementation(PLUGIN_URL),
+                false,
+            )?;
         }
+
+        Ok(())
     }
 }

@@ -25,7 +25,7 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
         floria_property.metadata.set_tosca_custom_metadata(&self.metadata);
 
         if let Some(data_type) = &self.type_name {
-            floria_property.class_ids.add_tosca_type(data_type, context)?;
+            floria_property.class_ids.add_tosca_type(DATA_TYPE, DATA_TYPE_NAME, data_type, context)?;
         }
 
         Ok(floria_property)
@@ -43,7 +43,7 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
         let preparer = match &self.validation {
-            Some(validation) => match validation.clone().compile(context) {
+            Some(validation) => match validation.clone().into_eager().compile(context) {
                 Ok(validation) => Some(validation),
                 Err(error) => {
                     context.errors.give(error)?;
@@ -54,7 +54,7 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
         };
 
         let (updater, value) = match &self.expression {
-            Some(expression) => match expression.clone().compile(context) {
+            Some(expression) => match expression.clone().into_eager().compile(context) {
                 Ok(expression) => {
                     if expression.is_literal() {
                         (None, Some(expression))
@@ -80,6 +80,7 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
 pub fn compile_value_assignments<AnnotatedT>(
     property_templates: &mut BTreeMap<ByteString, floria::Property>,
     value_assignments: &ValueAssignments<AnnotatedT>,
+    prefix: &'static str,
     tosca_entity: &'static str,
     read_only: bool,
     context: &mut CompilationContext<'_>,
@@ -88,7 +89,8 @@ where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
     for (name, value_assignment) in value_assignments {
-        property_templates.insert(name.clone(), value_assignment.compile(tosca_entity, read_only, context)?);
+        let name = if prefix.is_empty() { name.clone().into() } else { format!("{}:{}", prefix, name).into() };
+        property_templates.insert(name, value_assignment.compile(tosca_entity, read_only, context)?);
     }
     Ok(())
 }

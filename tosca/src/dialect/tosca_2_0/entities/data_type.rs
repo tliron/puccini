@@ -154,9 +154,9 @@ where
         let errors = &mut context.errors.to_error_receiver();
 
         let (parent, parent_namespace) =
-            entity_from_name_field_checked!(DATA_TYPE, self, derived_from, derivation_path, context);
+            completed_entity_checked_from_full_name_field!(DATA_TYPE, self, derived_from, derivation_path, context);
 
-        complete_optional_parent_name_field!(scalar_data_type, parent_namespace, self, parent, context);
+        complete_optional_parent_type_name_field!(scalar_data_type, self, parent, parent_namespace, false, context);
 
         if let Some(parent) = &parent {
             complete_none_field!(scalar_canonical_unit, self, parent);
@@ -269,6 +269,33 @@ where
 
         self.completion_state = CompletionState::Complete;
         Ok(())
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for DataType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self {
+            derived_from: self.derived_from.to_namespace(namespace),
+            version: self.version.clone(),
+            metadata: self.metadata.clone(),
+            description: self.description.clone(),
+            validation: self.validation.to_namespace(namespace),
+            properties: self.properties.to_namespace(namespace),
+            key_schema: self.key_schema.to_namespace(namespace),
+            entry_schema: self.entry_schema.to_namespace(namespace),
+            scalar_data_type: self.scalar_data_type.to_namespace(namespace),
+            scalar_units: self.scalar_units.clone(),
+            scalar_canonical_unit: self.scalar_canonical_unit.clone(),
+            scalar_prefixes: self.scalar_prefixes.clone(),
+            data_kind: self.data_kind,
+            scalar_data_kind: self.scalar_data_kind,
+            internal: self.internal,
+            annotations: self.annotations.clone(),
+            completion_state: self.completion_state,
+        }
     }
 }
 

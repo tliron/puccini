@@ -1,8 +1,10 @@
 use super::{super::super::errors::*, command::*};
 
 use {
+    compris::normal::Map,
     floria::{plugins::*, *},
     kutil::std::error::*,
+    read_url::*,
 };
 
 // TODO:
@@ -12,11 +14,13 @@ use {
 
 impl Compile {
     /// Instantiate.
-    pub fn instantiate<StoreT>(
+    pub fn instantiate<StoreT, AnnotatedT>(
         &self,
         service_template_id: &ID,
+        _inputs: Option<Map<AnnotatedT>>,
         directory: &Directory,
-        store: &StoreT,
+        store: StoreT,
+        url_context: &UrlContextRef,
         errors: &mut Errors<FloriaError>,
     ) -> Result<Option<Vertex>, MainError>
     where
@@ -28,13 +32,19 @@ impl Compile {
             .get_vertex_template(service_template_id)?
             .ok_or_else(|| StoreError::ID(service_template_id.to_string()))?;
 
-        let environment = Environment::new(self.plugin_debug)?;
-        let mut library = self.library(environment, store.clone())?;
+        let environment = PluginEnvironment::new(self.plugin_debug)?;
+        let mut context = self.plugin_context(environment, store.clone(), url_context.clone())?;
 
-        let mut floria_instance = floria_service_template.instantiate(&directory, None, &mut library, errors)?;
+        let mut floria_instance = floria_service_template.instantiate(&directory, None, &mut context, errors)?;
 
         if self.update {
-            floria_instance.update_properties(&mut Propagation::outgoing_all(), &mut library, errors)?;
+            floria_instance.handle_event(
+                UPDATE_PROPERTIES_EVENT,
+                &Default::default(),
+                &mut Propagation::outgoing_all(),
+                &mut context,
+                errors,
+            )?;
         }
 
         Ok(Some(floria_instance))

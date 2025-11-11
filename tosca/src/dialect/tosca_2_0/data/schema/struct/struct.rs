@@ -1,12 +1,12 @@
 use super::{
     super::{
-        super::{data_kind::*, expression::*},
+        super::{super::super::super::grammar::*, data_kind::*, expression::*},
         reference::*,
     },
     field::*,
 };
 
-use {compris::annotate::*, depiction::*, kutil::std::immutable::*, std::collections::*};
+use {compris::annotate::*, depiction::*, std::collections::*};
 
 //
 // StructSchema
@@ -17,7 +17,7 @@ use {compris::annotate::*, depiction::*, kutil::std::immutable::*, std::collecti
 pub struct StructSchema<AnnotatedT> {
     /// Fields.
     #[depict(iter(kv), as(depict), key_style(string))]
-    pub fields: BTreeMap<ByteString, StructSchemaField>,
+    pub fields: BTreeMap<Name, StructSchemaField>,
 
     /// Default.
     #[depict(option, as(depict))]
@@ -48,7 +48,7 @@ impl<AnnotatedT> StructSchema<AnnotatedT> {
         let fields: BTreeMap<_, _> = self
             .fields
             .into_iter()
-            .map(|(field_name, field)| (field_name.into(), field.into_expression(positions)))
+            .map(|(field_name, field)| (field_name.as_byte_string().into(), field.into_expression(positions)))
             .collect();
 
         map.insert("fields".into(), fields.into());

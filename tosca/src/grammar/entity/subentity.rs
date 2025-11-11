@@ -1,6 +1,6 @@
 use super::super::{complete::*, errors::*, name::*};
 
-use {compris::annotate::*, kutil::std::immutable::*};
+use compris::annotate::*;
 
 //
 // Subentity
@@ -14,7 +14,7 @@ pub trait Subentity<ParentSubentityT> {
     /// Complete.
     fn complete(
         &mut self,
-        name: Option<ByteString>,
+        name: Option<&Name>,
         parent: Option<&ParentSubentityT>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,

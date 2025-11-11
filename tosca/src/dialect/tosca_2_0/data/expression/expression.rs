@@ -1,4 +1,4 @@
-use super::call::*;
+use super::{super::super::super::super::grammar::*, call::*};
 
 use {
     compris::{annotate::*, normal::*},
@@ -47,6 +47,16 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         match self {
             Expression::Call(call) => call.is_native() && !call.function.name.0.starts_with('_'),
             _ => true,
+        }
+    }
+
+    /// If it's a call then make it eager.
+    pub fn into_eager(self) -> Self {
+        if let Expression::Call(mut call) = self {
+            call.make_eager();
+            call.into()
+        } else {
+            self
         }
     }
 
@@ -103,6 +113,22 @@ where
                     .collect(),
             ),
             Expression::Call(call) => Expression::Call(call.remove_annotations()),
+        }
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for Expression<AnnotatedT>
+where
+    AnnotatedT: Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        match self {
+            Self::Simple(simple) => Self::Simple(simple.clone()),
+            Self::List(list) => Expression::List(list.iter().map(|item| item.to_namespace(namespace)).collect()),
+            Self::Map(map) => Expression::Map(
+                map.iter().map(|(key, value)| (key.to_namespace(namespace), value.to_namespace(namespace))).collect(),
+            ),
+            Self::Call(call) => Self::Call(call.to_namespace(namespace)),
         }
     }
 }

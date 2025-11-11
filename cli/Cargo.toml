@@ -26,17 +26,19 @@ keywords = [
 # bindeps:
 # https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
 # puccini-plugin-tosca-2_0-functions = { version = "=0.0.4", artifact = "cdylib", target = "wasm32-wasip2" }
-wasmtime = { version = "38.0.4", default-features = false, features = [
+wasmtime = { version = "39.0.0", default-features = false, features = [
     "cranelift",
     "parallel-compilation",
     "pooling-allocator",
     "component-model",
+    "debug",
+    "gc-drc", # debug requires gc
 ] }
 
 [dependencies]
 anstream = "0.6.21"
 compris = "=0.0.11"
-clap = { version = "4.5.51", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 clap-num = "1.2.0"
 ctrlc = "3.5.1"
 depiction = "=0.0.1"
@@ -61,14 +63,18 @@ default = [
     "with-annotations",
 ]
 
-plugins = ["floria/plugins", "puccini-tosca/plugins"]
+plugins = [
+    "puccini-tosca/plugins",
+    "floria/plugins-http-platform",
+    "floria/plugins-tls",
+]
 filesystem = ["puccini-tosca/filesystem"]
 http = ["puccini-tosca/http"]
 with-annotations = []
 without-annotations = []
 
 wasm-precompiled = []
-wasm-debug-info = ["floria/wasm-debug"]
+wasm-debug = ["floria/wasm-debug"]
 
 bindeps = []
 

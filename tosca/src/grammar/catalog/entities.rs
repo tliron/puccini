@@ -6,15 +6,14 @@ use super::{
 use {compris::annotate::*, kutil::std::error::*, std::any::*};
 
 impl Catalog {
-    /// All entity names.
-    pub fn entity_names(&self) -> Vec<(SourceID, EntityKind, Name)> {
-        let mut entity_names = Vec::default();
-        for (source_id, source) in &self.sources {
-            entity_names.extend(
-                source.entity_names().into_iter().map(|(entity_kind, name)| (source_id.clone(), entity_kind, name)),
-            );
+    /// Find an entity by its reference.
+    pub fn find(&self, entity_ref: &EntityRef) -> Option<(EntityKind, Name, &Source)> {
+        for source in self.sources.values() {
+            if let Some((entity_kind, name)) = source.find(entity_ref) {
+                return Some((entity_kind, name, source));
+            }
         }
-        entity_names
+        None
     }
 
     /// Add an entity reference.
@@ -28,7 +27,7 @@ impl Catalog {
     where
         AnnotatedT: Default,
     {
-        Ok(self.get_source_mut(source_id)?.add_entity_ref(entity_kind, name, entity)?)
+        Ok(self.source_mut(source_id)?.add_entity_ref(entity_kind, name, entity)?)
     }
 
     /// Get an entity reference.
@@ -89,7 +88,7 @@ impl Catalog {
             return Ok(None);
         }
 
-        let source = unwrap_or_give_and_return!(self.get_source(source_id), errors, Ok(None));
+        let source = unwrap_or_give_and_return!(self.source(source_id), errors, Ok(None));
 
         let entity_kind_name =
             unwrap_or_give_and_return!(self.dialect_entity_kinds(&source.dialect_id), errors, Ok(None))
@@ -99,7 +98,7 @@ impl Catalog {
             unwrap_or_give_and_return!(source.lookup(entity_kind, &entity_kind_name, full_name), errors, Ok(None))
                 .clone();
 
-        let entity_source = unwrap_or_give_and_return!(self.get_source_mut(&entity_source_id), errors, Ok(None));
+        let entity_source = unwrap_or_give_and_return!(self.source_mut(&entity_source_id), errors, Ok(None));
 
         // Fallback?
 

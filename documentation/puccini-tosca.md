@@ -38,7 +38,7 @@ puccini-tosca compile https://site.org/csars/my-service.tar.gz
 # in a git repository
 # (wrapped in quotes to avoid shell processing of ! character)
 puccini-tosca compile \
-'git:https://my-git.org/my-user/my-repo#main!my-service/service-template.yaml'
+  'git:https://my-git.org/my-user/my-repo#main!my-service/service-template.yaml'
 
 # stdin
 cat services/my-service/service-template.yaml | puccini-tosca compile
@@ -66,7 +66,9 @@ That said, `puccini-tosca` can *simulate* a cloud environment in order to allow 
 To enable this simulation instantiate the compiled Floria entities into the in-memory Floria store using `--instantiate`:
 
 ```sh
-puccini-tosca compile --instantiate services/my-service/service-template.yaml
+puccini-tosca compile \
+  services/my-service/service-template.yaml \
+  --instantiate
 ```
 
 This will attempt to satisfy all TOSCA requirements and create actual relationships (Floria edges) between nodes (Floria vertexes). Unsatisfied requirements will result in Floria errors.
@@ -77,9 +79,9 @@ Note that if the TOSCA service template has required `inputs`, that do not have 
 
 ```sh
 puccini-tosca compile \
+  services/my-service/service-template.yaml \
   --instantiate \
-  --inputs='{"input1": "value1", "input2": "value2"}' \
-  services/my-service/service-template.yaml
+  --inputs='{"input1": "value1", "input2": "value2"}'
 ```
 
 Simulating Events: Day 1

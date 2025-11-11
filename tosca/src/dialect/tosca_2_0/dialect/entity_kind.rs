@@ -6,49 +6,49 @@ use super::super::super::super::grammar::*;
 pub const ARTIFACT_TYPE: EntityKind = EntityKind(1);
 
 /// Artifact type name.
-pub const ARTIFACT_TYPE_NAME: &str = "artifact type";
+pub const ARTIFACT_TYPE_NAME: &str = "artifact-type";
 
 /// Capability type.
 pub const CAPABILITY_TYPE: EntityKind = EntityKind(2);
 
 /// Capability type name.
-pub const CAPABILITY_TYPE_NAME: &str = "capability type";
+pub const CAPABILITY_TYPE_NAME: &str = "capability-type";
 
 /// Data type.
 pub const DATA_TYPE: EntityKind = EntityKind(3);
 
 /// Data type name.
-pub const DATA_TYPE_NAME: &str = "data type";
+pub const DATA_TYPE_NAME: &str = "data-type";
 
 /// Group type.
 pub const GROUP_TYPE: EntityKind = EntityKind(4);
 
 /// Group type name.
-pub const GROUP_TYPE_NAME: &str = "group type";
+pub const GROUP_TYPE_NAME: &str = "group-type";
 
 /// Interface type.
 pub const INTERFACE_TYPE: EntityKind = EntityKind(5);
 
 /// Interface type name.
-pub const INTERFACE_TYPE_NAME: &str = "interface type";
+pub const INTERFACE_TYPE_NAME: &str = "interface-type";
 
 /// Node type.
 pub const NODE_TYPE: EntityKind = EntityKind(6);
 
 /// Node type name.
-pub const NODE_TYPE_NAME: &str = "node type";
+pub const NODE_TYPE_NAME: &str = "node-type";
 
 /// Policy type.
 pub const POLICY_TYPE: EntityKind = EntityKind(7);
 
 /// Policy type name.
-pub const POLICY_TYPE_NAME: &str = "policy type";
+pub const POLICY_TYPE_NAME: &str = "policy-type";
 
 /// Relationship type.
 pub const RELATIONSHIP_TYPE: EntityKind = EntityKind(8);
 
 /// Relationship type name.
-pub const RELATIONSHIP_TYPE_NAME: &str = "relationship type";
+pub const RELATIONSHIP_TYPE_NAME: &str = "relationship-type";
 
 // Templates
 
@@ -90,11 +90,20 @@ pub const REPOSITORY: EntityKind = EntityKind(200);
 /// Repository name.
 pub const REPOSITORY_NAME: &str = "repository";
 
+/// Interface name.
+pub const INTERFACE_NAME: &str = "interface";
+
 /// Artifact name.
 pub const ARTIFACT_NAME: &str = "artifact";
 
 /// Capability name.
 pub const CAPABILITY_NAME: &str = "capability";
+
+/// Requirement name.
+pub const REQUIREMENT_NAME: &str = "requirement";
+
+/// Relationship name.
+pub const RELATIONSHIP_NAME: &str = "relationship";
 
 /// Property name.
 pub const PROPERTY_NAME: &str = "property";

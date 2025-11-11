@@ -1,4 +1,4 @@
-use super::super::{data::*, dialect::*};
+use super::super::{data::*, dialect::*, name::*};
 
 use {
     compris::{annotate::*, normal::*},
@@ -23,7 +23,7 @@ pub trait FloriaToscaMetadata {
     fn set_tosca_entity_static(&mut self, dialect: DialectID, entity_kind: &'static str);
 
     /// Set TOSCA `name` metadata.
-    fn set_tosca_name(&mut self, name: ByteString);
+    fn set_tosca_name(&mut self, name: Name);
 
     /// Set TOSCA `description` metadata.
     fn set_tosca_description(&mut self, description: Option<&ByteString>);
@@ -68,8 +68,8 @@ impl FloriaToscaMetadata for floria::Metadata {
         self.set_tosca_entity(dialect, ByteString::from_static(entity_kind));
     }
 
-    fn set_tosca_name(&mut self, name: ByteString) {
-        self.set_tosca_metadata("name", name);
+    fn set_tosca_name(&mut self, name: Name) {
+        self.set_tosca_metadata("name", name.as_byte_string());
     }
 
     fn set_tosca_description(&mut self, description: Option<&ByteString>) {

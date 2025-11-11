@@ -34,10 +34,10 @@ node_types:
             default:
             - name: grpc
               port: 8500
-              targetPort: 9555
+              target-port: 9555
     requirements:
     - checkout:
-        relationship: Connects
+        relationship: ms:krm:Connects
         node: CheckoutService
         capability: Service
 
@@ -61,10 +61,10 @@ node_types:
             default:
             - name: grpc
               port: 5050
-              targetPort: 5050
+              target-port: 5050
     requirements:
     - shipping:
-        relationship: Connects
+        relationship: ms:krm:Connects
         node: ShippingService
         capability: Service
 
@@ -88,8 +88,8 @@ node_types:
             default:
             - name: grpc
               port: 5050
-              targetPort: 5050
-      service-account:
-        properties:
-          name:
-            default: shippingservice
+              target-port: 5050
+      # service-account2:
+      #   properties:
+      #     name:
+      #       default: shippingservice

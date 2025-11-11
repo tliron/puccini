@@ -3,7 +3,7 @@ use super::{
     value_assignment::*,
 };
 
-use {compris::annotate::*, kutil::std::immutable::*};
+use compris::annotate::*;
 
 impl<AnnotatedT> RequirementAssignment<AnnotatedT>
 where
@@ -13,7 +13,7 @@ where
     pub fn compile(
         &self,
         edge_template: &mut floria::EdgeTemplate,
-        name: ByteString,
+        name: Name,
         context: &mut CompilationContext<'_>,
     ) -> Result<(), ToscaError<WithAnnotations>>
     where
@@ -21,11 +21,14 @@ where
     {
         edge_template.template.metadata.set_tosca_entity_static(DIALECT_ID, RELATIONSHIP_TEMPLATE_NAME);
         edge_template.template.metadata.set_tosca_name(name);
+        edge_template.template.metadata.set_tosca_description(self.description.as_ref());
+        edge_template.template.metadata.set_tosca_custom_metadata(&self.metadata);
 
         if let Some(relationship) = &self.relationship {
             compile_value_assignments(
                 &mut edge_template.template.property_templates,
                 &relationship.properties,
+                "",
                 PROPERTY_NAME,
                 true,
                 context,
@@ -36,6 +39,7 @@ where
             compile_value_assignments(
                 &mut edge_template.template.property_templates,
                 &relationship.attributes,
+                "",
                 ATTRIBUTE_NAME,
                 false,
                 context,

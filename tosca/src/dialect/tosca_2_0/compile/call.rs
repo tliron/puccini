@@ -1,4 +1,7 @@
-use super::super::{super::super::grammar::*, data::*, dialect::*, entities::*};
+use super::{
+    super::{super::super::grammar::*, data::*, dialect::*, entities::*},
+    plugin::*,
+};
 
 use {compris::annotate::*, kutil::std::error::*};
 
@@ -25,14 +28,13 @@ impl<AnnotatedT> Call<AnnotatedT> {
 
         // TODO: find signature
 
-        let (_file, prefix) = match function.plugin() {
-            Ok(plugin) => match plugin {
-                Some((file, prefix)) => (file, prefix),
-                None => {
-                    // TODO: support for other artifacts?
-                    return Ok(floria::Expression::Undefined);
-                }
-            },
+        let (plugin_url, global) = match function.plugin_url() {
+            Ok(Some(file)) => file,
+
+            Ok(None) => {
+                // TODO: support for other artifacts?
+                return Ok(floria::Expression::Undefined);
+            }
 
             Err(error) => {
                 context.errors.give(error.with_annotations_from(&self).into_annotated())?;
@@ -40,10 +42,8 @@ impl<AnnotatedT> Call<AnnotatedT> {
             }
         };
 
-        let Some(prefix) = prefix else {
-            context
-                .errors
-                .give(MissingRequiredError::new("floria-prefix".into(), None).with_annotations_from(&self))?;
+        let directory = if global { Default::default() } else { context.directory.clone() };
+        let Some(plugin_id) = get_or_create_plugin_by_url(plugin_url, directory, None, context)? else {
             return Ok(floria::Expression::Undefined);
         };
 
@@ -59,6 +59,6 @@ impl<AnnotatedT> Call<AnnotatedT> {
             arguments.push(argument);
         }
 
-        Ok(floria::Call::new(prefix, self.function.name.0, arguments, self.kind).into())
+        Ok(floria::Call::new(plugin_id, self.function.name.0, arguments, self.kind)?.into())
     }
 }
