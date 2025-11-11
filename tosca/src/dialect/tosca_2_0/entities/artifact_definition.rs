@@ -1,11 +1,11 @@
 use super::{
-    super::{super::super::grammar::*, data::*, dialect::*},
+    super::{super::super::grammar::*, dialect::*},
     artifact_type::*,
     value_assignment::*,
 };
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
     std::collections::*,
@@ -33,6 +33,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory artifact type for the artifact definition.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be inherited from parent.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -95,44 +97,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_plugin(plugin: ByteString) -> Self {
-        let mut floria_prefix = ValueAssignment::<AnnotatedT>::default();
-        floria_prefix.expression = Some(plugin.into());
-
-        let mut properties = ValueAssignments::default();
-        properties.insert("floria-prefix".into(), floria_prefix);
-
-        Self { type_name: Name::from(PLUGIN_ARTIFACT_TYPE).into(), properties, ..Default::default() }
-    }
-
-    /// Plugin file and prefix.
-    pub fn plugin(&self) -> Result<(ByteString, Option<ByteString>), ToscaError<AnnotatedT>> {
-        if self.type_name == Name::from(PLUGIN_ARTIFACT_TYPE).into() {
-            let prefix = self
-                .properties
-                .get("floria-prefix")
-                .and_then(|floria_prefix| floria_prefix.expression.as_ref())
-                .and_then(|floria_prefix| {
-                    if let Expression::Simple(floria_prefix) = floria_prefix { Some(floria_prefix) } else { None }
-                })
-                .and_then(|floria_prefix| {
-                    if let Variant::Text(floria_prefix) = floria_prefix {
-                        Some(floria_prefix.inner.clone())
-                    } else {
-                        None
-                    }
-                });
-
-            Ok((self.file.clone(), prefix))
-        } else {
-            Err(WrongTypeError::new(
-                "artifact definition".into(),
-                self.type_name.to_string(),
-                vec![PLUGIN_ARTIFACT_TYPE.into()],
-            )
-            .with_annotations_from_field(self, "type_name")
-            .into())
-        }
+    pub fn new_internal(namespace: Namespace, file: ByteString) -> Self {
+        Self { type_name: FullName::new(namespace, WASM_PLUGIN_ARTIFACT_TYPE), file, ..Default::default() }
     }
 }
 
@@ -142,23 +108,23 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(property, properties, self, parent, parent_namespace, true, context);
 
         if let Some(parent) = parent {
-            complete_none_field!(repository, self, parent);
-            complete_none_field!(artifact_version, self, parent);
-            complete_none_field!(checksum, self, parent);
-            complete_none_field!(checksum_algorithm, self, parent);
+            complete_optional_field!(repository, self, parent);
+            complete_optional_field!(artifact_version, self, parent);
+            complete_optional_field!(checksum, self, parent);
+            complete_optional_field!(checksum_algorithm, self, parent);
         }
 
         let (artifact_type, artifact_type_namespace) =
-            entity_from_full_name_field!(ARTIFACT_TYPE, ArtifactType, self, type_name, context);
+            completed_entity_from_full_name_field!(ARTIFACT_TYPE, ArtifactType, self, type_name, context);
 
         complete_subentity_map_field!(
             property,
@@ -199,4 +165,4 @@ where
 //
 
 /// Map of [ArtifactDefinition].
-pub type ArtifactDefinitions<AnnotatedT> = BTreeMap<ByteString, ArtifactDefinition<AnnotatedT>>;
+pub type ArtifactDefinitions<AnnotatedT> = BTreeMap<Name, ArtifactDefinition<AnnotatedT>>;

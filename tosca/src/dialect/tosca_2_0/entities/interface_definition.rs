@@ -32,6 +32,8 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// The mandatory name of the interface type on which this interface definition is based.
+    ///
+    /// Puccini note: *Not* mandatory, as it can be inherited from parent.
     #[resolve(key = "type")]
     #[depict(as(depict))]
     pub type_name: FullName,
@@ -76,18 +78,18 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, parent, parent_namespace, context);
+        complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(input, inputs, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(operation, operations, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(notification, notifications, self, parent, parent_namespace, true, context);
 
         let (interface_type, interface_type_namespace) =
-            entity_from_full_name_field!(INTERFACE_TYPE, InterfaceType, self, type_name, context);
+            completed_entity_from_full_name_field!(INTERFACE_TYPE, InterfaceType, self, type_name, context);
 
         complete_subentity_map_field!(input, inputs, self, interface_type, interface_type_namespace, true, context);
         complete_subentity_map_field!(
@@ -135,4 +137,4 @@ where
 //
 
 /// Map of [InterfaceDefinition].
-pub type InterfaceDefinitions<AnnotatedT> = BTreeMap<ByteString, InterfaceDefinition<AnnotatedT>>;
+pub type InterfaceDefinitions<AnnotatedT> = BTreeMap<Name, InterfaceDefinition<AnnotatedT>>;

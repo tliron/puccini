@@ -91,8 +91,13 @@ where
         assert!(self.completion_state == CompletionState::Incomplete);
         self.completion_state = CompletionState::Cannot;
 
-        let (parent, parent_namespace) =
-            entity_from_name_field_checked!(INTERFACE_TYPE, self, derived_from, derivation_path, context);
+        let (parent, parent_namespace) = completed_entity_checked_from_full_name_field!(
+            INTERFACE_TYPE,
+            self,
+            derived_from,
+            derivation_path,
+            context
+        );
 
         complete_subentity_map_field!(input, inputs, self, parent, parent_namespace, false, context);
         complete_subentity_map_field!(operation, operations, self, parent, parent_namespace, false, context);
@@ -100,6 +105,25 @@ where
 
         self.completion_state = CompletionState::Complete;
         Ok(())
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for InterfaceType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self {
+            derived_from: self.derived_from.to_namespace(namespace),
+            version: self.version.clone(),
+            metadata: self.metadata.clone(),
+            description: self.description.clone(),
+            inputs: self.inputs.to_namespace(namespace),
+            operations: self.operations.to_namespace(namespace),
+            notifications: self.notifications.to_namespace(namespace),
+            annotations: self.annotations.clone(),
+            completion_state: self.completion_state,
+        }
     }
 }
 

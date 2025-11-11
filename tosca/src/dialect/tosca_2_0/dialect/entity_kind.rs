@@ -1,56 +1,58 @@
 use super::super::super::super::grammar::*;
 
-// Types
+//
+// Type Entities
+//
 
 /// Artifact type.
 pub const ARTIFACT_TYPE: EntityKind = EntityKind(1);
 
 /// Artifact type name.
-pub const ARTIFACT_TYPE_NAME: &str = "artifact type";
+pub const ARTIFACT_TYPE_NAME: &str = "artifact-type";
 
 /// Capability type.
 pub const CAPABILITY_TYPE: EntityKind = EntityKind(2);
 
 /// Capability type name.
-pub const CAPABILITY_TYPE_NAME: &str = "capability type";
+pub const CAPABILITY_TYPE_NAME: &str = "capability-type";
 
 /// Data type.
 pub const DATA_TYPE: EntityKind = EntityKind(3);
 
 /// Data type name.
-pub const DATA_TYPE_NAME: &str = "data type";
+pub const DATA_TYPE_NAME: &str = "data-type";
 
 /// Group type.
 pub const GROUP_TYPE: EntityKind = EntityKind(4);
 
 /// Group type name.
-pub const GROUP_TYPE_NAME: &str = "group type";
+pub const GROUP_TYPE_NAME: &str = "group-type";
 
 /// Interface type.
 pub const INTERFACE_TYPE: EntityKind = EntityKind(5);
 
 /// Interface type name.
-pub const INTERFACE_TYPE_NAME: &str = "interface type";
+pub const INTERFACE_TYPE_NAME: &str = "interface-type";
 
 /// Node type.
 pub const NODE_TYPE: EntityKind = EntityKind(6);
 
 /// Node type name.
-pub const NODE_TYPE_NAME: &str = "node type";
+pub const NODE_TYPE_NAME: &str = "node-type";
 
 /// Policy type.
 pub const POLICY_TYPE: EntityKind = EntityKind(7);
 
 /// Policy type name.
-pub const POLICY_TYPE_NAME: &str = "policy type";
+pub const POLICY_TYPE_NAME: &str = "policy-type";
 
 /// Relationship type.
 pub const RELATIONSHIP_TYPE: EntityKind = EntityKind(8);
 
 /// Relationship type name.
-pub const RELATIONSHIP_TYPE_NAME: &str = "relationship type";
+pub const RELATIONSHIP_TYPE_NAME: &str = "relationship-type";
 
-// Templates
+// Template entities
 
 /// Service template.
 pub const SERVICE_TEMPLATE: EntityKind = EntityKind(100);
@@ -82,7 +84,9 @@ pub const RELATIONSHIP_TEMPLATE: EntityKind = EntityKind(108);
 /// Relationship template name.
 pub const RELATIONSHIP_TEMPLATE_NAME: &str = "relationship";
 
-// Other
+//
+// Other entities
+//
 
 /// Repository.
 pub const REPOSITORY: EntityKind = EntityKind(200);
@@ -90,11 +94,27 @@ pub const REPOSITORY: EntityKind = EntityKind(200);
 /// Repository name.
 pub const REPOSITORY_NAME: &str = "repository";
 
+/// Function.
+pub const FUNCTION: EntityKind = EntityKind(201);
+
+/// Function name.
+pub const FUNCTION_NAME: &str = "function";
+
+//
+// Definition entities
+//
+
+/// Interface name.
+pub const INTERFACE_NAME: &str = "interface";
+
 /// Artifact name.
 pub const ARTIFACT_NAME: &str = "artifact";
 
 /// Capability name.
 pub const CAPABILITY_NAME: &str = "capability";
+
+/// Requirement name.
+pub const REQUIREMENT_NAME: &str = "requirement";
 
 /// Property name.
 pub const PROPERTY_NAME: &str = "property";
@@ -104,12 +124,6 @@ pub const ATTRIBUTE_NAME: &str = "attribute";
 
 /// Parameter name.
 pub const PARAMETER_NAME: &str = "parameter";
-
-/// Function.
-pub const FUNCTION: EntityKind = EntityKind(201);
-
-/// Function name.
-pub const FUNCTION_NAME: &str = "function";
 
 impl super::Dialect {
     /// TOSCA 2.0 supported entity kinds.

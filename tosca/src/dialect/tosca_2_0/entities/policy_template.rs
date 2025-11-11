@@ -87,7 +87,7 @@ where
         self.completion_state = CompletionState::Cannot;
 
         let (policy_type, policy_type_namespace) =
-            entity_from_full_name_field!(POLICY_TYPE, PolicyType, self, type_name, context);
+            completed_entity_from_full_name_field!(POLICY_TYPE, PolicyType, self, type_name, context);
 
         complete_subentity_map_field!(property, properties, self, policy_type, policy_type_namespace, true, context);
         complete_subentity_map_field!(trigger, triggers, self, policy_type, policy_type_namespace, true, context);

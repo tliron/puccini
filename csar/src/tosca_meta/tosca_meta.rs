@@ -57,7 +57,7 @@ impl ToscaMeta {
 
         let mut reader = ToscaMetaBlockReader::new_from(read);
         let mut index = 0;
-        while let Some(block) = unwrap_or_give_and_return!(reader.read_block(), errors, Ok(tosca_meta)) {
+        while let Some(block) = must_unwrap_give!(reader.read_block(), errors, tosca_meta) {
             if index == 0 {
                 tosca_meta.parse_block_0(block, true, errors)?;
             } else {

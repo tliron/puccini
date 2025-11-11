@@ -3,7 +3,7 @@ use super::{
     value_assignment::*,
 };
 
-use {compris::annotate::*, kutil::std::immutable::*};
+use compris::annotate::*;
 
 impl<AnnotatedT> CapabilityAssignment<AnnotatedT>
 where
@@ -13,28 +13,28 @@ where
     pub fn compile(
         &self,
         vertex_template: &mut floria::VertexTemplate,
-        name: ByteString,
+        name: Name,
         context: &mut CompilationContext<'_>,
     ) -> Result<(), ToscaError<WithAnnotations>>
     where
         AnnotatedT: 'static,
     {
-        // TODO: get type name?
-        // floria_node_template.template.group_ids.add_tosca_type(
-        //     &self.type_name,
-        //     floria_directory,
-        //     floria_store.clone(),
-        //     errors,
-        // )?;
+        vertex_template.template.class_ids.add_tosca_type(
+            CAPABILITY_TYPE,
+            CAPABILITY_TYPE_NAME,
+            &self.type_name,
+            context,
+        )?;
 
         vertex_template.template.metadata.set_tosca_entity_static(DIALECT_ID, CAPABILITY_NAME);
         vertex_template.template.metadata.set_tosca_name(name);
-        // vertex_template.template.metadata.set_tosca_description(self.description.as_ref());
-        // vertex_template.template.metadata.merge_tosca_metadata(&self.metadata);
+        vertex_template.template.metadata.set_tosca_description(self.description.as_ref());
+        vertex_template.template.metadata.set_tosca_custom_metadata(&self.metadata);
 
         compile_value_assignments(
             &mut vertex_template.template.property_templates,
             &self.properties,
+            "",
             PROPERTY_NAME,
             true,
             context,
@@ -45,6 +45,7 @@ where
         compile_value_assignments(
             &mut vertex_template.template.property_templates,
             &self.attributes,
+            "",
             ATTRIBUTE_NAME,
             false,
             context,
@@ -106,7 +107,7 @@ where
     //     }
 
     //     let id = floria_node_template.template.id.clone();
-    //     unwrap_or_give_and_return!(context.store.add_node_template(floria_node_template), errors, Ok(None));
+    //     must_unwrap_give!(context.store.add_node_template(floria_node_template), errors);
     //     Ok(Some(id))
     // }
 }

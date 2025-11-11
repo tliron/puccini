@@ -1,6 +1,9 @@
-use super::super::{super::super::grammar::*, data::*, dialect::*, entities::*};
+use super::{
+    super::{super::super::grammar::*, data::*, dialect::*, entities::*},
+    plugin::*,
+};
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, kutil::std::error::*, std::mem::*};
 
 impl<AnnotatedT> Call<AnnotatedT> {
     /// Compile to a Floria expression.
@@ -11,54 +14,35 @@ impl<AnnotatedT> Call<AnnotatedT> {
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
-        let function = match context.catalog.entity::<FunctionDefinition<AnnotatedT>, _>(
-            FUNCTION,
-            &self.function,
-            context.source_id,
-        ) {
-            Ok(function) => function,
-            Err(error) => {
-                context.errors.give(error.with_annotations_from(&self))?;
-                return Ok(floria::Expression::Undefined);
-            }
-        };
+        let (function, source) = must_unwrap_give!(
+            context.catalog.entity::<FunctionDefinition<AnnotatedT>, _>(FUNCTION, &self.function, context.source_id),
+            context.errors.with_fallback_annotations(self.annotations())
+        );
 
         // TODO: find signature
 
-        let (_file, prefix) = match function.plugin() {
-            Ok(plugin) => match plugin {
-                Some((file, prefix)) => (file, prefix),
-                None => {
-                    // TODO: support for other artifacts?
-                    return Ok(floria::Expression::Undefined);
-                }
-            },
-
-            Err(error) => {
-                context.errors.give(error.with_annotations_from(&self).into_annotated())?;
+        let mut plugin = {
+            if let Some(plugin) = function.floria_plugin(&mut context.with_source(&source.source_id))? {
+                plugin
+            } else {
                 return Ok(floria::Expression::Undefined);
             }
         };
 
-        let Some(prefix) = prefix else {
-            context
-                .errors
-                .give(MissingRequiredError::new("floria-prefix".into(), None).with_annotations_from(&self))?;
+        // TODO: other artifact types?
+
+        let function = take(&mut plugin.function).unwrap_or(self.function.name.0);
+
+        let Some(plugin_id) = plugin.get_or_create(None, context)? else {
             return Ok(floria::Expression::Undefined);
         };
 
         let mut arguments = Vec::with_capacity(self.arguments.len());
         for argument in self.arguments {
-            let argument = match argument.compile(context) {
-                Ok(argument) => argument,
-                Err(error) => {
-                    context.errors.give(error)?;
-                    floria::Expression::Undefined
-                }
-            };
+            let argument = unwrap_or_give!(argument.compile(context), context.errors, floria::Expression::Undefined);
             arguments.push(argument);
         }
 
-        Ok(floria::Call::new(prefix, self.function.name.0, arguments, self.kind).into())
+        Ok(floria::Call::new(plugin_id, function, arguments, self.kind)?.into())
     }
 }

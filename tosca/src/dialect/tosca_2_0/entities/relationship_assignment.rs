@@ -5,7 +5,6 @@ use super::{
 use {
     compris::{annotate::*, resolve::*},
     depiction::*,
-    kutil::std::immutable::*,
 };
 
 //
@@ -58,13 +57,12 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         relationship_definition: Option<&RelationshipDefinition<AnnotatedT>>,
         relationship_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        complete_name_field!(type_name, self, relationship_definition, relationship_definition_namespace, context);
-
+        complete_type_name_field!(self, relationship_definition, relationship_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,
             properties,
@@ -107,7 +105,13 @@ where
             properties: self.properties.to_namespace(namespace),
             attributes: self.attributes.to_namespace(namespace),
             interfaces: self.interfaces.to_namespace(namespace),
-            annotations: self.annotations.clone_fields(&["type_name", "properties", "attributes", "interfaces"]),
+            annotations: self.annotations.clone_fields(&[
+                "type_name",
+                "properties",
+                "attributes",
+                "interfaces",
+                "type_name",
+            ]),
         }
     }
 }

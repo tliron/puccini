@@ -1,0 +1,122 @@
+tosca_definitions_version: tosca_2_0
+
+description: Kubernetes resource model (KRM)
+
+imports:
+
+- profile: puccini
+  namespace: puccini
+
+functions:
+
+  get_kubernetes:
+    signatures:
+    - arguments:
+      - type: KubernetesClient
+      result:
+        type: string
+      implementation:
+        primary:
+          type: puccini:WasmPlugin
+          file: artifacts/wasm/kubernetes-plugin.wasm
+          properties:
+            global: true
+
+data_types:
+
+  KubernetesClient:
+    properties:
+      url:
+        type: string
+      root-certificates:
+        type: string
+        required: false
+      user-certificates:
+        type: string
+        required: false
+      user-private-key:
+        type: string
+        required: false
+
+  Container:
+    properties:
+      label:
+        type: string
+        default: TODO
+      name:
+        type: string
+      image:
+        type: string
+      ports:
+        type: list
+        entry_schema: Port
+        required: false
+
+  Port:
+    properties:
+      name:
+        type: string
+      port:
+        type: integer
+      target-port:
+        type: integer
+
+capability_types:
+
+  Deployment:
+    properties:
+      containers:
+        type: list
+        entry_schema: Container
+
+  Service:
+    properties:
+      ports:
+        type: list
+        entry_schema: Port
+
+relationship_types:
+
+  Connects: {}
+
+node_types:
+
+  Kubernetes:
+    description:
+      Convenience base type for Kubernetes-based nodes.
+
+      It is not necessary to inherit from this. It *is* necessary to have the Kubernetes interface.
+    interfaces:
+      kubernetes:
+        type: Kubernetes
+
+interface_types:
+
+  Kubernetes:
+    operations:
+      apply:
+        inputs:
+          kubernetes-client:
+            type: KubernetesClient
+            default: { $get_input: [ kubernetes ] }
+        implementation:
+          primary:
+            type: puccini:WasmPlugin
+            file: artifacts/wasm/kubernetes-plugin.wasm
+            properties:
+              global: true
+              function: apply_kubernetes
+              event: kubernetes:apply
+      delete:
+        inputs:
+          kubernetes-client:
+            type: KubernetesClient
+            default: { $get_input: [ kubernetes ] }
+        implementation:
+          primary:
+            type: puccini:WasmPlugin
+            file: artifacts/wasm/kubernetes-plugin.wasm
+            properties:
+              global: true
+              function: delete_kubernetes
+              event: kubernetes:delete

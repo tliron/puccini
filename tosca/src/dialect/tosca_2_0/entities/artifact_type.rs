@@ -102,17 +102,37 @@ where
         self.completion_state = CompletionState::Cannot;
 
         let (parent, parent_namespace) =
-            entity_from_name_field_checked!(ARTIFACT_TYPE, self, derived_from, derivation_path, context);
+            completed_entity_checked_from_full_name_field!(ARTIFACT_TYPE, self, derived_from, derivation_path, context);
 
         complete_subentity_map_field!(property, properties, self, parent, parent_namespace, false, context);
 
         if let Some(parent) = &parent {
-            complete_none_field!(mime_type, self, parent);
-            complete_none_field!(file_ext, self, parent);
+            complete_optional_field!(mime_type, self, parent);
+            complete_optional_field!(file_ext, self, parent);
         }
 
         self.completion_state = CompletionState::Complete;
         Ok(())
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for ArtifactType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self {
+            derived_from: self.derived_from.to_namespace(namespace),
+            version: self.version.clone(),
+            metadata: self.metadata.clone(),
+            description: self.description.clone(),
+            mime_type: self.mime_type.clone(),
+            file_ext: self.file_ext.clone(),
+            properties: self.properties.to_namespace(namespace),
+            internal: self.internal,
+            annotations: self.annotations.clone(),
+            completion_state: self.completion_state,
+        }
     }
 }
 

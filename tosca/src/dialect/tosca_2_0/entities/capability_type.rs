@@ -98,8 +98,13 @@ where
         assert!(self.completion_state == CompletionState::Incomplete);
         self.completion_state = CompletionState::Cannot;
 
-        let (parent, parent_namespace) =
-            entity_from_name_field_checked!(CAPABILITY_TYPE, self, derived_from, derivation_path, context);
+        let (parent, parent_namespace) = completed_entity_checked_from_full_name_field!(
+            CAPABILITY_TYPE,
+            self,
+            derived_from,
+            derivation_path,
+            context
+        );
 
         complete_subentity_map_field!(property, properties, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(attribute, attributes, self, parent, parent_namespace, true, context);
@@ -108,6 +113,26 @@ where
 
         self.completion_state = CompletionState::Complete;
         Ok(())
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for CapabilityType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self {
+            derived_from: self.derived_from.to_namespace(namespace),
+            version: self.version.clone(),
+            metadata: self.metadata.clone(),
+            description: self.description.clone(),
+            properties: self.properties.to_namespace(namespace),
+            attributes: self.attributes.to_namespace(namespace),
+            valid_source_node_types: self.valid_source_node_types.to_namespace(namespace),
+            valid_relationship_types: self.valid_relationship_types.to_namespace(namespace),
+            annotations: self.annotations.clone(),
+            completion_state: self.completion_state,
+        }
     }
 }
 

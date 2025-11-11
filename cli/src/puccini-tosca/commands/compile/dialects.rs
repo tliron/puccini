@@ -3,6 +3,7 @@ use super::command::*;
 use {
     compris::annotate::*,
     puccini_tosca::{dialect::tosca_2_0, grammar::*},
+    read_url::*,
     std::fmt,
 };
 
@@ -11,55 +12,58 @@ use floria::{plugins::*, *};
 
 impl Compile {
     /// TOSCA [Catalog] with supported dialects.
-    pub fn catalog<AnnotatedT>() -> Catalog
+    pub fn catalog<AnnotatedT>() -> Result<Catalog, ToscaError<AnnotatedT>>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
     {
         let mut catalog = Catalog::default();
         catalog.add_dialect_ref(tosca_2_0::Dialect::default().into());
-        catalog.add_source(tosca_2_0::Dialect::implicit_source::<AnnotatedT>());
-        catalog
+        catalog.add_sources(tosca_2_0::Dialect::built_in_sources::<AnnotatedT>()?);
+        Ok(catalog)
     }
 
-    /// Floria [Library] with the plugins for supported dialects.
+    /// Floria [PluginContext] with the plugins for supported dialects.
     #[cfg(feature = "plugins")]
-    pub fn library<'environment, StoreT>(
+    pub fn plugin_context<'environment, StoreT>(
         &self,
-        environment: Environment,
+        environment: PluginEnvironment,
         store: StoreT,
-    ) -> Result<Library<StoreT>, FloriaError>
+        url_context: UrlContextRef,
+    ) -> Result<PluginContext<StoreT>, FloriaError>
     where
         StoreT: Clone + Send + Store,
     {
-        let mut library = Library::new(environment, store);
+        let mut context = PluginContext::new(environment, store, url_context);
 
-        match &self.plugin {
-            Some(plugin) => {
-                library.load_dispatch_plugin(tosca_2_0::DIALECT_ID, plugin, self.plugin_precompiled)?;
-            }
+        if let Some(plugin) = context.store.get_plugin_by_url(&tosca_2_0::PLUGIN_URL)? {
+            match &self.plugin {
+                Some(plugin_url) => {
+                    context.load_dispatch_plugin(plugin.id, plugin_url, self.plugin_precompiled)?;
+                }
 
-            #[cfg(feature = "_blanket")]
-            None => {}
+                #[cfg(feature = "_blanket")]
+                None => {}
 
-            // Bundle the plugin
-            #[cfg(not(feature = "_blanket"))]
-            None => {
-                #[cfg(feature = "wasm-precompiled")]
-                library.add_dispatch_plugin(
-                    tosca_2_0::DIALECT_ID,
-                    include_bytes!(concat!(env!("OUT_DIR"), "/puccini_plugin_tosca_2_0_functions.cwasm")),
-                    true,
-                )?;
+                // Bundle the plugin
+                #[cfg(not(feature = "_blanket"))]
+                None => {
+                    #[cfg(feature = "wasm-precompiled")]
+                    context.add_dispatch_plugin(
+                        plugin.id,
+                        include_bytes!(concat!(env!("OUT_DIR"), "/puccini_plugin_tosca_2_0.cwasm")),
+                        true,
+                    )?;
 
-                #[cfg(not(feature = "wasm-precompiled"))]
-                library.add_dispatch_plugin(
-                    tosca_2_0::DIALECT_ID,
-                    include_bytes!(concat!(env!("OUT_DIR"), "/puccini_plugin_tosca_2_0_functions.wasm")),
-                    false,
-                )?;
+                    #[cfg(not(feature = "wasm-precompiled"))]
+                    context.add_dispatch_plugin(
+                        plugin.id,
+                        include_bytes!(concat!(env!("OUT_DIR"), "/puccini_plugin_tosca_2_0.wasm")),
+                        false,
+                    )?;
+                }
             }
         }
 
-        Ok(library)
+        Ok(context)
     }
 }

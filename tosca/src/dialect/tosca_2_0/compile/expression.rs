@@ -17,11 +17,8 @@ impl<AnnotatedT> Expression<AnnotatedT> {
             Expression::List(list) => {
                 let mut floria_list = Vec::with_capacity(list.len());
                 for item in list {
-                    match item.compile(context) {
-                        Ok(item) => floria_list.push(item),
-                        Err(error) => {
-                            context.errors.give(error)?;
-                        }
+                    if let Some(item) = ok_give!(item.compile(context), context.errors) {
+                        floria_list.push(item);
                     }
                 }
                 floria_list.into()
@@ -30,30 +27,18 @@ impl<AnnotatedT> Expression<AnnotatedT> {
             Expression::Map(map) => {
                 let mut floria_map = BTreeMap::default();
                 for (key, value) in map {
-                    match key.compile(context) {
-                        Ok(key) => match value.compile(context) {
-                            Ok(value) => {
-                                floria_map.insert(key, value);
-                            }
-                            Err(error) => {
-                                context.errors.give(error)?;
-                            }
-                        },
-                        Err(error) => {
-                            context.errors.give(error)?;
-                        }
+                    if let Some(key) = ok_give!(key.compile(context), context.errors)
+                        && let Some(value) = ok_give!(value.compile(context), context.errors)
+                    {
+                        floria_map.insert(key, value);
                     }
                 }
                 floria_map.into()
             }
 
-            Expression::Call(call) => match call.compile(context) {
-                Ok(call) => call,
-                Err(error) => {
-                    context.errors.give(error)?;
-                    floria::Expression::Undefined
-                }
-            },
+            Expression::Call(call) => {
+                unwrap_or_give!(call.compile(context), context.errors, floria::Expression::Undefined)
+            }
         })
     }
 }

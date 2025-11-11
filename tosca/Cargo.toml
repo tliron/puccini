@@ -4,7 +4,7 @@ edition = "2024"
 name = "puccini-tosca"
 description = "TOSCA parser, validator, and Floria compiler"
 version = "0.0.4"
-rust-version = "1.91"
+rust-version = "1.92"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -32,11 +32,12 @@ floria = "=0.0.5"
 kutil = { version = "=0.0.5", features = ["std", "immutable"] }
 num-traits = "0.2.19"
 read-url = { version = "=0.0.10", default-features = false, features = ["blocking"] }
+rootcause = "0.11.0"
 smart-default = "0.7.1"
 thiserror = "2.0.17"
-tracing = "0.1.41"
+tracing = "0.1.44"
 tynm = "0.2.0"
-uuid = { version = "1.18.1", features = ["v4"] }
+uuid = { version = "1.19.0", features = ["v4"] }
 
 [features]
 default = ["plugins", "filesystem", "http", "tosca-2_0"]

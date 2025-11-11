@@ -15,7 +15,12 @@ where
     where
         AnnotatedT: 'static,
     {
-        vertex_template.template.class_ids.add_tosca_type(&self.type_name, context)?;
+        vertex_template.template.class_ids.add_tosca_type(
+            ARTIFACT_TYPE,
+            ARTIFACT_TYPE_NAME,
+            &self.type_name,
+            context,
+        )?;
 
         vertex_template.template.metadata.set_tosca_entity_static(DIALECT_ID, ARTIFACT_NAME);
         vertex_template.template.metadata.set_tosca_description(self.description.as_ref());
@@ -26,7 +31,7 @@ where
             vertex_template
                 .template
                 .property_templates
-                .insert(name.clone(), value_assignment.compile(PROPERTY_NAME, true, context)?);
+                .insert(name.clone().into(), value_assignment.compile(PROPERTY_NAME, true, context)?);
         }
 
         Ok(())

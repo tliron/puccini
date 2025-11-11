@@ -91,7 +91,7 @@ where
         self.completion_state = CompletionState::Cannot;
 
         let (parent, parent_namespace) =
-            entity_from_name_field_checked!(POLICY_TYPE, self, derived_from, derivation_path, context);
+            completed_entity_checked_from_full_name_field!(POLICY_TYPE, self, derived_from, derivation_path, context);
 
         complete_subentity_map_field!(property, properties, self, parent, parent_namespace, false, context);
         complete_subentity_map_field!(trigger, triggers, self, parent, parent_namespace, false, context);
@@ -99,6 +99,25 @@ where
 
         self.completion_state = CompletionState::Complete;
         Ok(())
+    }
+}
+
+impl<AnnotatedT> ToNamespace<Self> for PolicyType<AnnotatedT>
+where
+    AnnotatedT: Annotated + Clone + Default,
+{
+    fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
+        Self {
+            derived_from: self.derived_from.to_namespace(namespace),
+            version: self.version.clone(),
+            metadata: self.metadata.clone(),
+            description: self.description.clone(),
+            properties: self.properties.to_namespace(namespace),
+            targets: self.targets.to_namespace(namespace),
+            triggers: self.triggers.to_namespace(namespace),
+            annotations: self.annotations.clone(),
+            completion_state: self.completion_state,
+        }
     }
 }
 

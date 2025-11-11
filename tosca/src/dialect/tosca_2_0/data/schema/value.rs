@@ -95,11 +95,11 @@ impl<AnnotatedT> ValueSchema<AnnotatedT> {
 impl<AnnotatedT> PartialEq for ValueSchema<AnnotatedT> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Primitive(primitive), Self::Primitive(other_primitive)) => primitive == other_primitive,
-            (Self::Scalar(scalar), Self::Scalar(other_scalar)) => scalar == other_scalar,
-            (Self::List(list), Self::List(other_list)) => list == other_list,
-            (Self::Map(map), Self::Map(other_map)) => map == other_map,
-            (Self::Struct(struct_), Self::Struct(other_struct)) => struct_ == other_struct,
+            (Self::Primitive(left), Self::Primitive(right)) => left == right,
+            (Self::Scalar(left), Self::Scalar(right)) => left == right,
+            (Self::List(left), Self::List(right)) => left == right,
+            (Self::Map(left), Self::Map(right)) => left == right,
+            (Self::Struct(left), Self::Struct(right)) => left == right,
             _ => false,
         }
     }

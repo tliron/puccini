@@ -2,22 +2,23 @@
 #[macro_export]
 macro_rules! complete_schema_default_and_validation {
     (
-        $value_schema:ident,
-        $self:ident,
-        $definition:ident $(,)?
+        $value_schema:expr,
+        $self:expr,
+        $details:expr,
+        $details_namespace:expr $(,)?
     ) => {
-        if $self.default_expression().is_none()
-            && let Some(default) = $definition.default_expression()
-        {
+        if let Some(default) = $self.default_expression() {
             $value_schema.default = Some(default.clone());
+        } else if let Some(default) = $details.default_expression() {
+            $value_schema.default = Some(default.to_namespace($details_namespace));
         }
 
         if let Some(validation) = $self.validation() {
             $value_schema.validation.join_and(validation.clone());
         }
 
-        if let Some(validation) = $definition.validation() {
-            $value_schema.validation.join_and(validation.clone());
+        if let Some(validation) = $details.validation() {
+            $value_schema.validation.join_and(validation.to_namespace($details_namespace));
         }
     };
 }
@@ -26,29 +27,36 @@ macro_rules! complete_schema_default_and_validation {
 #[macro_export]
 macro_rules! complete_complex_schema_default_and_validation {
     (
-        $value_schema:ident,
-        $self:ident,
-        $definition:ident $(,)?
+        $value_schema:expr,
+        $self:expr,
+        $details:expr,
+        $details_namespace:expr,
+        $context:expr $(,)?
     ) => {
-        match ($self.default_expression(), $definition.default_expression()) {
+        match ($self.default_expression(), $details.default_expression()) {
             (None, None) => {}
             (Some(default), None) => $value_schema.default = Some(default.clone()),
-            (None, Some(default)) => $value_schema.default = Some(default.clone()),
+            (None, Some(default)) => $value_schema.default = Some(default.to_namespace($details_namespace)),
             (Some(default), Some(_)) => {
-                return Err($crate::grammar::OverrideProhibitedError::new("default".into())
-                    .with_annotations_from(default)
-                    .into());
+                use ::kutil::std::error::*;
+                $context.errors.give(
+                    $crate::grammar::OverrideProhibitedError::new("default".into()).with_annotations_from(default),
+                )?;
+                return Ok(None);
             }
         }
 
-        match ($self.validation(), $definition.validation()) {
+        match ($self.validation(), $details.validation()) {
             (None, None) => {}
             (Some(validation), None) => $value_schema.validation = Some(validation.clone()),
-            (None, Some(validation)) => $value_schema.validation = Some(validation.clone()),
+            (None, Some(validation)) => $value_schema.validation = Some(validation.to_namespace($details_namespace)),
             (Some(validation), Some(_)) => {
-                return Err($crate::grammar::OverrideProhibitedError::new("validation".into())
-                    .with_annotations_from(validation)
-                    .into());
+                use ::kutil::std::error::*;
+                $context.errors.give(
+                    $crate::grammar::OverrideProhibitedError::new("validation".into())
+                        .with_annotations_from(validation),
+                )?;
+                return Ok(None);
             }
         }
     };
@@ -58,30 +66,37 @@ macro_rules! complete_complex_schema_default_and_validation {
 #[macro_export]
 macro_rules! complete_entry_schema {
     (
-        $value_schema:ident,
-        $self:ident,
-        $definition:ident,
-        $schema:ident,
-        $source_id:ident,
-        $catalog:ident $(,)?
+        $value_schema:expr,
+        $self:expr,
+        $details:expr,
+        $details_namespace:expr,
+        $schema:expr,
+        $context:expr $(,)?
     ) => {
-        match ($self.entry_schema(), $definition.entry_schema()) {
+        match ($self.entry_schema(), $details.entry_schema()) {
             (None, None) => {}
 
             (Some(schema_definition), None) => {
-                let reference = schema_definition.initialize_schema($schema, $source_id, $catalog)?;
-                $value_schema.entry = Some(reference);
+                if let Some(reference) = schema_definition.initialize_schema($schema, $context)? {
+                    $value_schema.entry = Some(reference);
+                }
             }
 
             (None, Some(schema_definition)) => {
-                let reference = schema_definition.initialize_schema($schema, $source_id, $catalog)?;
-                $value_schema.entry = Some(reference);
+                if let Some(reference) =
+                    schema_definition.to_namespace($details_namespace).initialize_schema($schema, $context)?
+                {
+                    $value_schema.entry = Some(reference);
+                }
             }
 
             (Some(schema_definition), Some(_)) => {
-                return Err($crate::grammar::OverrideProhibitedError::new("entry_schema".into())
-                    .with_annotations_from(schema_definition)
-                    .into());
+                use ::kutil::std::error::*;
+                $context.errors.give(
+                    $crate::grammar::OverrideProhibitedError::new("entry_schema".into())
+                        .with_annotations_from(schema_definition),
+                )?;
+                return Ok(None);
             }
         }
     };
@@ -93,66 +108,77 @@ macro_rules! complete_key_schema {
     (
         $value_schema:ident,
         $self:ident,
-        $definition:ident,
+        $details:ident,
+        $details_namespace:expr,
         $schema:ident,
-        $source_id:ident,
-        $catalog:ident $(,)?
+        $context:ident $(,)?
     ) => {
-        match ($self.key_schema(), $definition.key_schema()) {
+        match ($self.key_schema(), $details.key_schema()) {
             (None, None) => {}
 
             (Some(schema_definition), None) => {
-                let reference = schema_definition.initialize_schema($schema, $source_id, $catalog)?;
+                if let Some(reference) = schema_definition.initialize_schema($schema, $context)? {
+                    // key_schema must be string
+                    if let Some(schema_definition) = $schema.dereference(reference)
+                        && let Some(data_kind) = schema_definition.data_kind()
+                        && data_kind != DataKind::String
+                    {
+                        let annotations = $self
+                            .key_schema()
+                            .and_then(|schema_definition| schema_definition.field_annotations("type_name").cloned());
 
-                // key_schema must be string
-                if let Some(schema_definition) = $schema.dereference(reference)
-                    && let Some(data_kind) = schema_definition.data_kind()
-                    && data_kind != DataKind::String
-                {
-                    let annotations = $self
-                        .key_schema()
-                        .and_then(|schema_definition| schema_definition.field_annotations("type_name").cloned());
+                        use ::kutil::std::error::*;
+                        $context.errors.give(
+                            $crate::grammar::WrongTypeError::new(
+                                "key_schema".into(),
+                                data_kind.to_string(),
+                                vec!["string".into()],
+                            )
+                            .with_annotations_option(annotations),
+                        )?;
+                        return Ok(None);
+                    }
 
-                    return Err($crate::grammar::WrongTypeError::new(
-                        "key_schema".into(),
-                        data_kind.to_string(),
-                        vec!["string".into()],
-                    )
-                    .with_annotations_option(annotations)
-                    .into());
+                    $value_schema.key = Some(reference);
                 }
-
-                $value_schema.key = Some(reference);
             }
 
             (None, Some(schema_definition)) => {
-                let reference = schema_definition.initialize_schema($schema, $source_id, $catalog)?;
-
-                // key_schema must be string kind
-                if let Some(schema_definition) = $schema.dereference(reference)
-                    && let Some(data_kind) = schema_definition.data_kind()
-                    && data_kind != DataKind::String
+                if let Some(reference) =
+                    schema_definition.to_namespace($details_namespace).initialize_schema($schema, $context)?
                 {
-                    let annotations = $definition
-                        .key_schema()
-                        .and_then(|schema_definition| schema_definition.field_annotations("type_name").cloned());
+                    // key_schema must be string kind
+                    if let Some(schema_definition) = $schema.dereference(reference)
+                        && let Some(data_kind) = schema_definition.data_kind()
+                        && data_kind != DataKind::String
+                    {
+                        let annotations = $details
+                            .key_schema()
+                            .and_then(|schema_definition| schema_definition.field_annotations("type_name").cloned());
 
-                    return Err($crate::grammar::WrongTypeError::new(
-                        "key_schema".into(),
-                        data_kind.to_string(),
-                        vec!["string".into()],
-                    )
-                    .with_annotations_option(annotations)
-                    .into());
+                        use ::kutil::std::error::*;
+                        $context.errors.give(
+                            $crate::grammar::WrongTypeError::new(
+                                "key_schema".into(),
+                                data_kind.to_string(),
+                                vec!["string".into()],
+                            )
+                            .with_annotations_option(annotations),
+                        )?;
+                        return Ok(None);
+                    }
+
+                    $value_schema.key = Some(reference);
                 }
-
-                $value_schema.key = Some(reference);
             }
 
             (Some(schema_definition), Some(_)) => {
-                return Err($crate::grammar::OverrideProhibitedError::new("key_schema".into())
-                    .with_annotations_from(schema_definition)
-                    .into());
+                use ::kutil::std::error::*;
+                $context.errors.give(
+                    $crate::grammar::OverrideProhibitedError::new("key_schema".into())
+                        .with_annotations_from(schema_definition),
+                )?;
+                return Ok(None);
             }
         }
     };

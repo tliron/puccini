@@ -1,35 +1,54 @@
+use kutil::std::error::FailFastErrorReceiver;
+
 use super::{
     super::{super::super::grammar::*, data::*, entities::*},
     dialect::*,
     entity_kind::*,
 };
 
-use {compris::annotate::*, kutil::std::immutable::*, std::fmt};
+use {compris::annotate::*, kutil::std::immutable::*};
 
 /// Wasm artifact type.
-pub const WASM_ARTIFACT_TYPE: &str = "_Wasm";
+pub const WASM_ARTIFACT_TYPE: Name = Name::new_static_unchecked("Wasm");
 
-/// Plugin artifact type.
-pub const PLUGIN_ARTIFACT_TYPE: &str = "_Plugin";
+/// Wasm plugin artifact type.
+pub const WASM_PLUGIN_ARTIFACT_TYPE: Name = Name::new_static_unchecked("WasmPlugin");
+
+/// Implicit source ID.
+pub const IMPLICIT_SOURCE_ID: SourceID = SourceID::Internal(DIALECT_ID);
+
+/// Internal source ID.
+pub const INTERNAL_SOURCE_ID: SourceID = SourceID::Profile(ByteString::from_static("puccini"));
+
+/// Internal namespace.
+pub fn internal_namespace() -> Namespace {
+    Namespace::from(vec!["_internal".into()])
+}
 
 impl super::Dialect {
-    /// Create the implicit source.
-    pub fn implicit_source<AnnotatedT>() -> Source
+    /// Create the built-in sources.
+    pub fn built_in_sources<AnnotatedT>() -> Result<Vec<Source>, ToscaError<AnnotatedT>>
     where
-        AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
+        AnnotatedT: 'static + Annotated + Clone + Default,
     {
-        let mut source = Source::new(SourceID::Internal(DIALECT_ID), DIALECT_ID);
+        let mut implicit = Source::new(IMPLICIT_SOURCE_ID, DIALECT_ID);
+        Self::add_implicit_data_types(&mut implicit)?;
+        Self::add_implicit_functions(&mut implicit)?;
 
-        Self::add_data_types::<AnnotatedT>(&mut source);
-        Self::add_artifact_types::<AnnotatedT>(&mut source);
-        Self::add_functions::<AnnotatedT>(&mut source);
+        let mut internal = Source::new(INTERNAL_SOURCE_ID, DIALECT_ID);
+        internal.merge_namespace(&implicit, &Default::default(), &mut FailFastErrorReceiver)?;
+        Self::add_internal_artifact_types(&mut internal)?;
+        Self::add_internal_functions(&mut internal)?;
 
-        source
+        // The implicit functions refer to _internal::WasmPlugin
+        implicit.merge_namespace(&internal, &internal_namespace(), &mut FailFastErrorReceiver)?;
+
+        Ok(vec![implicit, internal])
     }
 
-    fn add_data_types<AnnotatedT>(source: &mut Source)
+    fn add_implicit_data_types<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
     where
-        AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
+        AnnotatedT: 'static + Annotated + Clone + Default,
     {
         for data_kind in [
             DataKind::String,
@@ -44,44 +63,19 @@ impl super::Dialect {
             DataKind::List,
             DataKind::Map,
         ] {
-            source
-                .add_entity::<_, AnnotatedT>(
-                    DATA_TYPE,
-                    data_kind.into(),
-                    DataType::<AnnotatedT>::new_internal(data_kind),
-                    true,
-                )
-                .expect("add_entity");
+            source.add_entity::<_, AnnotatedT>(
+                DATA_TYPE,
+                data_kind.into(),
+                DataType::<AnnotatedT>::new_internal(data_kind),
+                false,
+            )?;
         }
+        Ok(())
     }
 
-    fn add_artifact_types<AnnotatedT>(source: &mut Source)
+    fn add_implicit_functions<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
     where
-        AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
-    {
-        let mut wasm = ArtifactType::<AnnotatedT>::new_internal();
-
-        wasm.mime_type = Some("application/wasm".into());
-        wasm.file_ext = Some(vec!["wasm".into()]);
-
-        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_ARTIFACT_TYPE.into(), wasm, true).expect("add_entity");
-
-        let mut plugin = ArtifactType::<AnnotatedT>::new_internal();
-
-        let mut floria_prefix = PropertyDefinition::<AnnotatedT>::default();
-        floria_prefix.type_name = Name::from("string").into();
-
-        plugin.derived_from = Some(Name::from(WASM_ARTIFACT_TYPE).into());
-        plugin.properties.insert(ByteString::from_static("floria-prefix"), floria_prefix);
-
-        source
-            .add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, PLUGIN_ARTIFACT_TYPE.into(), plugin, true)
-            .expect("add_entity");
-    }
-
-    fn add_functions<AnnotatedT>(source: &mut Source)
-    where
-        AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
+        AnnotatedT: 'static + Annotated + Clone + Default,
     {
         for function in [
             "ceil",
@@ -126,19 +120,66 @@ impl super::Dialect {
             "value",
             "intersection",
             "union",
-            "_apply",
-            "_assert",
-            "_schema",
-            "_select_capability",
         ] {
-            source
-                .add_entity::<_, AnnotatedT>(
-                    FUNCTION,
-                    function.into(),
-                    FunctionDefinition::<AnnotatedT>::new_internal_plugin(DIALECT_ID),
-                    true,
-                )
-                .expect("add_entity");
+            source.add_entity::<_, AnnotatedT>(
+                FUNCTION,
+                function.into(),
+                FunctionDefinition::<AnnotatedT>::new_internal(internal_namespace(), PLUGIN_URL),
+                false,
+            )?;
         }
+
+        Ok(())
+    }
+
+    fn add_internal_artifact_types<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
+    where
+        AnnotatedT: 'static + Annotated + Clone + Default,
+    {
+        let mut wasm = ArtifactType::<AnnotatedT>::new_internal();
+
+        wasm.mime_type = Some("application/wasm".into());
+        wasm.file_ext = Some(vec!["wasm".into(), "cwasm".into()]);
+
+        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_ARTIFACT_TYPE, wasm, true)?;
+
+        let mut wasm_plugin = ArtifactType::<AnnotatedT>::new_internal();
+
+        let mut global = PropertyDefinition::<AnnotatedT>::default();
+        global.type_name = Name::new_static_unchecked("boolean").into();
+        global.required = Some(false);
+
+        let mut function = PropertyDefinition::<AnnotatedT>::default();
+        function.type_name = Name::new_static_unchecked("string").into();
+        function.required = Some(false);
+
+        let mut event = PropertyDefinition::<AnnotatedT>::default();
+        event.type_name = Name::new_static_unchecked("string").into();
+        event.required = Some(false);
+
+        wasm_plugin.derived_from = Some(WASM_ARTIFACT_TYPE.into());
+        wasm_plugin.properties.insert("global".into(), global);
+        wasm_plugin.properties.insert("function".into(), function);
+        wasm_plugin.properties.insert("event".into(), event);
+
+        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_PLUGIN_ARTIFACT_TYPE, wasm_plugin, false)?;
+
+        Ok(())
+    }
+
+    fn add_internal_functions<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
+    where
+        AnnotatedT: 'static + Annotated + Clone + Default,
+    {
+        for function in ["apply", "assert", "schema", "select_capability"] {
+            source.add_entity::<_, AnnotatedT>(
+                FUNCTION,
+                function.into(),
+                FunctionDefinition::<AnnotatedT>::new_internal(Default::default(), PLUGIN_URL),
+                false,
+            )?;
+        }
+
+        Ok(())
     }
 }

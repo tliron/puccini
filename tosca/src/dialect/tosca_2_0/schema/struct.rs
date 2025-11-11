@@ -15,9 +15,9 @@ where
         &self,
         schema: &mut Schema<AnnotatedT>,
         reference: SchemaReference,
-        definition: &SchemaDetailsT,
-        source_id: &SourceID,
-        catalog: &Catalog,
+        details: &SchemaDetailsT,
+        details_namespace: Option<&Namespace>,
+        context: &mut CompletionContext,
     ) -> Result<SchemaReference, ToscaError<WithAnnotations>>
     where
         AnnotatedT: 'static,
@@ -25,12 +25,13 @@ where
     {
         let mut struct_schema = StructSchema::default();
 
-        complete_schema_default_and_validation!(struct_schema, self, definition);
+        complete_schema_default_and_validation!(struct_schema, self, details, details_namespace);
 
         if let Some(properties) = &self.properties {
             for (name, property) in properties {
-                let field = property.initialize_struct_field_schema(schema, source_id, catalog)?;
-                struct_schema.fields.insert(name.clone(), field);
+                if let Some(field) = property.initialize_struct_field_schema(schema, context)? {
+                    struct_schema.fields.insert(name.clone(), field);
+                }
             }
         }
 
@@ -46,25 +47,22 @@ where
     pub fn initialize_struct_field_schema(
         &self,
         schema: &mut Schema<AnnotatedT>,
-        source_id: &SourceID,
-        catalog: &Catalog,
-    ) -> Result<StructSchemaField, ToscaError<WithAnnotations>>
+        context: &mut CompletionContext,
+    ) -> Result<Option<StructSchemaField>, ToscaError<WithAnnotations>>
     where
         AnnotatedT: 'static,
     {
-        // TODO: we should have error receiver?
-        let data_type = catalog
-            .entity::<DataType<AnnotatedT>, _>(DATA_TYPE, &self.type_name, source_id)
-            .map_err(|error| error.with_annotations_from_field(self, "type_name"))?;
+        let (data_type, data_type_namespace) =
+            completed_entity_from_full_name_field!(DATA_TYPE, DataType, self, type_name, context);
 
-        let reference = data_type.initialize_schema(
-            &self.to_schema_key(Some(self.type_name.clone())),
-            schema,
-            self,
-            source_id,
-            catalog,
-        )?;
+        let data_type = data_type.to_namespace(data_type_namespace);
 
-        Ok(StructSchemaField::new(reference, self.required.unwrap_or(true)))
+        Ok(match data_type {
+            Some(data_type) => data_type
+                .initialize_schema(schema, self, None, context)?
+                .map(|reference| StructSchemaField::new(reference, self.required.unwrap_or(true))),
+
+            None => None,
+        })
     }
 }

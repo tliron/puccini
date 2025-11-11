@@ -16,9 +16,9 @@ set -e
 # WASM_PRECOMPILE = true | false
 # Whether to precompile Wasm code to native (.wasm to .cwasm)
 #
-# WASM_DEBUG_INFO = true | false
-# Whether to include debug information in Wasm
-# This affects *both* .wasm and .cwasm building
+# WASM_DEBUG = true | false
+# Whether to enable Wasm debugging in the runtime
+# This also adds debug information information to built Wasm artifacts (.wasm and .cwasm)
 # *as well* as how the Wasm runtime defaults in native code
 # Note that this *does* work when WASM=release even though the debug info is empty
 #
@@ -42,12 +42,12 @@ if [ "$1" == -r ]; then
     NATIVE=${NATIVE:-release}
     LTO=${LTO:-true}
     WASM=${WASM:-release}
-	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-false}
+	WASM_DEBUG=${WASM_DEBUG:-false}
 else
     NATIVE=${NATIVE:-dev}
     LTO=${LTO:-off}
     WASM=${WASM:-dev}
-	WASM_DEBUG_INFO=${WASM_DEBUG_INFO:-true}
+	WASM_DEBUG=${WASM_DEBUG:-true}
 fi
 
 if [ "$BINDEPS" == false ]; then
@@ -65,18 +65,18 @@ fi
 
 m "building native ($NATIVE)..." "$CYAN"
 
-if [ "$WASM_DEBUG_INFO" == true ]; then
-    m "  (enabling wasm debug info)" "$CYAN"
-    NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug-info --features=floria/wasm-debug"
+if [ "$WASM_DEBUG" == true ]; then
+    m "• enabling Wasm debug" "$CYAN"
+    NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug"
 fi
 
 if [ "$WASM_PRECOMPILE" == true ]; then
-    m "  (precompiling wasm)" "$CYAN"
+    m "• precompiling Wasm" "$CYAN"
     NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-precompiled"
 fi
 
 if [ "$NATIVE" == release ]; then
-    m "  (LTO = $LTO)" "$CYAN"
+    m "• LTO = $LTO" "$CYAN"
 
     CARGO_PROFILE_RELEASE_LTO=$LTO \
 	cargo install \
@@ -98,7 +98,7 @@ else
         fi
 
         if [ -n "$LINKER" ]; then
-            m "  (linker = $LINKER)" "$CYAN"
+            m "• linking with $LINKER" "$CYAN"
             RUSTFLAGS="$RUSTFLAGS --codegen linker=clang --codegen link-arg=--ld-path=$LINKER"
         fi
     fi

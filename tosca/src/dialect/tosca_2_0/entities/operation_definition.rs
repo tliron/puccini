@@ -57,7 +57,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -76,7 +76,7 @@ where
     fn to_namespace(&self, namespace: Option<&Namespace>) -> Self {
         Self {
             description: self.description.clone(),
-            implementation: self.implementation.clone(),
+            implementation: self.implementation.to_namespace(namespace),
             inputs: self.inputs.to_namespace(namespace),
             outputs: self.outputs.to_namespace(namespace),
             annotations: self.annotations.clone(),
@@ -89,4 +89,4 @@ where
 //
 
 /// Map of [OperationDefinition].
-pub type OperationDefinitions<AnnotatedT> = BTreeMap<ByteString, OperationDefinition<AnnotatedT>>;
+pub type OperationDefinitions<AnnotatedT> = BTreeMap<Name, OperationDefinition<AnnotatedT>>;

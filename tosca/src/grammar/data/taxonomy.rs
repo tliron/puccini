@@ -154,6 +154,15 @@ impl<'own, NameT, ValueT> IntoIterator for &'own mut Taxonomy<NameT, ValueT> {
     }
 }
 
+impl<NameT, ValueT> FromIterator<(NameT, ValueT)> for Taxonomy<NameT, ValueT> {
+    fn from_iter<IteratorT>(iterator: IteratorT) -> Self
+    where
+        IteratorT: IntoIterator<Item = (NameT, ValueT)>,
+    {
+        Self(iterator.into_iter().collect())
+    }
+}
+
 // Conversions
 
 impl<NameT, ValueT> From<Taxonomy<NameT, ValueT>> for Vec<(NameT, ValueT)> {

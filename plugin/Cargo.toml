@@ -1,0 +1,40 @@
+[package]
+edition = "2024"
+
+name = "puccini-plugin-tosca-2_0"
+description = "Floria plugin for TOSCA 2.0 built-in functions"
+version = "0.0.4"
+rust-version = "1.92"
+
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tliron/puccini"
+documentation = "https://docs.rs/puccini-plugin-tosca-2_0"
+authors = ["Tal Liron"]
+
+readme = "../README.md"
+
+categories = [] # https://crates.io/category_slugs
+keywords = [
+    "cloud",
+    "orchestration",
+    "wasm",
+    "tosca",
+    "khutulun",
+]
+
+[dependencies]
+puccini-plugin-sdk-tosca-2_0 = "=0.0.4"
+floria-plugin-sdk = "=0.0.5"
+regex = "1.12.2"
+
+[lib]
+crate-type = ["cdylib"]
+
+# [package.metadata.component]
+# package = "component:puccini-tosca"
+
+# https://stackoverflow.com/a/61417700
+[package.metadata.docs.rs]
+all-features = true
+targets = ["wasm32-wasip2"]
+rustdoc-args = ["--cfg", "docsrs"]

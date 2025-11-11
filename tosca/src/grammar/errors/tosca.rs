@@ -107,10 +107,10 @@ pub enum ToscaError<AnnotatedT> {
     #[depict(as(depict))]
     NumberOverflow(#[from] NumberOverflowError<AnnotatedT>),
 
-    /// Store.
-    #[error("store: {0}")]
+    /// Floria.
+    #[error("Floria: {0}")]
     #[depict(as(depict))]
-    Store(#[from] floria::StoreError),
+    Floria(#[from] floria::StoreError),
 }
 
 // Delegated
@@ -143,7 +143,7 @@ where
             Self::OverrideProhibited(override_prohibited) => override_prohibited.annotations(),
             Self::MissingRequired(missing_required) => missing_required.annotations(),
             Self::NumberOverflow(number_overflow) => number_overflow.annotations(),
-            Self::Store(_) => None,
+            Self::Floria(_) => None,
         }
     }
 
@@ -167,7 +167,7 @@ where
             Self::OverrideProhibited(override_prohibited) => override_prohibited.annotations_mut(),
             Self::MissingRequired(missing_required) => missing_required.annotations_mut(),
             Self::NumberOverflow(number_overflow) => number_overflow.annotations_mut(),
-            Self::Store(_) => None,
+            Self::Floria(_) => None,
         }
     }
 }
@@ -200,12 +200,18 @@ where
             Self::OverrideProhibited(override_prohibited) => override_prohibited.into_annotated().into(),
             Self::MissingRequired(missing_required) => missing_required.into_annotated().into(),
             Self::NumberOverflow(number_overflow) => number_overflow.into_annotated().into(),
-            Self::Store(store) => store.into(),
+            Self::Floria(store) => store.into(),
         }
     }
 }
 
 // Conversions
+
+impl<AnnotatedT> From<floria::MalformedError> for ToscaError<AnnotatedT> {
+    fn from(error: floria::MalformedError) -> Self {
+        floria::StoreError::from(error).into()
+    }
+}
 
 impl<AnnotatedT> TryFrom<ToscaError<AnnotatedT>> for ResolveError<AnnotatedT> {
     type Error = ();

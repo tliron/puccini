@@ -2,11 +2,17 @@ use super::super::super::super::grammar::{Dialect as DialectTrait, *};
 
 use {
     compris::{annotate::*, normal::*},
-    kutil::std::error::*,
+    kutil::std::immutable::*,
 };
 
 /// Dialect ID.
 pub const DIALECT_ID: DialectID = DialectID::from_static("tosca_2_0");
+
+/// Plugin name.
+pub const PLUGIN_NAME: ByteString = ByteString::from_static("tosca:2.0");
+
+/// Plugin URL.
+pub const PLUGIN_URL: ByteString = ByteString::from_static("implicit:tosca:2.0");
 
 //
 // Dialect
@@ -40,7 +46,7 @@ impl DialectTrait for Dialect {
         variant: Variant<WithAnnotations>,
         errors: ToscaErrorReceiverRef,
     ) -> Result<(), ToscaError<WithAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.to_error_receiver().into_annotated())
+        self.initialize_source(source, variant, &mut errors.clone().into_annotated())
     }
 
     fn initialize_source_without_annotations(
@@ -49,7 +55,7 @@ impl DialectTrait for Dialect {
         variant: Variant<WithoutAnnotations>,
         errors: ToscaErrorReceiverRef,
     ) -> Result<(), ToscaError<WithoutAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.to_error_receiver().into_annotated())
+        self.initialize_source(source, variant, &mut errors.clone().into_annotated())
     }
 
     fn compile_source(

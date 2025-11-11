@@ -109,6 +109,14 @@ where
     #[depict(style(symbol))]
     pub optional: bool,
 
+    /// Description.
+    #[depict(skip)]
+    pub description: Option<ByteString>,
+
+    /// Metadata.
+    #[depict(skip)]
+    pub metadata: Metadata<AnnotatedT>,
+
     #[resolve(annotations)]
     #[depict(skip)]
     pub(crate) annotations: StructAnnotations,
@@ -120,7 +128,7 @@ where
 {
     fn complete(
         &mut self,
-        name: Option<ByteString>,
+        name: Option<&Name>,
         requirement_definition: Option<&RequirementDefinition<AnnotatedT>>,
         requirement_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
@@ -130,7 +138,7 @@ where
         // TODO: validate capability adheres to parent's capability type
 
         if let Some(requirement_definition) = requirement_definition {
-            complete_none_field_to!(relationship, self, requirement_definition, || Some(
+            complete_optional_field_to!(relationship, self, requirement_definition, || Some(
                 requirement_definition.relationship.to_namespace(requirement_definition_namespace)
             ));
         }
@@ -158,6 +166,8 @@ where
             capability: Some(self.capability.clone()),
             relationship: Some(self.relationship.to_namespace(namespace)),
             node_filter: self.node_filter.clone(),
+            description: self.description.clone(),
+            metadata: self.metadata.clone(),
             annotations: self.annotations.clone_fields(&["node", "capability", "relationship", "node_filter"]),
             ..Default::default()
         }
@@ -197,4 +207,4 @@ pub enum RequirementAssignmentNode {
 //
 
 /// [Taxonomy] of [RequirementAssignment].
-pub type RequirementAssignments<AnnotatedT> = Taxonomy<ByteString, RequirementAssignment<AnnotatedT>>;
+pub type RequirementAssignments<AnnotatedT> = Taxonomy<Name, RequirementAssignment<AnnotatedT>>;

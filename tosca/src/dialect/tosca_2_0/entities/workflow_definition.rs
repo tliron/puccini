@@ -1,4 +1,6 @@
-use {compris::resolve::*, depiction::*, kutil::std::immutable::*, std::collections::*};
+use super::super::super::super::grammar::*;
+
+use {compris::resolve::*, depiction::*, std::collections::*};
 
 //
 // WorkflowDefinition
@@ -16,4 +18,4 @@ pub struct WorkflowDefinition {}
 //
 
 /// Map of [WorkflowDefinition].
-pub type WorkflowDefinitions = BTreeMap<ByteString, WorkflowDefinition>;
+pub type WorkflowDefinitions = BTreeMap<Name, WorkflowDefinition>;

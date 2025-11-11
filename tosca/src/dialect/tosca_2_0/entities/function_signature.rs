@@ -66,15 +66,11 @@ where
     AnnotatedT: Annotated + Clone + Default,
 {
     /// Constructor.
-    pub fn new_plugin(plugin: ByteString) -> Self {
-        Self { implementation: Some(ImplementationDefinition::new_plugin(plugin)), ..Default::default() }
-    }
-
-    /// Plugin file and prefix.
-    pub fn plugin(&self) -> Result<Option<(ByteString, Option<ByteString>)>, ToscaError<AnnotatedT>> {
-        match &self.implementation {
-            Some(implementation_definition) => implementation_definition.plugin(),
-            None => Ok(None),
+    pub fn new_internal(namespace: Namespace, artifact_file: ByteString) -> Self {
+        Self {
+            implementation: Some(ImplementationDefinition::new_internal(namespace, artifact_file)),
+            variadic: true,
+            ..Default::default()
         }
     }
 }
@@ -85,7 +81,7 @@ where
 {
     fn complete(
         &mut self,
-        _name: Option<ByteString>,
+        _name: Option<&Name>,
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,

@@ -1,5 +1,5 @@
 use super::{
-    super::super::{data::*, entities::*},
+    super::super::{super::super::grammar::*, data::*, entities::*},
     details::*,
 };
 
@@ -11,6 +11,10 @@ impl<AnnotatedT> SchemaDetails<AnnotatedT> for SchemaDefinition<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
+    fn data_type_name(&self) -> Option<&FullName> {
+        Some(&self.type_name)
+    }
+
     fn default_expression(&self) -> Option<&Expression<AnnotatedT>> {
         None
     }

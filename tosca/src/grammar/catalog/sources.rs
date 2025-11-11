@@ -9,8 +9,18 @@ impl Catalog {
         self.sources.insert(source.source_id.clone(), source);
     }
 
+    /// Add sources.
+    pub fn add_sources<IterableT>(&mut self, sources: IterableT)
+    where
+        IterableT: IntoIterator<Item = Source>,
+    {
+        for source in sources {
+            self.add_source(source);
+        }
+    }
+
     /// Get a source.
-    pub fn get_source<AnnotatedT>(&self, source_id: &SourceID) -> Result<&Source, SourceNotLoadedError<AnnotatedT>>
+    pub fn source<AnnotatedT>(&self, source_id: &SourceID) -> Result<&Source, SourceNotLoadedError<AnnotatedT>>
     where
         AnnotatedT: Default,
     {
@@ -18,7 +28,7 @@ impl Catalog {
     }
 
     /// Get a source.
-    pub fn get_source_mut<AnnotatedT>(
+    pub fn source_mut<AnnotatedT>(
         &mut self,
         source_id: &SourceID,
     ) -> Result<&mut Source, SourceNotLoadedError<AnnotatedT>>
@@ -33,6 +43,6 @@ impl Catalog {
     where
         AnnotatedT: Default,
     {
-        Ok(self.dialect_entity_kinds(&self.get_source(source_id)?.dialect_id)?)
+        Ok(self.dialect_entity_kinds(&self.source(source_id)?.dialect_id)?)
     }
 }
