@@ -2,7 +2,7 @@ use {
     anstream::{println, stdout},
     compris::{annotate::*, normal::*, ser::*, *},
     depiction::*,
-    kutil::std::error::*,
+    problemo::*,
     puccini_csar::*,
 };
 
@@ -20,7 +20,7 @@ Another: One
 
     // Note that the TOSCA.meta format is very strict!
 
-    let tosca_meta = ToscaMeta::from_bytes(source, &mut FailFastErrorReceiver).expect("from_bytes");
+    let tosca_meta = ToscaMeta::from_bytes(source, &mut FailFast).expect("from_bytes");
     tosca_meta.print_default_depiction();
 
     // Stringify with max columns
@@ -31,7 +31,7 @@ Another: One
     // Read it back
     // (just to show that a round-trip works)
 
-    let tosca_meta = ToscaMeta::from_string(&source, &mut FailFastErrorReceiver).expect("from_string");
+    let tosca_meta = ToscaMeta::from_string(&source, &mut FailFast).expect("from_string");
 
     // Into Compris variant and then JSON
 

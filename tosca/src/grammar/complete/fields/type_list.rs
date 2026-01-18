@@ -8,8 +8,8 @@ macro_rules! complete_type_list_field {
         $context:expr $(,)?
     ) => {
         if let Some(entity) = &$entity {
-            errors_with_fallback_annotations_from_field!(errors, $context.errors, $self, stringify!($field), {
-                let context = context_with_errors!($context, errors);
+            problems_with_fallback_annotations_from_field!(problems, $context.problems, $self, stringify!($field), {
+                let context = context_with_problems!($context, problems);
                 complete_type_list(&mut $self.$field, &entity.$field, context)?;
             });
         }

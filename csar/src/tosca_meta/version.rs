@@ -2,6 +2,7 @@ use super::super::errors::*;
 
 use {
     depiction::*,
+    problemo::*,
     std::{fmt, io},
 };
 
@@ -26,20 +27,20 @@ impl Version {
     }
 
     /// Parse.
-    pub fn parse(name: &str, representation: &str) -> Result<Self, CsarError> {
+    pub fn parse(name: &str, representation: &str) -> Result<Self, Problem> {
         if let Some((major, minor)) = representation.split_once('.') {
-            let major = major
-                .parse()
-                .map_err(|_| MalformedKeyError::new(name.into(), "major not an unsigned integer".into()))?;
+            let major = major.parse().map_err(|_| {
+                MalformedKeyError::as_problem(name.into(), "major not an unsigned integer".into()).via(CsarError)
+            })?;
 
-            let minor = minor
-                .parse()
-                .map_err(|_| MalformedKeyError::new(name.into(), "minor not an unsigned integer".into()))?;
+            let minor = minor.parse().map_err(|_| {
+                MalformedKeyError::as_problem(name.into(), "minor not an unsigned integer".into()).via(CsarError)
+            })?;
 
             return Ok(Version::new(major, minor));
         }
 
-        Err(MalformedKeyError::new(name.into(), "not <major>.<minor>".into()).into())
+        Err(MalformedKeyError::as_problem(name.into(), "not <major>.<minor>".into()).via(CsarError))
     }
 }
 
@@ -56,7 +57,7 @@ impl Depict for Version {
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}.{}", self.major, self.minor)
     }
 }

@@ -3,8 +3,9 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -67,7 +68,7 @@ where
         notification_definition: Option<&NotificationDefinition<AnnotatedT>>,
         notification_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_subentity_map_field!(
             input,
             inputs,

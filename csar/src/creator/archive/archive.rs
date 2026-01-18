@@ -10,7 +10,7 @@ pub const DEFAULT_ARCHIVE_ENTRY_PERMISSIONS: u32 = 0o004;
 //
 
 /// Common reference type for [Archive].
-pub type ArchiveRef<'own> = Box<dyn Archive + 'own>;
+pub type ArchiveRef<'archive> = Box<dyn Archive + 'archive>;
 
 /// Archive.
 ///

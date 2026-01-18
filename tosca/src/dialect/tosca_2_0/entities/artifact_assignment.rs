@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, artifact_definition::*, value_assignment::*};
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -90,7 +91,7 @@ where
         artifact_definition: Option<&ArtifactDefinition<AnnotatedT>>,
         artifact_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_type_name_field!(self, artifact_definition, artifact_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,

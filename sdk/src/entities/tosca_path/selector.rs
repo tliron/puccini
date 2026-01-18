@@ -2,7 +2,7 @@ use super::super::super::entities::*;
 
 use {floria_plugin_sdk::data::*, std::iter::*};
 
-impl<'own> ToscaPathParser<'own> {
+impl<'context> ToscaPathParser<'context> {
     /// Next selector for node or relationship.
     pub fn next_selector(&mut self) -> Result<ToscaSelector, String> {
         Ok(match self.iterator.peek() {

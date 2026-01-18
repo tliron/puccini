@@ -47,7 +47,7 @@ impl Comparator for Timestamp {
 }
 
 impl fmt::Display for Timestamp {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.datetime.to_rfc3339(), formatter)
     }
 }

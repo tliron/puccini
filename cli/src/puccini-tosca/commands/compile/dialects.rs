@@ -2,6 +2,7 @@ use super::command::*;
 
 use {
     compris::annotate::*,
+    problemo::*,
     puccini_tosca::{dialect::tosca_2_0, grammar::*},
     read_url::*,
     std::fmt,
@@ -12,7 +13,7 @@ use floria::{plugins::*, *};
 
 impl Compile {
     /// TOSCA [Catalog] with supported dialects.
-    pub fn catalog<AnnotatedT>() -> Result<Catalog, ToscaError<AnnotatedT>>
+    pub fn catalog<AnnotatedT>() -> Result<Catalog, Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
     {
@@ -29,7 +30,7 @@ impl Compile {
         environment: PluginEnvironment,
         store: StoreT,
         url_context: UrlContextRef,
-    ) -> Result<PluginContext<StoreT>, FloriaError>
+    ) -> Result<PluginContext<StoreT>, Problem>
     where
         StoreT: Clone + Send + Store,
     {

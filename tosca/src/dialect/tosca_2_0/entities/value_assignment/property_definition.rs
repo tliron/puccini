@@ -7,7 +7,7 @@ use super::{
     value_assignment::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> Subentity<PropertyDefinition<AnnotatedT>> for ValueAssignment<AnnotatedT>
 where
@@ -19,7 +19,7 @@ where
         property_definition: Option<&PropertyDefinition<AnnotatedT>>,
         property_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_optional_type_name_field!(self, property_definition, property_definition_namespace, true, context);
 
         let Some(property_definition) = property_definition else {
@@ -28,17 +28,16 @@ where
 
         if let Some(expression) = &self.expression {
             if property_definition.value.is_some() {
-                context.errors.give(OverrideProhibitedError::new("value".into()).with_annotations_from(expression))?;
+                context
+                    .problems
+                    .give(OverrideProhibitedError::as_problem("value").with_annotations_from(expression))?;
             }
         } else if property_definition.value.is_some() {
             self.expression = property_definition.value.to_namespace(property_definition_namespace);
         } else if property_definition.default.is_some() {
             self.expression = property_definition.default.to_namespace(property_definition_namespace);
         } else if property_definition.required.unwrap_or(true) {
-            context.errors.give(
-                MissingRequiredError::new("property".into(), name.map(|name| name.to_string()))
-                    .with_annotations_from(self),
-            )?;
+            context.problems.give(MissingRequiredError::as_problem("property", name).with_annotations_from(self))?;
         }
 
         let (data_type, _data_type_namespace) =
@@ -47,10 +46,9 @@ where
         if let Some(data_type) = data_type {
             validate_type(&data_type, &property_definition.type_name, context)?;
 
-            if let Some(validation) = unwrap_or_give!(
+            if let Some(validation) = give_unwrap!(
                 data_type.schema_validation(property_definition, property_definition_namespace, context),
-                context.errors,
-                None
+                &mut context.problems,
             ) {
                 self.validation.join_apply(validation);
             }

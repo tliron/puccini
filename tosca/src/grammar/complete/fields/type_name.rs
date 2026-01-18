@@ -19,8 +19,13 @@ macro_rules! complete_type_name_field {
         }
 
         if $required && $self.type_name.is_empty() {
-            use {::compris::resolve::*, ::kutil::std::error::*};
-            $context.errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from($self))?;
+            use {::compris::resolve::*, ::problemo::*};
+            $context.problems.give(
+                MissingRequiredKeyError::as_problem(::compris::normal::Variant::<
+                    ::compris::annotate::WithoutAnnotations,
+                >::from("type"))
+                .with_annotations_from($self),
+            )?;
             return Ok(());
         }
     };
@@ -48,8 +53,13 @@ macro_rules! complete_optional_type_name_field {
         }
 
         if $required && $self.type_name.is_none() {
-            use {::compris::resolve::*, ::kutil::std::error::*};
-            $context.errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from($self))?;
+            use {::compris::resolve::*, ::problemo::*};
+            $context.problems.give(
+                MissingRequiredKeyError::as_problem(::compris::normal::Variant::<
+                    ::compris::annotate::WithoutAnnotations,
+                >::from("type"))
+                .with_annotations_from($self),
+            )?;
             return Ok(());
         }
     };
@@ -82,10 +92,13 @@ macro_rules! complete_optional_parent_type_name_field {
         }
 
         if $required && $self.$field.is_none() {
-            use {::compris::resolve::*, ::kutil::std::error::*};
-            $context
-                .errors
-                .give(MissingRequiredKeyError::new(stringify!($field).into()).with_annotations_from($self))?;
+            use {::compris::resolve::*, ::problemo::*};
+            $context.problems.give(
+                MissingRequiredKeyError::as_problem(::compris::normal::Variant::<
+                    ::compris::annotate::WithoutAnnotations,
+                >::from(stringify!($field)))
+                .with_annotations_from($self),
+            )?;
             return Ok(());
         }
     };

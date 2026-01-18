@@ -1,6 +1,6 @@
-use super::super::{complete::*, errors::*};
+use super::super::complete::*;
 
-use {compris::annotate::*, depiction::*, std::any::*};
+use {compris::annotate::*, depiction::*, problemo::*, std::any::*};
 
 //
 // Entity
@@ -12,7 +12,7 @@ use {compris::annotate::*, depiction::*, std::any::*};
 /// [Subentity](super::subentity::Subentity) instead.
 pub trait Entity
 where
-    Self: Any + DynDepict,
+    Self: Any + DynAnnotated + DynDepict,
 {
     /// Completion state.
     fn completion_state(&self) -> CompletionState;
@@ -38,5 +38,5 @@ where
         &mut self,
         derivation_path: &mut DerivationPath,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>>;
+    ) -> Result<(), Problem>;
 }

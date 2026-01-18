@@ -1,6 +1,11 @@
 use super::{super::errors::*, archive::*, creator::*};
 
-use {duplicate::*, kutil::io::writer::*, std::io};
+use {
+    duplicate::*,
+    kutil::io::writer::*,
+    problemo::{common::*, *},
+    std::io,
+};
 
 impl CsarCreator {
     #[duplicate_item(
@@ -9,13 +14,13 @@ impl CsarCreator {
         [create_for_seek_writer] [ArchiveSeekWriter] [io::Seek + io::Write];
     )]
     /// Create an [Archive] for a writer.
-    pub fn create_for_writer<WriteT>(&mut self, writer: WriteT) -> Result<ArchiveT, CsarError>
+    pub fn create_for_writer<WriteT>(&mut self, writer: WriteT) -> Result<ArchiveT, Problem>
     where
         WriteT: 'static + Where,
     {
         let mut archive = match self.format {
             Some(format) => ArchiveT::new_for(writer.into_any_writer(), format, self.compression_level)?,
-            None => return Err(CsarError::Missing("must specify format".into())),
+            None => return Err(MissingError::as_problem("must specify format").via(CsarError)),
         };
 
         // Add TOSCA.meta first

@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, relationship_definition::*};
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, depict::*, normal::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
 };
 
 //
@@ -81,7 +82,7 @@ where
         requirement_definition: Option<&Self>,
         requirement_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         self.relationship.complete(
             name,
             requirement_definition.map(|parent| &parent.relationship),

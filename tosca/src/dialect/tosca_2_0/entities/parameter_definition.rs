@@ -5,9 +5,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, depict::*, normal::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     smart_default::*,
     std::collections::*,
 };
@@ -107,7 +108,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_optional_parent_type_name_field!(type_name, self, parent, parent_namespace, false, context);
         complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
         complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);
@@ -136,7 +137,7 @@ where
             // (only for map and list types)
 
             // if let Some(validation) =
-            //     unwrap_or_give!(data_type.schema_validation(self, None, context), context.errors, None)
+            //     give_unwrap!(data_type.schema_validation(self, None, context), context.problems, None)
             // {
             //     self.validation.join_apply(validation);
             // }

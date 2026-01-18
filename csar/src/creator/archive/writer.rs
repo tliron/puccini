@@ -6,6 +6,7 @@ use super::{
 use {
     duplicate::*,
     kutil::{io::writer::*, std::any::*},
+    problemo::*,
     self_cell::*,
     std::{any::*, io, path::*},
 };
@@ -40,7 +41,7 @@ impl ArchiveWriter {
         writer: AnyWriterRef,
         format: Format,
         compression_level: Option<CompressionLevel>,
-    ) -> Result<Self, CsarError> {
+    ) -> Result<Self, Problem> {
         match format {
             #[cfg(feature = "tarball")]
             Format::Tarball => Ok(Self::new_tarball(writer)),
@@ -52,10 +53,10 @@ impl ArchiveWriter {
             Format::ZstandardTarball => Self::new_zstandard_tarball(writer, compression_level),
 
             #[cfg(feature = "zip")]
-            Format::ZIP => Err(CsarError::Invalid("cannot create archive for ZIP".into())),
+            Format::ZIP => Err(common::InvalidError::as_problem("cannot create archive for ZIP").via(CsarError)),
 
             #[cfg(not(all(feature = "tarball", feature = "gzip", feature = "zstandard", feature = "zip")))]
-            _ => Err(CsarError::UnsupportedFormat(format)),
+            _ => Err(common::UnsupportedError::as_problem("CSAR format").with(format).via(CsarError)),
         }
     }
 }
@@ -67,7 +68,7 @@ impl ArchiveSeekWriter {
         writer: AnySeekWriterRef,
         format: Format,
         compression_level: Option<CompressionLevel>,
-    ) -> Result<Self, CsarError> {
+    ) -> Result<Self, Problem> {
         match format {
             #[cfg(feature = "tarball")]
             Format::Tarball => Ok(Self::new_tarball(writer)),
@@ -82,7 +83,7 @@ impl ArchiveSeekWriter {
             Format::ZIP => Ok(Self::new_zip(writer)),
 
             #[cfg(not(all(feature = "tarball", feature = "gzip", feature = "zstandard", feature = "zip")))]
-            _ => Err(CsarError::UnsupportedFormat(format)),
+            _ => Err(common::UnsupportedError::as_problem("CSAR format").with(format).via(CsarError)),
         }
     }
 }
@@ -96,11 +97,11 @@ impl ArchiveSeekWriter {
 )]
 impl ArchiveT {
     /// Convert the writer into a concrete type.
-    pub fn into_writer<AnyT>(self) -> Result<Box<AnyT>, Box<dyn Any>>
+    pub fn into_writer<AnyT>(self) -> Option<Box<AnyT>>
     where
         AnyT: Any,
     {
-        Box::leak(self.into_owner().into_inner()).into_concrete()
+        Box::leak(self.into_owner().into_inner()).downcast()
     }
 }
 

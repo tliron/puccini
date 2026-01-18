@@ -2,8 +2,9 @@ use super::super::source::*;
 
 use {
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -22,6 +23,12 @@ impl UnsupportedSourceError {
     pub fn new(source_id: SourceID) -> Self {
         Self { source_id }
     }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem(source_id: SourceID) -> Problem {
+        Self::new(source_id).into_problem().with(ErrorDepiction::new::<Self>())
+    }
 }
 
 impl Depict for UnsupportedSourceError {
@@ -34,7 +41,7 @@ impl Depict for UnsupportedSourceError {
 }
 
 impl fmt::Display for UnsupportedSourceError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.source_id, formatter)
     }
 }

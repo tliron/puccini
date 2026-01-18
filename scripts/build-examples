@@ -21,7 +21,10 @@ if [ "$PROFILE" == release ]; then
     # LTO and stripping debuginfo create smaller Wasm files
     CARGO_PROFILE_RELEASE_LTO=true \
     CARGO_PROFILE_RELEASE_STRIP=debuginfo \
-    cargo build --package="$PACKAGE" --target="$TARGET" --release
+    cargo build \
+        --package="$PACKAGE" \
+        --target="$TARGET" \
+        --release
 else
     RUSTFLAGS='-Z threads=8' \
     cargo +nightly build --package="$PACKAGE" --target="$TARGET"
@@ -63,6 +66,7 @@ kconfig user-private-key "{.users[$USER].user.client-key-data}"
 # Another way:
 # kubectl get configmap kube-root-ca.crt --output=jsonpath="{['data']['ca\.crt']}" > /tmp/cacert.pem
 
-m "creating CSAR..." "$CYAN"
+m "creating CSARs..." "$CYAN"
 
 puccini-csar create "$ROOT/examples/online-boutique" "$ROOT/examples/csar/online-boutique.tar.zst"
+puccini-csar create "$ROOT/examples/online-boutique" "$ROOT/examples/csar/online-boutique.zip"

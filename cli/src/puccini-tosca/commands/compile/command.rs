@@ -1,6 +1,6 @@
 use super::{debug::*, format::*};
 
-use {clap::*, std::path::*};
+use {clap::*, problemo::*, std::path::*};
 
 //
 // Compile
@@ -120,10 +120,10 @@ impl Compile {
         }
     }
 
-    pub fn floria_directory(&self) -> Result<floria::Directory, floria::MalformedError> {
-        match &self.directory {
-            Some(directory) => directory.parse(),
-            None => Ok(Default::default()),
-        }
+    pub fn floria_directory(&self) -> Result<floria::Directory, Problem> {
+        Ok(match &self.directory {
+            Some(directory) => directory.parse()?,
+            None => Default::default(),
+        })
     }
 }

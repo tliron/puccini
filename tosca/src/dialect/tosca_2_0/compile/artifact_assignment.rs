@@ -1,6 +1,6 @@
 use super::super::{super::super::grammar::*, dialect::*, entities::*};
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> ArtifactAssignment<AnnotatedT>
 where
@@ -10,8 +10,8 @@ where
     pub fn compile(
         &self,
         vertex_template: &mut floria::VertexTemplate,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<(), ToscaError<WithAnnotations>>
+        context: &mut CompilationContext,
+    ) -> Result<(), Problem>
     where
         AnnotatedT: 'static,
     {

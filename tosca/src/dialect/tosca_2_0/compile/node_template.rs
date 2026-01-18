@@ -3,7 +3,7 @@ use super::{
     value_assignment::*,
 };
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> NodeTemplate<AnnotatedT>
 where
@@ -14,8 +14,8 @@ where
         &self,
         vertex_template: &mut floria::VertexTemplate,
         name: Name,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<(), ToscaError<WithAnnotations>>
+        context: &mut CompilationContext,
+    ) -> Result<(), Problem>
     where
         AnnotatedT: 'static,
     {

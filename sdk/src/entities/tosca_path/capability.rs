@@ -5,7 +5,7 @@ use {
     std::iter::*,
 };
 
-impl<'own> ToscaPathParser<'own> {
+impl<'context> ToscaPathParser<'context> {
     /// Next site after capability.
     pub fn next_site_after_capability(&mut self, path_site: &Vertex) -> Result<Option<Entity>, String> {
         match self.iterator.peek() {

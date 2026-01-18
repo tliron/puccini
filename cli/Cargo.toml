@@ -4,7 +4,7 @@ edition = "2024"
 name = "puccini-cli"
 description = "Puccini TOSCA and CSAR CLI utilities"
 version = "0.0.4"
-rust-version = "1.92"
+rust-version = "1.93"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -31,7 +31,7 @@ floria = "=0.0.5"
 [dependencies]
 anstream = "0.6.21"
 compris = "=0.0.11"
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.55", features = ["derive"] }
 clap-num = "1.2.0"
 ctrlc = "3.5.1"
 depiction = "=0.0.1"
@@ -39,10 +39,10 @@ floria = "=0.0.5"
 indicatif = "0.18.3"
 kutil = { version = "=0.0.5", features = ["cli", "std", "clap"] }
 mimalloc = { version = "0.1.48", features = ["v3"] }
+problemo = "=0.0.7"
 puccini-csar = { version = "=0.0.4", features = ["creator", "url"] }
 puccini-tosca = { version = "=0.0.4", default-features = false, features = ["tosca-2_0"] }
 read-url = { version = "=0.0.10", features = ["blocking"] }
-thiserror = "2.0.17"
 tracing = "0.1.44"
 
 [features]
@@ -55,6 +55,7 @@ default = [
     "puccini-csar/zip",
     "puccini-csar/zstandard",
     "with-annotations",
+    "without-annotations",
 ]
 
 plugins = [

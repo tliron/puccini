@@ -21,7 +21,7 @@ impl Default for ToscaSelector {
 }
 
 impl fmt::Display for ToscaSelector {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Index(index) => fmt::Display::fmt(index, formatter),
             Self::All => fmt::Display::fmt("ALL", formatter),

@@ -2,7 +2,7 @@ use {
     compris::annotate::*,
     depiction::*,
     floria::*,
-    kutil::std::error::*,
+    problemo::*,
     puccini_tosca::{dialect::tosca_2_0, grammar::*},
     read_url::*,
 };
@@ -38,24 +38,24 @@ service_template:
     // Load our source
 
     catalog
-        .load_source_with_annotations::<WithAnnotations, _>(&source_id, &url_context, &mut FailFastErrorReceiver)
+        .load_source_with_annotations(&source_id, &url_context, &mut FailFast)
         .expect("load_source_with_annotations");
 
     // Complete
 
-    catalog.complete_entities::<WithAnnotations, _>(&mut FailFastErrorReceiver).expect("complete_entities");
+    catalog.complete_entities(&mut FailFast).expect("complete_entities");
 
     // Compile service template into Floria in-memory store
 
     let store = InMemoryStore::default();
 
-    let mut errors = FailFastErrorReceiver;
+    let mut errors = FailFast;
     let directory = Directory::default();
     let mut context =
         CompilationContext::new(&source_id, &catalog, &directory, store.clone().into_ref(), errors.as_ref());
 
     let service_template_id = catalog
-        .compile_service_template(&mut context)
+        .compile_service_template_with_annotations(&mut context)
         .expect("compile_service_template")
         .expect("compile_service_template");
 

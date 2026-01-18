@@ -3,6 +3,7 @@ use super::super::super::super::grammar::{Dialect as DialectTrait, *};
 use {
     compris::{annotate::*, normal::*},
     kutil::std::immutable::*,
+    problemo::*,
 };
 
 /// Dialect ID.
@@ -44,24 +45,28 @@ impl DialectTrait for Dialect {
         &self,
         source: &mut Source,
         variant: Variant<WithAnnotations>,
-        errors: ToscaErrorReceiverRef,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.clone().into_annotated())
+        mut problems: ProblemReceiverRef,
+    ) -> Result<(), Problem> {
+        self.initialize_source(source, variant, &mut problems)
     }
 
     fn initialize_source_without_annotations(
         &self,
         source: &mut Source,
         variant: Variant<WithoutAnnotations>,
-        errors: ToscaErrorReceiverRef,
-    ) -> Result<(), ToscaError<WithoutAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.clone().into_annotated())
+        mut problems: ProblemReceiverRef,
+    ) -> Result<(), Problem> {
+        self.initialize_source(source, variant, &mut problems)
     }
 
-    fn compile_source(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>> {
+    fn compile_source_with_annotations(&self, context: &mut CompilationContext) -> Result<Option<floria::ID>, Problem> {
         self.compile_service_template::<WithAnnotations>(context)
+    }
+
+    fn compile_source_without_annotations(
+        &self,
+        context: &mut CompilationContext,
+    ) -> Result<Option<floria::ID>, Problem> {
+        self.compile_service_template::<WithoutAnnotations>(context)
     }
 }

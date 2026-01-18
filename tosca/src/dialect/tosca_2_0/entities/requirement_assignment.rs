@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, relationship_assignment::*, requirement_definition::*};
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, depict::*, normal::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     smart_default::*,
 };
 
@@ -132,7 +133,7 @@ where
         requirement_definition: Option<&RequirementDefinition<AnnotatedT>>,
         requirement_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         // TODO: validate node (template) adheres to parent's node (type)
 
         // TODO: validate capability adheres to parent's capability type
