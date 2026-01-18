@@ -3,6 +3,7 @@ use super::super::super::super::grammar::{Dialect as DialectTrait, *};
 use {
     compris::{annotate::*, normal::*},
     kutil::std::immutable::*,
+    problemo::*,
 };
 
 /// Dialect ID.
@@ -25,6 +26,18 @@ pub struct Dialect {
     pub implementation: DialectImplementation,
 }
 
+impl Dialect {
+    /// Catalog.
+    pub fn add_to_catalog<AnnotatedT>(catalog: &mut Catalog) -> Result<(), Problem>
+    where
+        AnnotatedT: 'static + Annotated + Clone + Default,
+    {
+        catalog.add_dialect_ref(Self::default().into());
+        catalog.add_sources(Self::built_in_sources::<AnnotatedT>()?);
+        Ok(())
+    }
+}
+
 impl Default for Dialect {
     fn default() -> Self {
         Self { implementation: DialectImplementation::new(DIALECT_ID, Self::entity_kinds()) }
@@ -32,36 +45,36 @@ impl Default for Dialect {
 }
 
 impl DialectTrait for Dialect {
-    fn dialect_id(&self) -> DialectID {
-        self.implementation.dialect_id()
-    }
-
-    fn entity_kinds(&self) -> &EntityKinds {
-        &self.implementation.entity_kinds
+    fn implementation(&self) -> &DialectImplementation {
+        &self.implementation
     }
 
     fn initialize_source_with_annotations(
         &self,
         source: &mut Source,
         variant: Variant<WithAnnotations>,
-        errors: ToscaErrorReceiverRef,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.clone().into_annotated())
+        mut problems: ProblemReceiverRef,
+    ) -> Result<(), Problem> {
+        self.initialize_source(source, variant, &mut problems)
     }
 
     fn initialize_source_without_annotations(
         &self,
         source: &mut Source,
         variant: Variant<WithoutAnnotations>,
-        errors: ToscaErrorReceiverRef,
-    ) -> Result<(), ToscaError<WithoutAnnotations>> {
-        self.initialize_source(source, variant, &mut errors.clone().into_annotated())
+        mut problems: ProblemReceiverRef,
+    ) -> Result<(), Problem> {
+        self.initialize_source(source, variant, &mut problems)
     }
 
-    fn compile_source(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>> {
+    fn compile_source_with_annotations(&self, context: &mut CompilationContext) -> Result<Option<floria::ID>, Problem> {
         self.compile_service_template::<WithAnnotations>(context)
+    }
+
+    fn compile_source_without_annotations(
+        &self,
+        context: &mut CompilationContext,
+    ) -> Result<Option<floria::ID>, Problem> {
+        self.compile_service_template::<WithoutAnnotations>(context)
     }
 }

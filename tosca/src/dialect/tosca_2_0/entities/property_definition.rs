@@ -5,9 +5,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     smart_default::*,
     std::collections::*,
 };
@@ -102,7 +103,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_type_name_field!(self, parent, parent_namespace, true, context);
         complete_subentity_field!(key_schema, self, parent, parent_namespace, context);
         complete_subentity_field!(entry_schema, self, parent, parent_namespace, context);

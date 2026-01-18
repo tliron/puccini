@@ -3,43 +3,30 @@ use super::{
     catalog::*,
 };
 
-use std::any::*;
+use problemo::*;
 
 impl Catalog {
     /// Add a dialect reference.
     pub fn add_dialect_ref(&mut self, dialect: DialectRef) {
-        self.dialects.insert(dialect.dialect_id(), dialect);
+        self.dialects.insert(dialect.implementation().dialect_id.clone(), dialect);
     }
 
     /// Get a dialect reference.
-    pub fn get_dialect_ref<AnnotatedT>(
-        &self,
-        dialect_id: &DialectID,
-    ) -> Result<&DialectRef, UnsupportedDialectError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        self.dialects.get(dialect_id).ok_or_else(|| UnsupportedDialectError::new(dialect_id.clone()))
+    pub fn get_dialect_ref(&self, dialect_id: &DialectID) -> Result<&DialectRef, Problem> {
+        self.dialects.get(dialect_id).ok_or_else(|| UnsupportedDialectError::as_problem(dialect_id.clone()))
     }
 
     /// Get a [Dialect].
-    pub fn get_dialect<DialectT, AnnotatedT>(&self, dialect_id: &DialectID) -> Result<&DialectT, ToscaError<AnnotatedT>>
+    pub fn get_dialect<DialectT>(&self, dialect_id: &DialectID) -> Result<&DialectT, Problem>
     where
         DialectT: 'static,
-        AnnotatedT: Default,
     {
         let dialect = self.get_dialect_ref(dialect_id)?;
-        Ok(dialect.into_any_ref_checked("dialect", type_name::<DialectT>())?)
+        dialect.downcast_ref_checked()
     }
 
     /// Supported entity kinds.
-    pub fn dialect_entity_kinds<AnnotatedT>(
-        &self,
-        dialect_id: &DialectID,
-    ) -> Result<&EntityKinds, UnsupportedDialectError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        Ok(self.get_dialect_ref(dialect_id)?.entity_kinds())
+    pub fn dialect_entity_kinds(&self, dialect_id: &DialectID) -> Result<&EntityKinds, Problem> {
+        Ok(&self.get_dialect_ref(dialect_id)?.implementation().entity_kinds)
     }
 }

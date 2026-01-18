@@ -37,18 +37,18 @@ macro_rules! impl_type_entity {
 //
 
 /// Type entity descriptor.
-pub struct TypeEntityDescriptor<'own, AnnotatedT> {
+pub struct TypeEntityDescriptor<'context, AnnotatedT> {
     /// Version.
     pub version: Option<ByteString>,
 
     /// Description.
-    pub description: Option<&'own ByteString>,
+    pub description: Option<&'context ByteString>,
 
     /// Metadata.
-    pub metadata: &'own Metadata<AnnotatedT>,
+    pub metadata: &'context Metadata<AnnotatedT>,
 
     /// Parent.
-    pub parent: Option<&'own FullName>,
+    pub parent: Option<&'context FullName>,
 }
 
 #[allow(unused_imports)]

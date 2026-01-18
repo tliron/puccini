@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, implementation_definition::*, schema_definition::*};
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
 };
 
 //
@@ -85,7 +86,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         for argument in &mut self.arguments {
             argument.complete(None, None, parent_namespace, context)?;
         }

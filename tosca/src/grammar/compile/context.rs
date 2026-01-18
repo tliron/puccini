@@ -1,55 +1,54 @@
-use super::super::{catalog::*, errors::*, source::*};
+use super::super::{catalog::*, source::*};
+
+use problemo::*;
 
 //
 // CompilationContext
 //
 
 /// Compilation context.
-pub struct CompilationContext<'own> {
+pub struct CompilationContext<'context> {
     /// Source ID.
-    pub source_id: &'own SourceID,
+    pub source_id: &'context SourceID,
 
     /// Catalog.
-    pub catalog: &'own Catalog,
+    pub catalog: &'context Catalog,
 
     /// Floria directory.
-    pub directory: &'own floria::Directory,
+    pub directory: &'context floria::Directory,
 
     /// Floria store.
     pub store: floria::StoreRef,
 
-    /// Errors.
-    pub errors: ToscaErrorReceiverRef<'own>,
+    /// Problems.
+    pub problems: ProblemReceiverRef<'context>,
 }
 
-impl<'own> CompilationContext<'own> {
+impl<'context> CompilationContext<'context> {
     /// Constructor.
     pub fn new(
-        source_id: &'own SourceID,
-        catalog: &'own Catalog,
-        directory: &'own floria::Directory,
+        source_id: &'context SourceID,
+        catalog: &'context Catalog,
+        directory: &'context floria::Directory,
         store: floria::StoreRef,
-        errors: ToscaErrorReceiverRef<'own>,
+        problems: ProblemReceiverRef<'context>,
     ) -> Self {
-        Self { source_id, catalog, directory, store, errors }
+        Self { source_id, catalog, directory, store, problems }
     }
 
     /// With source.
-    pub fn with_source(&self, source_id: &'own SourceID) -> Self {
+    pub fn with_source(&self, source_id: &'context SourceID) -> Self {
         Self {
             source_id,
             catalog: self.catalog,
             directory: self.directory,
             store: self.store.clone(),
-            errors: self.errors.clone(),
+            problems: self.problems.clone(),
         }
     }
 
     /// Get the source.
-    pub fn source<AnnotatedT>(&self) -> Result<&Source, SourceNotLoadedError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    pub fn source(&self) -> Result<&Source, Problem> {
         self.catalog.source(self.source_id)
     }
 }

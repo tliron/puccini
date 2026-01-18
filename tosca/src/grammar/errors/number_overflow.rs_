@@ -1,8 +1,8 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -11,12 +11,12 @@ use {
 
 /// Number overflow error.
 #[derive(Debug, Error)]
-pub struct NumberOverflowError<AnnotatedT> {
+pub struct NumberOverflowError {
     /// Annotated.
     pub annotated: AnnotatedT,
 }
 
-impl_annotated!(NumberOverflowError);
+impl_depict_error_function!(NumberOverflowError);
 
 impl<AnnotatedT> NumberOverflowError<AnnotatedT> {
     /// Constructor.
@@ -48,7 +48,7 @@ impl<AnnotatedT> Depict for NumberOverflowError<AnnotatedT> {
 }
 
 impl<AnnotatedT> fmt::Display for NumberOverflowError<AnnotatedT> {
-    fn fmt(&self, _formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, _formatter: &mut fmt::Formatter) -> fmt::Result {
         Ok(())
     }
 }

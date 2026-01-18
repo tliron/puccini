@@ -1,8 +1,9 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -10,38 +11,32 @@ use {
 //
 
 /// Name reused error.
-#[derive(Debug, Error)]
-pub struct NameReusedError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct NameReusedError {
     /// Name.
     pub name: String,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(NameReusedError);
-
-impl<AnnotatedT> NameReusedError<AnnotatedT> {
+impl NameReusedError {
     /// Constructor.
-    pub fn new(name: String) -> Self
+    pub fn new<NameT>(name: NameT) -> Self
     where
-        AnnotatedT: Default,
+        NameT: ToString,
     {
-        Self { name, annotated: Default::default() }
+        Self { name: name.to_string() }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<NameT>(name: NameT) -> Problem
+    where
+        NameT: ToString,
+    {
+        Self::new(name).into_problem().with(AnnotatedCauseEquality::new::<Self>()).with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<NameReusedError<NewAnnotatedT>> for NameReusedError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> NameReusedError<NewAnnotatedT> {
-        NameReusedError::new(self.name).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for NameReusedError<AnnotatedT> {
+impl Depict for NameReusedError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -51,8 +46,8 @@ impl<AnnotatedT> Depict for NameReusedError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for NameReusedError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for NameReusedError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.name, formatter)
     }
 }

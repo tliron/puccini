@@ -3,7 +3,7 @@ use super::{
     catalog::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*, std::any::*};
+use problemo::*;
 
 impl Catalog {
     /// Find an entity by its reference.
@@ -17,16 +17,13 @@ impl Catalog {
     }
 
     /// Add an entity reference.
-    pub fn add_entity_ref<AnnotatedT>(
+    pub fn add_entity_ref(
         &mut self,
         entity_kind: EntityKind,
         source_id: &SourceID,
         name: Name,
         entity: EntityRef,
-    ) -> Result<(), ToscaError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<(), Problem> {
         Ok(self.source_mut(source_id)?.add_entity_ref(entity_kind, name, entity)?)
     }
 
@@ -34,30 +31,24 @@ impl Catalog {
     ///
     /// If not found (e.g. it is currently removed for its completion phase) will return the
     /// fallback if it exists.
-    pub fn entity_ref<AnnotatedT>(
+    pub fn entity_ref(
         &self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
-    ) -> Result<(&EntityRef, &Source), ToscaError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<(&EntityRef, &Source), Problem> {
         let entity_kind_name = self.source_entity_kinds(source_id)?.represent(entity_kind);
         let source = self.lookup(entity_kind, &entity_kind_name, source_id, full_name)?;
         Ok((source.entity_ref(entity_kind, &entity_kind_name, &full_name.name)?, source))
     }
 
     /// Remove an entity and return its entity reference and source ID if it exists.
-    pub fn remove_entity_ref<AnnotatedT>(
+    pub fn remove_entity_ref(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
-    ) -> Result<(EntityRef, &Source), ToscaError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<(EntityRef, &Source), Problem> {
         let entity_kind_name = self.source_entity_kinds(source_id)?.represent(entity_kind);
         let source = self.lookup_mut(entity_kind, &entity_kind_name, source_id, full_name)?;
         let entity = source.remove_entity_ref(entity_kind, &entity_kind_name, &full_name.name)?;
@@ -72,49 +63,46 @@ impl Catalog {
     ///
     /// If not found (e.g. it is currently removed for its completion phase) will return the
     /// fallback if it exists.
-    pub fn completed_entity_ref<AnnotatedT, ErrorReceiverT>(
+    pub fn completed_entity_ref<ProblemReceiverT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<(&EntityRef, &Source)>, ToscaError<AnnotatedT>>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<(&EntityRef, &Source)>, Problem>
     where
-        AnnotatedT: Annotated + Default,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         if full_name.is_empty() {
             return Ok(None);
         }
 
-        let source = must_unwrap_give!(self.source(source_id), errors);
+        let source = give_unwrap!(self.source(source_id), problems);
 
         let entity_kind_name =
-            must_unwrap_give!(self.dialect_entity_kinds(&source.dialect_id), errors).represent(entity_kind);
+            give_unwrap!(self.dialect_entity_kinds(&source.dialect_id), problems).represent(entity_kind);
 
-        let entity_source_id =
-            must_unwrap_give!(source.lookup(entity_kind, &entity_kind_name, full_name), errors).clone();
+        let entity_source_id = give_unwrap!(source.lookup(entity_kind, &entity_kind_name, full_name), problems).clone();
 
-        let entity_source = must_unwrap_give!(self.source_mut(&entity_source_id), errors);
+        let entity_source = give_unwrap!(self.source_mut(&entity_source_id), problems);
 
         // Fallback?
 
-        if let Some(_) = must_unwrap_give!(
-            entity_source.fallback_entity_ref(entity_kind, &entity_kind_name, &full_name.name),
-            errors
-        ) {
+        if let Some(_) =
+            give_unwrap!(entity_source.fallback_entity_ref(entity_kind, &entity_kind_name, &full_name.name), problems)
+        {
             return self.entity_ref(entity_kind, full_name, source_id).map(Some);
         }
 
         // Remove entity
 
         let mut entity =
-            must_unwrap_give!(entity_source.remove_entity_ref(entity_kind, &entity_kind_name, &full_name.name), errors);
+            give_unwrap!(entity_source.remove_entity_ref(entity_kind, &entity_kind_name, &full_name.name), problems);
 
         // Update derivation path
 
-        must_unwrap_give!(derivation_path.add(entity_source_id.clone(), full_name.name.clone()), errors);
+        give_unwrap!(derivation_path.add(entity_source_id.clone(), full_name.name.clone()), problems);
 
         // Complete
 
@@ -125,19 +113,11 @@ impl Catalog {
                 &full_name.name,
                 &entity_source_id,
                 derivation_path,
-                errors,
+                problems,
             ) {
                 Ok(complete) => complete,
                 Err(error) => {
-                    if self
-                        .add_entity_ref::<WithoutAnnotations>(
-                            entity_kind,
-                            &entity_source_id,
-                            full_name.name.clone(),
-                            entity,
-                        )
-                        .is_err()
-                    {
+                    if self.add_entity_ref(entity_kind, &entity_source_id, full_name.name.clone(), entity).is_err() {
                         panic!("source {} disappeared", &entity_source_id);
                     }
                     return Err(error);
@@ -147,17 +127,14 @@ impl Catalog {
 
         // Add entity back
 
-        if self
-            .add_entity_ref::<WithoutAnnotations>(entity_kind, &entity_source_id, full_name.name.clone(), entity)
-            .is_err()
-        {
+        if self.add_entity_ref(entity_kind, &entity_source_id, full_name.name.clone(), entity).is_err() {
             panic!("source {} disappeared", &entity_source_id);
         }
 
         Ok(if complete {
             // Get entity
 
-            match self.entity_ref::<WithoutAnnotations>(entity_kind, full_name, source_id) {
+            match self.entity_ref(entity_kind, full_name, source_id) {
                 Ok(entity) => Some(entity),
 
                 Err(_) => {
@@ -173,18 +150,17 @@ impl Catalog {
     ///
     /// If not found (e.g. it is currently removed for its completion phase) will return the
     /// fallback if it exists.
-    pub fn entity<EntityT, AnnotatedT>(
+    pub fn entity<EntityT>(
         &self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
-    ) -> Result<(&EntityT, &Source), ToscaError<AnnotatedT>>
+    ) -> Result<(&EntityT, &Source), Problem>
     where
         EntityT: 'static,
-        AnnotatedT: Default,
     {
         let (entity, source) = self.entity_ref(entity_kind, full_name, source_id)?;
-        Ok((entity.into_any_ref_checked("entity", type_name::<EntityT>())?, source))
+        Ok((entity.downcast_ref_checked()?, source))
     }
 
     /// Get an [Entity],
@@ -197,19 +173,18 @@ impl Catalog {
     /// A [DerivationPath] is created in order to detect circular dependencies.
     ///
     /// Note that the entity is removed from the catalog while it is being completed.
-    pub fn completed_entity<EntityT, AnnotatedT, ErrorReceiverT>(
+    pub fn completed_entity<EntityT, ProblemReceiverT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<(&EntityT, &Source)>, ToscaError<AnnotatedT>>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<(&EntityT, &Source)>, Problem>
     where
         EntityT: 'static,
-        AnnotatedT: Annotated + Default,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        self.completed_entity_checked(entity_kind, full_name, source_id, &mut Default::default(), errors)
+        self.completed_entity_checked(entity_kind, full_name, source_id, &mut Default::default(), problems)
     }
 
     /// Get an [Entity],
@@ -222,23 +197,20 @@ impl Catalog {
     /// The call is added to the derivation_path in order to detect circular dependencies.
     ///
     /// Note that the entity is removed from the catalog while it is being completed.
-    pub fn completed_entity_checked<EntityT, AnnotatedT, ErrorReceiverT>(
+    pub fn completed_entity_checked<EntityT, ProblemReceiverT>(
         &mut self,
         entity_kind: EntityKind,
         full_name: &FullName,
         source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<(&EntityT, &Source)>, ToscaError<AnnotatedT>>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<(&EntityT, &Source)>, Problem>
     where
         EntityT: 'static,
-        AnnotatedT: Annotated + Default,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        Ok(match self.completed_entity_ref(entity_kind, full_name, source_id, derivation_path, errors)? {
-            Some((entity, source)) => {
-                Some((must_unwrap_give!(entity.into_any_ref_checked("entity", type_name::<EntityT>()), errors), source))
-            }
+        Ok(match self.completed_entity_ref(entity_kind, full_name, source_id, derivation_path, problems)? {
+            Some((entity, source)) => Some((give_unwrap!(entity.downcast_ref_checked(), problems), source)),
             None => None,
         })
     }

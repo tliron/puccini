@@ -1,3 +1,5 @@
+use read_url::*;
+
 //
 // Format
 //
@@ -37,6 +39,6 @@ impl Format {
 
     /// With scheme.
     pub fn with_scheme(&self, url: &str, path: &str) -> String {
-        format!("{}:{}!{}", self.scheme(), url, path)
+        format_archive_url(self.scheme(), url, path)
     }
 }

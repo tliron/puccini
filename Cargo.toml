@@ -6,5 +6,10 @@ members = [
     "tosca",
     "sdk",
     "plugin",
+    "python",
     "examples/plugins/kubernetes",
 ]
+
+[profile.release]
+strip = "debuginfo"
+lto = true

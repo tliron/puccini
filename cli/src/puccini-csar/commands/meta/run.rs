@@ -1,18 +1,16 @@
-use super::{
-    super::{super::errors::*, root::*},
-    command::*,
-};
+use super::{super::root::*, command::*};
 
 use {
+    compris::depict::*,
     depiction::*,
-    kutil::{cli::run::*, std::error::*},
+    problemo::{common::*, *},
     puccini_csar::*,
 };
 
 impl Meta {
     /// Run meta subcommand.
-    pub fn run(&self, root: &Root) -> Result<(), MainError> {
-        let mut csar_errors = Errors::default();
+    pub fn run(&self, root: &Root) -> Result<(), Problem> {
+        let mut problems = Problems::default();
 
         if !root.quiet {
             self.print_introduction();
@@ -24,11 +22,11 @@ impl Meta {
             true,
             self.force,
             self.dry_run,
-            &mut csar_errors,
+            &mut problems,
         )?;
 
-        match csar_errors.check() {
-            Ok(()) => {
+        match problems.check() {
+            Ok(_) => {
                 if !root.quiet
                     && let Some(created) = created
                 {
@@ -38,14 +36,12 @@ impl Meta {
                 Ok(())
             }
 
-            Err(csar_errors) => {
+            Err(problems) => {
                 if !root.quiet {
-                    for error in csar_errors {
-                        error.eprint_default_depiction();
-                    }
+                    problems.annotated_depiction().eprint_default_depiction();
                 }
 
-                Err(ExitError::new(1, None).into())
+                Err(ExitError::failure())
             }
         }
     }

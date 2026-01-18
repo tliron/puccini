@@ -6,9 +6,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, normal::*, resolve::*},
     depiction::*,
-    kutil::std::{error::*, immutable::*},
+    kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -87,7 +88,7 @@ where
         &mut self,
         _derivation_path: &mut DerivationPath,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         assert!(self.completion_state == CompletionState::Incomplete);
         self.completion_state = CompletionState::Cannot;
 
@@ -103,7 +104,10 @@ where
         }
 
         if self.type_name.is_none() {
-            context.errors.give(MissingRequiredKeyError::new("type".into()).with_annotations_from(self))?;
+            context.problems.give(
+                MissingRequiredKeyError::as_problem(Variant::<WithoutAnnotations>::from("type"))
+                    .with_annotations_from(self),
+            )?;
             return Ok(());
         }
 

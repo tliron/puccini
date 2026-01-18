@@ -1,9 +1,9 @@
-use super::{super::super::errors::*, command::*};
+use super::command::*;
 
 use {
     compris::normal::{Map, *},
     floria::{plugins::*, *},
-    kutil::std::error::*,
+    problemo::*,
     read_url::*,
     std::collections::*,
 };
@@ -22,8 +22,8 @@ impl Compile {
         directory: &Directory,
         store: StoreT,
         url_context: &UrlContextRef,
-        errors: &mut Errors<FloriaError>,
-    ) -> Result<Option<Vertex>, MainError>
+        problems: &mut Problems,
+    ) -> Result<Option<Vertex>, Problem>
     where
         StoreT: 'static + Clone + Send + Store,
     {
@@ -31,9 +31,9 @@ impl Compile {
 
         let floria_service_template = store
             .get_vertex_template(service_template_id)?
-            .ok_or_else(|| StoreError::ID(service_template_id.to_string()))?;
+            .ok_or_else(|| StoreError::as_problem().with(service_template_id.clone()))?;
 
-        let environment = PluginEnvironment::new(self.plugin_debug)?;
+        let environment = PluginEnvironment::new(self.wasm_debug, self.wasm_cache)?;
         let mut context = self.plugin_context(environment, store.clone(), url_context.clone())?;
 
         let mut floria_instance = floria_service_template.instantiate(
@@ -41,11 +41,11 @@ impl Compile {
             None,
             self.instantiation_payload(inputs).as_ref(),
             &mut context,
-            errors,
+            problems,
         )?;
 
         for event in self.events() {
-            floria_instance.handle_event(&event, None, &mut Propagation::outgoing_all(), &mut context, errors)?;
+            floria_instance.handle_event(&event, None, &mut Propagation::outgoing_all(), &mut context, problems)?;
         }
 
         Ok(Some(floria_instance))

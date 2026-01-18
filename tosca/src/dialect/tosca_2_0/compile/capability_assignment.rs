@@ -3,7 +3,7 @@ use super::{
     value_assignment::*,
 };
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> CapabilityAssignment<AnnotatedT>
 where
@@ -14,8 +14,8 @@ where
         &self,
         vertex_template: &mut floria::VertexTemplate,
         name: Name,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<(), ToscaError<WithAnnotations>>
+        context: &mut CompilationContext,
+    ) -> Result<(), Problem>
     where
         AnnotatedT: 'static,
     {
@@ -55,17 +55,17 @@ where
     }
 
     // /// Compile to Floria.
-    // pub fn compile_to_floria<StoreT, ErrorReceiverT>(
+    // pub fn compile_to_floria<StoreT, ProblemReceiverT>(
     //     &self,
     //     context: CompileToFloriaContext<OldCatalog<'_, AnnotatedT>, StoreT>,
     //     capability_name: &str,
     //     node_template_id: floria::ID,
     //     node_type: &NodeType<AnnotatedT>,
-    //     errors: &mut ErrorReceiverT,
+    //     errors: &mut ProblemReceiverT,
     // ) -> Result<Option<floria::ID>, ToscaError<AnnotatedT>>
     // where
     //     StoreT: floria::Store,
-    //     ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+    //     ProblemReceiverT: ProblemReceiver<ToscaError<AnnotatedT>>,
     // {
     //     let mut floria_node_template = floria::NodeTemplate::new_for(
     //         context.floria_directory.clone(),
@@ -107,7 +107,7 @@ where
     //     }
 
     //     let id = floria_node_template.template.id.clone();
-    //     must_unwrap_give!(context.store.add_node_template(floria_node_template), errors);
+    //     give_unwrap!(context.store.add_node_template(floria_node_template), errors);
     //     Ok(Some(id))
     // }
 }

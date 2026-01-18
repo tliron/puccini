@@ -1,5 +1,7 @@
 use super::super::super::{errors::*, name::*, source::*};
 
+use problemo::*;
+
 //
 // DerivationPath
 //
@@ -15,14 +17,7 @@ impl DerivationPath {
     }
 
     /// Add a segment to the path if it's not already there.
-    pub fn add<AnnotatedT>(
-        &mut self,
-        source_id: SourceID,
-        name: Name,
-    ) -> Result<(), CyclicalDerivationError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    pub fn add(&mut self, source_id: SourceID, name: Name) -> Result<(), Problem> {
         tracing::trace!(source = source_id.to_string(), "add segment: {}", name);
 
         let segment = DerivationPathSegment::new(source_id, name.clone());
@@ -30,7 +25,7 @@ impl DerivationPath {
             self.0.push(segment);
             Ok(())
         } else {
-            Err(CyclicalDerivationError::new(name.to_string()))
+            Err(CyclicalDerivationError::as_problem(name))
         }
     }
 

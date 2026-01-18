@@ -1,30 +1,31 @@
 use super::super::{
-    super::{super::errors::*, compression_level::*, tracker::*},
+    super::{compression_level::*, tracker::*},
     archive::{Archive, *},
 };
 
 use {
     kutil::std::time::*,
+    problemo::*,
     std::{fs::*, io, path::*},
     tar::*,
 };
 
 /// Create a tarball [Archive].
-pub fn new_tarball_archive<'own, WriteT>(writer: WriteT) -> ArchiveRef<'own>
+pub fn new_tarball_archive<'writer, WriteT>(writer: WriteT) -> ArchiveRef<'writer>
 where
-    WriteT: 'own + io::Write,
+    WriteT: 'writer + io::Write,
 {
     Box::new(Builder::new(writer))
 }
 
 /// Create a Gzip tarball [Archive].
 #[cfg(feature = "gzip")]
-pub fn new_gzip_tarball_archive<'own, WriteT>(
+pub fn new_gzip_tarball_archive<'writer, WriteT>(
     writer: WriteT,
     compression_level: Option<CompressionLevel>,
-) -> ArchiveRef<'own>
+) -> ArchiveRef<'writer>
 where
-    WriteT: 'own + io::Write,
+    WriteT: 'writer + io::Write,
 {
     use flate2::{write::*, *};
 
@@ -37,12 +38,12 @@ where
 
 /// Create a Zstandard tarball [Archive].
 #[cfg(feature = "zstandard")]
-pub fn new_zstandard_tarball_archive<'own, WriteT>(
+pub fn new_zstandard_tarball_archive<'writer, WriteT>(
     writer: WriteT,
     compression_level: Option<CompressionLevel>,
-) -> Result<ArchiveRef<'own>, CsarError>
+) -> Result<ArchiveRef<'writer>, Problem>
 where
-    WriteT: 'own + io::Write,
+    WriteT: 'writer + io::Write,
 {
     use zstd::stream::*;
 

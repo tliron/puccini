@@ -1,14 +1,11 @@
-use super::{
-    super::{super::errors::*, root::*},
-    command::*,
-};
+use super::{super::root::*, command::*};
 
 use {
     clap::*,
-    compris::{annotate::*, normal::*, ser::*},
+    compris::{annotate::*, depict::*, normal::*, ser::*},
     depiction::*,
-    kutil::{cli::run::*, std::error::*},
-    puccini_csar::{tosca_meta::*, url::*, *},
+    problemo::{common::*, *},
+    puccini_csar::{tosca_meta::*, url::*},
     read_url::*,
     std::{
         fs::*,
@@ -18,47 +15,40 @@ use {
 
 impl Inspect {
     /// Run inspect subcommand.
-    pub fn run(&self, root: &Root) -> Result<(), MainError> {
+    pub fn run(&self, root: &Root) -> Result<(), Problem> {
         match &self.file_or_url {
             Some(file_or_url) => self.from_url(file_or_url.clone(), root),
             None => self.from_stdin(root),
         }
     }
 
-    fn from_url(&self, file_or_url: String, root: &Root) -> Result<(), MainError> {
+    fn from_url(&self, file_or_url: String, root: &Root) -> Result<(), Problem> {
         let url_context = Self::url_context()?;
-        let mut csar_errors = Errors::default();
+        let mut problems = Problems::default();
         let url = CsarUrl::new(url_context, file_or_url, None);
-        let tosca_meta = url.tosca_meta(true, &mut csar_errors)?;
-        self.output(tosca_meta, csar_errors, root)
+        let tosca_meta = url.tosca_meta(true, &mut problems)?;
+        self.output(tosca_meta, problems, root)
     }
 
-    fn from_stdin(&self, root: &Root) -> Result<(), MainError> {
+    fn from_stdin(&self, root: &Root) -> Result<(), Problem> {
         let stdin = io::stdin();
         if stdin.is_terminal() {
             Root::command().print_help()?;
-            return Err(ExitError::success().into());
+            return Err(ExitError::success());
         }
 
-        let mut csar_errors = Errors::default();
-        let tosca_meta = ToscaMeta::read(&mut io::BufReader::new(stdin), &mut csar_errors)?;
-        self.output(Some(tosca_meta), csar_errors, root)
+        let mut problems = Problems::default();
+        let tosca_meta = ToscaMeta::read(&mut io::BufReader::new(stdin), &mut problems)?;
+        self.output(Some(tosca_meta), problems, root)
     }
 
-    fn output(
-        &self,
-        tosca_meta: Option<ToscaMeta>,
-        csar_errors: Errors<CsarError>,
-        root: &Root,
-    ) -> Result<(), MainError> {
-        if let Err(csar_errors) = csar_errors.check() {
+    fn output(&self, tosca_meta: Option<ToscaMeta>, problems: Problems, root: &Root) -> Result<(), Problem> {
+        if let Err(problems) = problems.check() {
             if !root.quiet {
-                for error in csar_errors {
-                    error.eprint_default_depiction();
-                }
+                problems.annotated_depiction().eprint_default_depiction();
             }
 
-            return Err(ExitError::new(1, None).into());
+            return Err(ExitError::failure());
         }
 
         if let Some(tosca_meta) = tosca_meta {
@@ -89,7 +79,7 @@ impl Inspect {
         Ok(())
     }
 
-    fn url_context() -> Result<UrlContextRef, MainError> {
+    fn url_context() -> Result<UrlContextRef, Problem> {
         let url_context = UrlContext::new();
 
         #[cfg(feature = "filesystem")]

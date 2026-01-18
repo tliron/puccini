@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+# sudo dnf install python-devel
+
+"$HERE/build-python-venv" "$@"
+into_python
+
+pip install --upgrade pip
+pip install --upgrade maturin[patchelf] rich
+
+cd "$ROOT/python"
+
+if [ "$1" != -r ]; then
+    # See: https://github.com/PyO3/maturin/issues/2951
+    MATURIN_ARGS=--profile=dev
+fi
+
+maturin build \
+    --sdist \
+    --compatibility=pypi \
+    $MATURIN_ARGS
+
+# .tar.gz?
+pip install --force-reinstall "$ROOT/target/wheels/"*.whl

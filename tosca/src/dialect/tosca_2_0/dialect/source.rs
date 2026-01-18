@@ -5,23 +5,23 @@ use super::{
 
 use {
     compris::{annotate::*, normal::*, resolve::*},
-    kutil::std::error::*,
+    problemo::*,
     std::mem::*,
 };
 
 impl super::Dialect {
     /// Initialize source.
-    pub fn initialize_source<AnnotatedT, ErrorReceiverT>(
+    pub fn initialize_source<AnnotatedT, ProblemReceiverT>(
         &self,
         source: &mut Source,
         variant: Variant<AnnotatedT>,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<(), ToscaError<AnnotatedT>>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<(), Problem>
     where
         AnnotatedT: 'static + Annotated + Default + Clone,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        let file: Option<File<_>> = variant.resolve_with_errors(&mut errors.to_variant_error_receiver())?;
+        let file: Option<File<_>> = variant.resolve_with_problems(problems)?;
 
         let Some(file) = file else {
             return Ok(());
@@ -41,70 +41,69 @@ impl super::Dialect {
             }
         }
 
-        let mut errors = errors.into_annotated();
-
         for (name, artifact_type) in file.artifact_types {
-            must_unwrap_give!(source.add_entity(ARTIFACT_TYPE, name, artifact_type, false), errors);
+            give_unwrap!(source.add_entity(ARTIFACT_TYPE, name, artifact_type, false), problems);
         }
 
         for (name, capability_type) in file.capability_types {
-            must_unwrap_give!(source.add_entity(CAPABILITY_TYPE, name, capability_type, false), errors);
+            give_unwrap!(source.add_entity(CAPABILITY_TYPE, name, capability_type, false), problems);
         }
 
         for (name, data_type) in file.data_types {
             // Note that only data types need a fallback (to support recursive definitions)
-            must_unwrap_give!(source.add_entity(DATA_TYPE, name.clone(), data_type, true), errors);
+            give_unwrap!(source.add_entity(DATA_TYPE, name.clone(), data_type, true), problems);
         }
 
         for (name, group_type) in file.group_types {
-            must_unwrap_give!(source.add_entity(GROUP_TYPE, name, group_type, false), errors);
+            give_unwrap!(source.add_entity(GROUP_TYPE, name, group_type, false), problems);
         }
 
         for (name, interface_type) in file.interface_types {
-            must_unwrap_give!(source.add_entity(INTERFACE_TYPE, name, interface_type, false), errors);
+            give_unwrap!(source.add_entity(INTERFACE_TYPE, name, interface_type, false), problems);
         }
 
         for (name, node_type) in file.node_types {
-            must_unwrap_give!(source.add_entity(NODE_TYPE, name, node_type, false), errors);
+            give_unwrap!(source.add_entity(NODE_TYPE, name, node_type, false), problems);
         }
 
         for (name, policy_type) in file.policy_types {
-            must_unwrap_give!(source.add_entity(POLICY_TYPE, name, policy_type, false), errors);
+            give_unwrap!(source.add_entity(POLICY_TYPE, name, policy_type, false), problems);
         }
 
         for (name, relationship_type) in file.relationship_types {
-            must_unwrap_give!(source.add_entity(RELATIONSHIP_TYPE, name, relationship_type, false), errors);
+            give_unwrap!(source.add_entity(RELATIONSHIP_TYPE, name, relationship_type, false), problems);
         }
 
         if let Some(mut service_template) = file.service_template {
             for (name, group_template) in take(&mut service_template.groups) {
-                must_unwrap_give!(source.add_entity(GROUP_TEMPLATE, name, group_template, false), errors);
+                give_unwrap!(source.add_entity(GROUP_TEMPLATE, name, group_template, false), problems);
             }
 
             for (name, node_template) in take(&mut service_template.node_templates) {
-                must_unwrap_give!(source.add_entity(NODE_TEMPLATE, name, node_template, false), errors);
+                give_unwrap!(source.add_entity(NODE_TEMPLATE, name, node_template, false), problems);
             }
 
             let mut index = 0;
             for policy_template in take(&mut service_template.policies) {
                 index += 1;
                 let name = index.to_string().parse().expect("policy template name");
-                must_unwrap_give!(source.add_entity(POLICY_TEMPLATE, name, policy_template, false), errors);
+                give_unwrap!(source.add_entity(POLICY_TEMPLATE, name, policy_template, false), problems);
             }
 
             for (name, relationship_template) in take(&mut service_template.relationship_templates) {
-                must_unwrap_give!(source.add_entity(RELATIONSHIP_TEMPLATE, name, relationship_template, false), errors);
+                give_unwrap!(source.add_entity(RELATIONSHIP_TEMPLATE, name, relationship_template, false), problems);
             }
 
-            must_unwrap_give!(source.add_entity(SERVICE_TEMPLATE, Default::default(), service_template, false), errors);
+            // Note that the service template has no name!
+            give_unwrap!(source.add_entity(SERVICE_TEMPLATE, Default::default(), service_template, false), problems);
         }
 
         for (name, repository) in file.repositories {
-            must_unwrap_give!(source.add_entity(REPOSITORY, name, repository, false), errors);
+            give_unwrap!(source.add_entity(REPOSITORY, name, repository, false), problems);
         }
 
         for (name, function) in file.functions {
-            must_unwrap_give!(source.add_entity(FUNCTION, name, function, false), errors);
+            give_unwrap!(source.add_entity(FUNCTION, name, function, false), problems);
         }
 
         Ok(())

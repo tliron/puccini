@@ -1,8 +1,9 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -10,39 +11,32 @@ use {
 //
 
 /// Override prohibited error.
-#[derive(Debug, Error)]
-pub struct OverrideProhibitedError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct OverrideProhibitedError {
     /// Name.
     pub name: String,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(OverrideProhibitedError);
-
-impl<AnnotatedT> OverrideProhibitedError<AnnotatedT>
-where
-    AnnotatedT: Default,
-{
+impl OverrideProhibitedError {
     /// Constructor.
-    pub fn new(name: String) -> Self {
-        Self { name, annotated: Default::default() }
+    pub fn new<NameT>(name: NameT) -> Self
+    where
+        NameT: ToString,
+    {
+        Self { name: name.to_string() }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<NameT>(name: NameT) -> Problem
+    where
+        NameT: ToString,
+    {
+        Self::new(name).into_problem().with(AnnotatedCauseEquality::new::<Self>()).with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<OverrideProhibitedError<NewAnnotatedT>>
-    for OverrideProhibitedError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> OverrideProhibitedError<NewAnnotatedT> {
-        OverrideProhibitedError::new(self.name).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for OverrideProhibitedError<AnnotatedT> {
+impl Depict for OverrideProhibitedError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -51,8 +45,8 @@ impl<AnnotatedT> Depict for OverrideProhibitedError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for OverrideProhibitedError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for OverrideProhibitedError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.name, formatter)
     }
 }

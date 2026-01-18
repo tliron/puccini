@@ -53,7 +53,7 @@ pub fn break_tosca_meta_line(line: String, mut max_columns: usize) -> String {
     lines.join("\n")
 }
 
-fn next_string(chars: &mut Chars<'_>, max_count: usize, indent: bool) -> Option<String> {
+fn next_string(chars: &mut Chars, max_count: usize, indent: bool) -> Option<String> {
     let mut line = if indent { String::from(" ") } else { Default::default() };
 
     let mut count = 0;

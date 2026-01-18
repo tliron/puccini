@@ -1,20 +1,16 @@
-use super::{
-    super::{super::errors::*, root::*},
-    command::*,
-};
+use super::{super::root::*, command::*};
 
 use {
-depiction::*,    kutil::{
-        cli::{ run::*},
-        std::error::*,
-    },
+    compris::depict::*,
+    depiction::*,
+    problemo::{common::*, *},
     puccini_csar::{creator::*, *},
 };
 
 impl Create {
     /// Run create subcommand.
-    pub fn run(&self, root: &Root) -> Result<(), MainError> {
-        let mut csar_errors = Errors::default();
+    pub fn run(&self, root: &Root) -> Result<(), Problem> {
+        let mut problems = Problems::default();
 
         if !root.quiet {
             self.print_introduction();
@@ -26,11 +22,11 @@ impl Create {
             false,
             false,
             self.dry_run,
-            &mut csar_errors,
+            &mut problems,
         )?;
 
-        match csar_errors.check() {
-            Ok(()) => {
+        match problems.check() {
+            Ok(_) => {
                 if !root.quiet
                     && let Some(created) = created
                 {
@@ -40,14 +36,12 @@ impl Create {
                 Ok(())
             }
 
-            Err(csar_errors) => {
+            Err(problems) => {
                 if !root.quiet {
-                    for error in csar_errors {
-                        error.eprint_default_depiction();
-                    }
+                    problems.annotated_depiction().eprint_default_depiction();
                 }
 
-                Err(ExitError::new(1, None).into())
+                Err(ExitError::failure())
             }
         }
     }

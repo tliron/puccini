@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+TARGET_DIR=$ROOT/target/$(rust_host)/release
+
+"$TARGET_DIR/puccini-csar" create "$ROOT/examples/online-boutique" "$ROOT/examples/csar/online-boutique.tar.zst"
+"$TARGET_DIR/puccini-csar" create "$ROOT/examples/online-boutique" "$ROOT/examples/csar/online-boutique.zip"
+"$TARGET_DIR/puccini-tosca" compile "$ROOT/examples/csar/online-boutique.tar.zst" -iu || true
+"$TARGET_DIR/puccini-tosca" compile "$ROOT/examples/csar/online-boutique.zip" -iu || true

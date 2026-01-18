@@ -2,7 +2,7 @@ use super::super::{
     super::{entity::*, errors::*, name::*},
     context::*,
 };
-use {compris::annotate::*, kutil::std::error::*, std::collections::*};
+use {compris::annotate::*, problemo::*, std::collections::*};
 
 /// Complete a map of [Subentity].
 pub fn complete_subentity_map<SubentityT, ParentSubentityT>(
@@ -12,7 +12,7 @@ pub fn complete_subentity_map<SubentityT, ParentSubentityT>(
     parent_namespace: Option<&Namespace>,
     must_be_declared: bool,
     context: &mut CompletionContext,
-) -> Result<(), ToscaError<WithAnnotations>>
+) -> Result<(), Problem>
 where
     SubentityT: Annotated + Subentity<ParentSubentityT>,
     ParentSubentityT: ToNamespace<SubentityT>,
@@ -22,9 +22,9 @@ where
             if must_be_declared {
                 for (name, subentity) in map.iter() {
                     if !parent_map.contains_key(name) {
-                        context.errors.give(
-                            UndeclaredError::new(type_name.into(), name.to_string()).with_annotations_from(subentity),
-                        )?;
+                        context
+                            .problems
+                            .give(UndeclaredError::as_problem(type_name, name).with_annotations_from(subentity))?;
                     }
                 }
             }

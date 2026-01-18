@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+VENV=$ROOT/work/python
+
+if [ "$1" == -c ]; then
+    m 'cleaning Python virtual environment...'
+    rm --force --recursive "$VENV"
+fi
+
+if [ ! -d "$VENV" ]; then
+    m 'creating Python virtual environment...'
+    python -m venv "$VENV" --upgrade-deps
+fi

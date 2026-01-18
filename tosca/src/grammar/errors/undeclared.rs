@@ -1,8 +1,9 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -10,42 +11,40 @@ use {
 //
 
 /// Undeclared error.
-#[derive(Debug, Error)]
-pub struct UndeclaredError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct UndeclaredError {
     /// Type name.
     pub type_name: String,
 
     /// Name.
     pub name: String,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(UndeclaredError);
-
-impl<AnnotatedT> UndeclaredError<AnnotatedT> {
+impl UndeclaredError {
     /// Constructor.
-    pub fn new(type_name: String, name: String) -> Self
+    pub fn new<TypeNameT, NameT>(type_name: TypeNameT, name: NameT) -> Self
     where
-        AnnotatedT: Default,
+        TypeNameT: ToString,
+        NameT: ToString,
     {
-        //println!("{}", std::backtrace::Backtrace::force_capture());
-        Self { type_name, name, annotated: Default::default() }
+        Self { type_name: type_name.to_string(), name: name.to_string() }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<TypeNameT, NameT>(type_name: TypeNameT, name: NameT) -> Problem
+    where
+        TypeNameT: ToString,
+        NameT: ToString,
+    {
+        Self::new(type_name, name)
+            .into_problem()
+            .with(AnnotatedCauseEquality::new::<Self>())
+            .with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<UndeclaredError<NewAnnotatedT>> for UndeclaredError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> UndeclaredError<NewAnnotatedT> {
-        UndeclaredError::new(self.type_name, self.name).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for UndeclaredError<AnnotatedT> {
+impl Depict for UndeclaredError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -55,8 +54,8 @@ impl<AnnotatedT> Depict for UndeclaredError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for UndeclaredError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for UndeclaredError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}: {}", self.type_name, self.name)
     }
 }

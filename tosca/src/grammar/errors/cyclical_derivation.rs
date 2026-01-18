@@ -1,8 +1,9 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -10,39 +11,35 @@ use {
 //
 
 /// Cyclical derivation error.
-#[derive(Debug, Error)]
-pub struct CyclicalDerivationError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct CyclicalDerivationError {
     /// Parent name.
     pub parent_name: String,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(CyclicalDerivationError);
-
-impl<AnnotatedT> CyclicalDerivationError<AnnotatedT> {
+impl CyclicalDerivationError {
     /// Constructor.
-    pub fn new(parent_name: String) -> Self
+    pub fn new<ParentNameT>(parent_name: ParentNameT) -> Self
     where
-        AnnotatedT: Default,
+        ParentNameT: ToString,
     {
-        Self { parent_name, annotated: Default::default() }
+        Self { parent_name: parent_name.to_string() }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<ParentNameT>(parent_name: ParentNameT) -> Problem
+    where
+        ParentNameT: ToString,
+    {
+        Self::new(parent_name)
+            .into_problem()
+            .with(AnnotatedCauseEquality::new::<Self>())
+            .with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<CyclicalDerivationError<NewAnnotatedT>>
-    for CyclicalDerivationError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> CyclicalDerivationError<NewAnnotatedT> {
-        CyclicalDerivationError::new(self.parent_name).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for CyclicalDerivationError<AnnotatedT> {
+impl Depict for CyclicalDerivationError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -52,8 +49,8 @@ impl<AnnotatedT> Depict for CyclicalDerivationError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for CyclicalDerivationError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for CyclicalDerivationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.parent_name, formatter)
     }
 }

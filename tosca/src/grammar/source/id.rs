@@ -13,7 +13,7 @@ pub enum SourceID {
     /// Profile.
     Profile(ByteString),
 
-    /// ID (universally unique).
+    /// Universally unique ID.
     ID(Uuid),
 
     /// Internal.
@@ -28,6 +28,11 @@ impl SourceID {
             None => Default::default(),
         }
     }
+
+    /// True if internal.
+    pub fn is_internal(&self) -> bool {
+        matches!(self, SourceID::Internal(_))
+    }
 }
 
 impl Default for SourceID {
@@ -37,7 +42,7 @@ impl Default for SourceID {
 }
 
 impl fmt::Display for SourceID {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::URL(url) => write!(formatter, "url:{}", url),
             Self::Profile(profile) => write!(formatter, "profile:{}", profile),

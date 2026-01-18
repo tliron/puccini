@@ -32,6 +32,14 @@ function git_version () {
 	GO_VERSION=$(go version | { read _ _ v _; echo ${v#go}; })
 }
 
+function rust_host () {
+    rustc --version --verbose | sed -n 's|host: ||p'
+}
+
+function into_python () {
+    . "$ROOT/work/python/bin/activate"
+}
+
 function only_root () {
         if [ "$EUID" -ne 0 ]; then
                 m "Run this script as root" "$RED"

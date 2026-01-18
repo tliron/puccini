@@ -25,7 +25,7 @@ pub struct Create {
     /// 1 = least compression, fastest;
     /// 10 = most compression, slowest;
     /// leave empty to use format's default
-    #[arg(long = "compression", short = 'c', value_parser = compression_level_parser, verbatim_doc_comment)]
+    #[arg(long = "compression", short = 'C', value_parser = compression_level_parser, verbatim_doc_comment)]
     pub compression_level: Option<usize>,
 
     /// override or set the "Created-By" key
@@ -41,7 +41,7 @@ pub struct Create {
     pub other_definitions: Vec<String>,
 
     /// maximum number of columns for TOSCA.meta file
-    #[arg(long = "max-columns", default_value_t = 80)]
+    #[arg(long = "max-columns", short = 'c', default_value_t = 80)]
     pub max_columns: usize,
 
     /// enable dry run;

@@ -52,7 +52,7 @@ data_types:
       B: 1
     prefixes:
       '': 1
-      K: 1024
+      K: 1000
       Ki: 1024
       M: 1000000
       Mi: 1048576

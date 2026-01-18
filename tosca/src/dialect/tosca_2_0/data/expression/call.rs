@@ -142,7 +142,7 @@ impl<AnnotatedT> Depict for Call<AnnotatedT> {
 }
 
 impl<AnnotatedT> fmt::Display for Call<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self.kind {
             floria::CallKind::Eager => write!(formatter, "*")?,
             floria::CallKind::Lazy => write!(formatter, "&")?,
