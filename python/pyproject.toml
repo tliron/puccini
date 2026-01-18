@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.11,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "puccini"
+requires-python = ">=3.14"
+classifiers = [
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: Apache Software License',
+    'License :: OSI Approved :: MIT License',
+    'Development Status :: 4 - Beta',
+]
+
+[tool.maturin]
+requires-python = ">=3.8"
+bindings = "pyo3"
+profile = "release"
+dynamic = ["version"]

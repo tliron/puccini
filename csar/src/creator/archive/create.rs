@@ -3,7 +3,10 @@ use super::{
     archive::*,
 };
 
-use std::{fs::*, io, path::*};
+use {
+    problemo::*,
+    std::{fs::*, io, path::*},
+};
 
 /// Create an [Archive] file or write to stdout.
 ///
@@ -13,8 +16,8 @@ pub fn create_archive_file_or_stdout(
     path: Option<&Path>,
     format: Format,
     compression_level: Option<CompressionLevel>,
-) -> Result<ArchiveRef<'_>, CsarError> {
-    let writer = || -> Result<Box<dyn io::Write>, CsarError> {
+) -> Result<ArchiveRef<'_>, Problem> {
+    let writer = || -> Result<Box<dyn io::Write>, Problem> {
         Ok(match path {
             Some(path) => Box::new(io::BufWriter::new(File::create(path)?)),
             None => Box::new(io::stdout()),
@@ -34,10 +37,10 @@ pub fn create_archive_file_or_stdout(
         #[cfg(feature = "zip")]
         Format::ZIP => match path {
             Some(path) => Ok(super::zip::new_zip_archive(Box::new(File::create(path)?))),
-            None => Err(CsarError::Missing("ZIP file".into())),
+            None => Err(common::MissingError::as_problem("ZIP file").via(CsarError)),
         },
 
         #[cfg(not(all(feature = "tarball", feature = "gzip", feature = "zstandard", feature = "zip")))]
-        _ => Err(CsarError::UnsupportedFormat(format)),
+        _ => Err(common::UnsupportedError::as_problem("CSAR format").with(format).via(CsarError)),
     }
 }

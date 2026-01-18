@@ -1,10 +1,10 @@
 use super::super::dialect::*;
 
 use {
-    compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -13,38 +13,25 @@ use {
 
 /// Unsupported dialect error.
 #[derive(Debug, Error)]
-pub struct UnsupportedDialectError<AnnotatedT> {
+pub struct UnsupportedDialectError {
     /// Dialect ID.
     pub dialect_id: DialectID,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(UnsupportedDialectError);
-
-impl<AnnotatedT> UnsupportedDialectError<AnnotatedT> {
+impl UnsupportedDialectError {
     /// Constructor.
-    pub fn new(dialect_id: DialectID) -> Self
-    where
-        AnnotatedT: Default,
-    {
-        Self { dialect_id, annotated: Default::default() }
+    pub fn new(dialect_id: DialectID) -> Self {
+        Self { dialect_id }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem(dialect_id: DialectID) -> Problem {
+        Self::new(dialect_id).into_problem().with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<UnsupportedDialectError<NewAnnotatedT>>
-    for UnsupportedDialectError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> UnsupportedDialectError<NewAnnotatedT> {
-        UnsupportedDialectError::new(self.dialect_id).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for UnsupportedDialectError<AnnotatedT> {
+impl Depict for UnsupportedDialectError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -53,8 +40,8 @@ impl<AnnotatedT> Depict for UnsupportedDialectError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for UnsupportedDialectError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for UnsupportedDialectError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.dialect_id, formatter)
     }
 }

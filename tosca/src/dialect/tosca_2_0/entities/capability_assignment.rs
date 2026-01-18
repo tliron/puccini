@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, capability_definition::*, value_assignment::*};
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -66,7 +67,7 @@ where
         capability_definition: Option<&CapabilityDefinition<AnnotatedT>>,
         capability_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_type_name_field!(self, capability_definition, capability_definition_namespace, false, context);
         complete_subentity_map_field!(
             property,

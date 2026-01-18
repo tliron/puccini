@@ -1,6 +1,6 @@
 use {
-    compris::{annotate::*, normal::*, resolve::*},
-    kutil::std::error::*,
+    compris::{annotate::*, errors::*, normal::*, resolve::*},
+    problemo::*,
     std::{slice, vec},
 };
 
@@ -71,17 +71,17 @@ where
     }
 }
 
-impl<NameT, ValueT, AnnotatedT> Resolve<Taxonomy<NameT, ValueT>, AnnotatedT> for Variant<AnnotatedT>
+impl<NameT, ValueT, AnnotatedT> Resolve<Taxonomy<NameT, ValueT>> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
-    Variant<AnnotatedT>: Resolve<NameT, AnnotatedT> + Resolve<ValueT, AnnotatedT>,
+    Variant<AnnotatedT>: Resolve<NameT> + Resolve<ValueT>,
 {
-    fn resolve_with_errors<ErrorReceiverT>(
+    fn resolve_with_problems<ProblemReceiverT>(
         self,
-        errors: &mut ErrorReceiverT,
-    ) -> ResolveResult<Taxonomy<NameT, ValueT>, AnnotatedT>
+        problems: &mut ProblemReceiverT,
+    ) -> ResolveResult<Taxonomy<NameT, ValueT>>
     where
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let mut resolved = Vec::default();
 
@@ -93,26 +93,26 @@ where
                         Self::Map(map) => {
                             if map.inner.len() == 1 {
                                 let pair = map.into_key_value_pair().expect("single-key map");
-                                if let Some((key, value)) = pair.resolve_with_errors(errors)? {
+                                if let Some((key, value)) = pair.resolve_with_problems(problems)? {
                                     resolved.push((key, value));
                                 }
                             } else {
-                                errors.give(
-                                    MalformedError::new(
-                                        "name-value pair".into(),
-                                        "is not a map with a single key".into(),
-                                    )
-                                    .with_annotations_from(&map),
+                                problems.give(
+                                    MalformedError::as_problem("name-value pair", "is not a map with a single key")
+                                        .with_annotations_from(&map),
                                 )?;
                             }
                         }
 
-                        _ => errors.give(IncompatibleVariantTypeError::new_from(&item, &["map"]))?,
+                        _ => problems.give(
+                            IncompatibleVariantTypeError::as_problem_from(&item, &["map"]).with_annotations_from(&item),
+                        )?,
                     }
                 }
             }
 
-            _ => errors.give(IncompatibleVariantTypeError::new_from(&self, &["list"]))?,
+            _ => problems
+                .give(IncompatibleVariantTypeError::as_problem_from(&self, &["list"]).with_annotations_from(&self))?,
         }
 
         Ok(Some(Taxonomy(resolved)))
@@ -136,18 +136,18 @@ impl<NameT, ValueT> IntoIterator for Taxonomy<NameT, ValueT> {
     }
 }
 
-impl<'own, NameT, ValueT> IntoIterator for &'own Taxonomy<NameT, ValueT> {
-    type Item = &'own (NameT, ValueT);
-    type IntoIter = slice::Iter<'own, (NameT, ValueT)>;
+impl<'this, NameT, ValueT> IntoIterator for &'this Taxonomy<NameT, ValueT> {
+    type Item = &'this (NameT, ValueT);
+    type IntoIter = slice::Iter<'this, (NameT, ValueT)>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
     }
 }
 
-impl<'own, NameT, ValueT> IntoIterator for &'own mut Taxonomy<NameT, ValueT> {
-    type Item = &'own mut (NameT, ValueT);
-    type IntoIter = slice::IterMut<'own, (NameT, ValueT)>;
+impl<'this, NameT, ValueT> IntoIterator for &'this mut Taxonomy<NameT, ValueT> {
+    type Item = &'this mut (NameT, ValueT);
+    type IntoIter = slice::IterMut<'this, (NameT, ValueT)>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter_mut()

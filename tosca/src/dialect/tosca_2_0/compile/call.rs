@@ -3,20 +3,17 @@ use super::{
     plugin::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*, std::mem::*};
+use {compris::annotate::*, problemo::*, std::mem::*};
 
 impl<AnnotatedT> Call<AnnotatedT> {
     /// Compile to a Floria expression.
-    pub fn compile(
-        self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<floria::Expression, ToscaError<WithAnnotations>>
+    pub fn compile(self, context: &mut CompilationContext) -> Result<floria::Expression, Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
-        let (function, source) = must_unwrap_give!(
-            context.catalog.entity::<FunctionDefinition<AnnotatedT>, _>(FUNCTION, &self.function, context.source_id),
-            context.errors.with_fallback_annotations(self.annotations())
+        let (function, source) = give_unwrap!(
+            context.catalog.entity::<FunctionDefinition<AnnotatedT>>(FUNCTION, &self.function, context.source_id),
+            &mut context.problems.with_fallback_annotations(self.annotations())
         );
 
         // TODO: find signature
@@ -39,7 +36,8 @@ impl<AnnotatedT> Call<AnnotatedT> {
 
         let mut arguments = Vec::with_capacity(self.arguments.len());
         for argument in self.arguments {
-            let argument = unwrap_or_give!(argument.compile(context), context.errors, floria::Expression::Undefined);
+            let argument =
+                give_unwrap!(argument.compile(context), &mut context.problems, floria::Expression::Undefined);
             arguments.push(argument);
         }
 

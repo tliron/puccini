@@ -10,14 +10,27 @@ Download the Puccini Tools
 
 Check out our [published distributions](https://github.com/tliron/puccini/releases).
 
-Included are [`puccini-tosca`](puccini-tosca), [`puccini-csar`](puccini-csar), the examples, and this documentation. All binaries are optimized builds with all the default features enabled.
+Included are [`puccini-tosca`](puccini-tosca), [`puccini-csar`](puccini-csar), the examples, and this documentation. The binaries are optimized builds (with both [LTO](https://en.wikipedia.org/wiki/Interprocedural_optimization#WPO_and_LTO) and [PGO](https://en.wikipedia.org/wiki/Profile-guided_optimization)) with all the default features enabled.
 
-| Note that the `puccini-tosca` binary internally bundles a precompiled version of the TOSCA 2.0 Wasm plugin. If you need the originally Wasm then you can build it from source (see below).
+| Note that the `puccini-tosca` binary internally bundles a precompiled version of the TOSCA 2.0 Wasm plugin, which contains the implementations for the TOSCA built-in functions. If you need the originally Wasm then you can build it from source (see below).
 
 Building Puccini from Source
 ----------------------------
 
 If you need a build for other architectures or targets, with debug information, or with features other than the defaults, then you can build it yourself.
+
+### Development Environment
+
+Development at this early stage happens simultaneously in multiple git repositories. Thus it is recommended to use the [Khutulun Development Environment](https://github.com/tliron/khutulun-dev), which is configured for the latest commits in all dependencies.
+
+However, if you want to build a *specific released version* of Puccini then it is enough to just clone its repository and continue with "Prerequisites" below:
+
+```sh
+git clone https://github.com/tliron/puccini.git
+cd puccini
+# Checkout the version tag you want
+git checkout v0.0.4
+```
 
 ### Prerequisites
 
@@ -27,13 +40,13 @@ You need the [Rust](https://rust-lang.org) compiler and standard library as well
 
 We'll also need the [WASI](https://wasi.dev) (preview 2) target libraries for Rust in order to build our Wasm plugins.
 
-Finally, we need either [gcc](https://gcc.gnu.org) or [Clang](https://clang.llvm.org). We recommend also installing the [Wild linker](https://github.com/davidlattimore/wild), which Puccini can detect and use for faster building of debug builds.
+Finally, we need either [gcc](https://gcc.gnu.org) or [Clang](https://clang.llvm.org). We recommend also installing the [Wild linker](https://github.com/davidlattimore/wild), which Puccini can detect and use for faster linking of debug builds.
 
 To install everything:
 
-```
-# Install rustup:
-# https://rustup.rs
+```sh
+# Rust:
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Configure PATH (you might want to add this to your ~/.bashrc):
 . ~/.cargo/env
@@ -42,31 +55,21 @@ To install everything:
 rustup target add wasm32-wasip2
 rustup +nightly target add wasm32-wasip2
 
-# Install compiler requirements:
-#  Fedora world: sudo dnf install gcc clang openssl-devel
-#  Debian world: sudo apt install build-essential clang libssl-dev
-#  Arch world: sudo pacman -S base-devel clang openssl
+# Compiler requirements:
+#  Fedora world:
+#    sudo dnf install gcc clang openssl-devel
+#  Debian world:
+#    sudo apt install build-essential clang libssl-dev
+#  Arch world:
+#    sudo pacman -S base-devel clang openssl
 
-# Install Wild:
+# Wild linker:
 cargo install --locked wild-linker
-```
-
-### Development Environment
-
-Development at this early stage happens simultaneously in multiple git repositories. Thus it is recommended to use the [Khutulun Development Environment](https://github.com/tliron/khutulun-dev), which is configured for the latest commits in all dependant repositories.
-
-If you want to build a specific released version of Puccini then it is enough to just clone its repository:
-
-```
-git clone https://github.com/tliron/puccini.git
-cd puccini
-# An version tag would work
-git checkout v0.0.4
 ```
 
 ### Build Puccini CLI Tools
 
-```
+```sh
 # Into the Puccini git repository
 cd puccini
 
@@ -90,7 +93,7 @@ The default for `scripts/build` is a debug build:
 * includes debug information (for error backtraces and interaction with debuggers)
 * thus produces larger binaries
 
-| Note that for debug builds only are using the compiler from the nightly channel of Rust. The only reason is that it's faster! It supports parallel builds and alternative (faster) linkers. Eventually these features will make it into stable Rust and we'll stop using nightly.
+| Note that for debug builds *only* we are using the compiler from the [nightly channel](https://rust-lang.github.io/rustup/concepts/channels.html) of Rust. The only reason is that it's faster. It supports parallel builds and alternative (faster) linkers. Eventually these features will make it into stable Rust and we'll stop using nightly.
 
 Unless you're developing Puccini, you'd likely prefer a release build:
 
@@ -98,7 +101,7 @@ Unless you're developing Puccini, you'd likely prefer a release build:
 * best runtime performance: *all* optimizations enabled
 * small binaries
 
-```
+```sh
 scripts/build -r
 
 # Verify it
@@ -107,9 +110,11 @@ puccini-tosca version --build
 
 The build script can be configured with several environment variables. See its source for documentation. Example:
 
-```
+```sh
 WASM_PRECOMPILE=true WASM_DEBUG_INFO=false scripts/build
 ```
+
+For the most optimized build use: `PGO=true scripts/build -r`, though note that PGO currently provides a very modest performance boost (~1%). It takes ~8 minutes to build.
 
 <!--
 ```

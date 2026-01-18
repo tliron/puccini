@@ -3,7 +3,7 @@ use super::{
     plugin::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, problemo::*};
 
 //
 // GetFloriaPlugin
@@ -12,23 +12,17 @@ use {compris::annotate::*, kutil::std::error::*};
 /// Get Floria plugin.
 pub trait GetFloriaPlugin {
     /// Get Floria plugin.
-    fn floria_plugin(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<Plugin>, ToscaError<WithAnnotations>>;
+    fn floria_plugin(&self, context: &mut CompilationContext) -> Result<Option<Plugin>, Problem>;
 }
 
 impl<AnnotatedT> GetFloriaPlugin for ArtifactDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn floria_plugin(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<Plugin>, ToscaError<WithAnnotations>> {
-        let (artifact_type, _source) = must_unwrap_give!(
-            context.catalog.entity::<ArtifactType<AnnotatedT>, _>(ARTIFACT_TYPE, &self.type_name, context.source_id),
-            context.errors.with_fallback_annotations_from_field(self, "type_name")
+    fn floria_plugin(&self, context: &mut CompilationContext) -> Result<Option<Plugin>, Problem> {
+        let (artifact_type, _source) = give_unwrap!(
+            context.catalog.entity::<ArtifactType<AnnotatedT>>(ARTIFACT_TYPE, &self.type_name, context.source_id),
+            &mut context.problems.with_fallback_annotations_from_field(self, "type_name")
         );
 
         // TODO: more than internal
@@ -47,10 +41,7 @@ impl<AnnotatedT> GetFloriaPlugin for ImplementationDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn floria_plugin(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<Plugin>, ToscaError<WithAnnotations>> {
+    fn floria_plugin(&self, context: &mut CompilationContext) -> Result<Option<Plugin>, Problem> {
         match &self.primary {
             Some(artifact) => match artifact {
                 ImplementationDefinitionArtifact::Definition(artifact_definition) => {
@@ -67,10 +58,7 @@ impl<AnnotatedT> GetFloriaPlugin for OperationAssignment<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn floria_plugin(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<Plugin>, ToscaError<WithAnnotations>> {
+    fn floria_plugin(&self, context: &mut CompilationContext) -> Result<Option<Plugin>, Problem> {
         match &self.implementation {
             Some(implementation_definition) => implementation_definition.floria_plugin(context),
             None => Ok(None),
@@ -82,10 +70,7 @@ impl<AnnotatedT> GetFloriaPlugin for FunctionSignature<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn floria_plugin(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<Plugin>, ToscaError<WithAnnotations>> {
+    fn floria_plugin(&self, context: &mut CompilationContext) -> Result<Option<Plugin>, Problem> {
         match &self.implementation {
             Some(implementation_definition) => implementation_definition.floria_plugin(context),
             None => Ok(None),
@@ -97,10 +82,7 @@ impl<AnnotatedT> GetFloriaPlugin for FunctionDefinition<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn floria_plugin(
-        &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<Plugin>, ToscaError<WithAnnotations>> {
+    fn floria_plugin(&self, context: &mut CompilationContext) -> Result<Option<Plugin>, Problem> {
         match self.signatures.first() {
             Some(signature) => signature.floria_plugin(context),
             None => Ok(None),

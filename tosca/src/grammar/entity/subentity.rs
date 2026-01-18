@@ -1,6 +1,6 @@
-use super::super::{complete::*, errors::*, name::*};
+use super::super::{complete::*, name::*};
 
-use compris::annotate::*;
+use problemo::*;
 
 //
 // Subentity
@@ -18,5 +18,5 @@ pub trait Subentity<ParentSubentityT> {
         parent: Option<&ParentSubentityT>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>>;
+    ) -> Result<(), Problem>;
 }

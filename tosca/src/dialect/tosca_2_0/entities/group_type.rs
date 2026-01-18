@@ -5,9 +5,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -82,7 +83,7 @@ where
         &mut self,
         derivation_path: &mut DerivationPath,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         assert!(self.completion_state == CompletionState::Incomplete);
         self.completion_state = CompletionState::Cannot;
 

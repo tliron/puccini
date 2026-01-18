@@ -1,12 +1,9 @@
 use super::{
-    super::{
-        super::{super::errors::*, compression_level::*},
-        writer::*,
-    },
+    super::{super::compression_level::*, writer::*},
     archive::*,
 };
 
-use {duplicate::*, kutil::io::writer::*, self_cell::*};
+use {duplicate::*, kutil::io::writer::*, problemo::*, self_cell::*};
 
 #[duplicate_item(
     ArchiveT            WriterRefT;
@@ -30,7 +27,7 @@ impl ArchiveT {
     pub fn new_zstandard_tarball(
         writer: WriterRefT,
         compression_level: Option<CompressionLevel>,
-    ) -> Result<Self, CsarError> {
+    ) -> Result<Self, Problem> {
         Self::try_new(MutBorrow::new(writer), |writer| {
             new_zstandard_tarball_archive(writer.borrow_mut(), compression_level)
         })

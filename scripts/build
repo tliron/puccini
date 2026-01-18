@@ -17,6 +17,7 @@ set -e
 # Whether to precompile Wasm code to native (.wasm to .cwasm)
 #
 # WASM_DEBUG = true | false
+# *Warning: big performance hit when enabled!*
 # Whether to enable Wasm debugging in the runtime
 # This also adds debug information information to built Wasm artifacts (.wasm and .cwasm)
 # *as well* as how the Wasm runtime defaults in native code
@@ -27,8 +28,17 @@ set -e
 # https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
 # Currently only supported on NATIVE=dev
 
+# Wild requirements:
 # sudo dnf install clang
 # cargo install wild-linker
+
+# PGO requirements:
+# cargo install cargo-pgo
+# rustup component add llvm-tools-preview
+#
+# For debugging:
+# sudo dnf install llvm
+# llvm-profdata show target/pgo-profiles/...
 
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
@@ -41,13 +51,15 @@ BINDEPS=${BINDEPS:-false}
 if [ "$1" == -r ]; then
     NATIVE=${NATIVE:-release}
     LTO=${LTO:-true}
+    PGO=${PGO:-false}
     WASM=${WASM:-release}
 	WASM_DEBUG=${WASM_DEBUG:-false}
 else
     NATIVE=${NATIVE:-dev}
     LTO=${LTO:-off}
+    PGO=${PGO:-false}
     WASM=${WASM:-dev}
-	WASM_DEBUG=${WASM_DEBUG:-true}
+	WASM_DEBUG=${WASM_DEBUG:-false}
 fi
 
 if [ "$BINDEPS" == false ]; then
@@ -66,22 +78,47 @@ fi
 m "building native ($NATIVE)..." "$CYAN"
 
 if [ "$WASM_DEBUG" == true ]; then
-    m "• enabling Wasm debug" "$CYAN"
+    m "• Wasm: debug" "$CYAN"
     NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-debug"
 fi
 
 if [ "$WASM_PRECOMPILE" == true ]; then
-    m "• precompiling Wasm" "$CYAN"
+    m "• Wasm: precompiled" "$CYAN"
     NATIVE_FEATURES="$NATIVE_FEATURES --features=wasm-precompiled"
 fi
 
 if [ "$NATIVE" == release ]; then
-    m "• LTO = $LTO" "$CYAN"
+    if [ "$LTO" == true ]; then
+        m "• LTO" "$CYAN"
+    fi
+    if [ "$PGO" == true ]; then
+        m "• PGO"
+    fi
 
-    CARGO_PROFILE_RELEASE_LTO=$LTO \
-	cargo install \
-	    --path="$ROOT/cli" \
-		$NATIVE_FEATURES
+    if [ "$PGO" == true ]; then
+        CARGO_PROFILE_RELEASE_LTO=$LTO \
+        cargo pgo build -- \
+            --bin=puccini-csar \
+            --bin=puccini-tosca \
+            $NATIVE_FEATURES
+
+        "$HERE/build-pgo-profiles"
+
+        CARGO_PROFILE_RELEASE_LTO=$LTO \
+        cargo pgo optimize build -- \
+            --bin=puccini-csar \
+            --bin=puccini-tosca \
+            $NATIVE_FEATURES
+
+        TARGET_DIR=$ROOT/target/$(rust_host)/release
+        cp "$TARGET_DIR/puccini-csar" ~/.cargo/bin/puccini-csar-pgo
+        cp "$TARGET_DIR/puccini-tosca" ~/.cargo/bin/puccini-tosca-pgo
+    else
+        CARGO_PROFILE_RELEASE_LTO=$LTO \
+    	cargo install \
+    	    --path="$ROOT/cli" \
+    		$NATIVE_FEATURES
+    fi
 else
     RUSTFLAGS='-Z threads=8'
 
@@ -98,7 +135,7 @@ else
         fi
 
         if [ -n "$LINKER" ]; then
-            m "• linking with $LINKER" "$CYAN"
+            m "• linker = $LINKER" "$CYAN"
             RUSTFLAGS="$RUSTFLAGS --codegen linker=clang --codegen link-arg=--ld-path=$LINKER"
         fi
     fi

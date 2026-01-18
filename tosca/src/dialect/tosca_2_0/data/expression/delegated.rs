@@ -2,7 +2,7 @@ use super::expression::*;
 
 use {
     compris::annotate::*,
-    depiction::{utils::*, *},
+    depiction::*,
     kutil::std::iter::*,
     std::{cmp::*, fmt, hash::*, io},
 };
@@ -41,8 +41,8 @@ impl<AnnotatedT> Depict for Expression<AnnotatedT> {
     {
         match self {
             Self::Simple(simple) => simple.depict(writer, context),
-            Self::List(list) => depict_list(list.iter(), None, writer, context),
-            Self::Map(map) => depict_map(map.iter(), None, writer, context),
+            Self::List(list) => depict_list(list, None, writer, context),
+            Self::Map(map) => depict_map(map, None, writer, context),
             Self::Call(call) => call.depict(writer, context),
         }
     }
@@ -55,7 +55,7 @@ impl<AnnotatedT> Default for Expression<AnnotatedT> {
 }
 
 impl<AnnotatedT> fmt::Display for Expression<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Simple(simple) => fmt::Display::fmt(simple, formatter),
 

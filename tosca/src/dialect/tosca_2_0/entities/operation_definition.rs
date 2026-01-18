@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, implementation_definition::*, parameter_definition::*};
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -61,7 +62,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_subentity_map_field!(input, inputs, self, parent, parent_namespace, true, context);
         complete_subentity_map_field!(output, outputs, self, parent, parent_namespace, true, context);
         complete_subentity_field!(implementation, self, parent, parent_namespace, context);

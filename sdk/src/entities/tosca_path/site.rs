@@ -5,7 +5,7 @@ use {
     std::iter::*,
 };
 
-impl<'own> ToscaPathParser<'own> {
+impl<'context> ToscaPathParser<'context> {
     /// Next site.
     pub fn next_site(&mut self, path_site: Entity) -> Result<Entity, String> {
         let argument = self.iterator.next().ok_or_else(|| "TOSCA path: empty")?;

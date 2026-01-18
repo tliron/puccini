@@ -1,7 +1,7 @@
 *Work in progress, not ready for general use. For now, see the [previous version](https://github.com/tliron/go-puccini).*
 
 [![crates.io](https://img.shields.io/crates/v/puccini-tosca?color=%23227700)](https://crates.io/crates/puccini-tosca)
-[![docs.rs](https://img.shields.io/badge/docs.rs-latest?color=grey)](https://docs.rs/puccini-tosca/latest/puccini_tosca/)
+[![docs.rs](https://img.shields.io/badge/docs.rs-latest?color=grey)](https://docs.rs/puccini-tosca)
 
 Puccini
 =======
@@ -10,7 +10,8 @@ Tools for working with [TOSCA](https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSC
 
 It comprises:
 
-* Libraries for TOSCA (parsing, validation, compilation) and CSAR (validation, reading, writing)
+* Low-level Rust libraries for TOSCA (parsing, validation, compilation) and CSAR (validation, reading, writing)
+* A high-level Python library for TOSCA and CSAR
 * [Wasm](https://webassembly.org) implementations for TOSCA's built-in functions
 * CLI tools based on the above:
 
@@ -38,9 +39,9 @@ Documentation
 * [puccini-csar Guide](https://puccini.cloud/documentation/puccini-csar)
 * [Frequently Asked Questions](https://puccini.cloud/documentation/faq)
 * [Puccini and Floria](https://puccini.cloud/documentation/floria)
-* [puccini-tosca API Documentation](https://docs.rs/puccini-tosca/latest/puccini_tosca/),
+* [puccini-tosca API Documentation](https://docs.rs/puccini-tosca),
   [examples](https://github.com/tliron/puccini/tree/main/tosca/examples)
-* [puccini-csar API Documentation](https://docs.rs/puccini-csar/latest/puccini_csar/),
+* [puccini-csar API Documentation](https://docs.rs/puccini-csar),
   [examples](https://github.com/tliron/puccini/tree/main/csar/examples)
 
 Acknowledgments

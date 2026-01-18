@@ -2,9 +2,9 @@ use super::command::*;
 
 use {
     compris::annotate::*,
+    problemo::*,
     puccini_tosca::{dialect::tosca_2_0, grammar::*},
     read_url::*,
-    std::fmt,
 };
 
 #[cfg(feature = "plugins")]
@@ -12,13 +12,12 @@ use floria::{plugins::*, *};
 
 impl Compile {
     /// TOSCA [Catalog] with supported dialects.
-    pub fn catalog<AnnotatedT>() -> Result<Catalog, ToscaError<AnnotatedT>>
+    pub fn catalog<AnnotatedT>() -> Result<Catalog, Problem>
     where
-        AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default,
+        AnnotatedT: 'static + Annotated + Clone + Default,
     {
         let mut catalog = Catalog::default();
-        catalog.add_dialect_ref(tosca_2_0::Dialect::default().into());
-        catalog.add_sources(tosca_2_0::Dialect::built_in_sources::<AnnotatedT>()?);
+        tosca_2_0::Dialect::add_to_catalog::<AnnotatedT>(&mut catalog)?;
         Ok(catalog)
     }
 
@@ -29,7 +28,7 @@ impl Compile {
         environment: PluginEnvironment,
         store: StoreT,
         url_context: UrlContextRef,
-    ) -> Result<PluginContext<StoreT>, FloriaError>
+    ) -> Result<PluginContext<StoreT>, Problem>
     where
         StoreT: Clone + Send + Store,
     {
