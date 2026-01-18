@@ -1,9 +1,6 @@
-use super::super::{
-    super::{errors::*, name::*},
-    context::*,
-};
+use super::super::{super::name::*, context::*};
 
-use compris::annotate::*;
+use problemo::*;
 
 /// Check that our type is the same as or derived from the parent's type.
 #[allow(unused_variables)]
@@ -11,7 +8,7 @@ pub fn validate_type<TypeT>(
     type_: &TypeT,
     parent_type_name: &FullName,
     context: &mut CompletionContext,
-) -> Result<(), ToscaError<WithAnnotations>> {
+) -> Result<(), Problem> {
     Ok(())
 }
 
@@ -21,7 +18,7 @@ pub fn validate_type_name(
     type_name: &FullName,
     parent_type_name: &FullName,
     context: &mut CompletionContext,
-) -> Result<(), ToscaError<WithAnnotations>> {
+) -> Result<(), Problem> {
     // if type_name.is_empty() {
     //     errors.give(ResolveError::from(InvalidKeyError::new("type_name".into())))?;
     // }
@@ -35,7 +32,7 @@ pub fn validate_entity_type(
     name: &Name,
     type_names: &Option<Vec<FullName>>,
     context: &mut CompletionContext,
-) -> Result<(), ToscaError<WithAnnotations>> {
+) -> Result<(), Problem> {
     Ok(())
 }
 
@@ -45,7 +42,7 @@ pub fn validate_entities_types(
     names: &Vec<Name>,
     type_names: &Option<Vec<FullName>>,
     context: &mut CompletionContext,
-) -> Result<(), ToscaError<WithAnnotations>> {
+) -> Result<(), Problem> {
     for name in names {
         validate_entity_type(name, type_names, context)?
     }

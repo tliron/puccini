@@ -6,7 +6,8 @@ use super::super::{
 use {
     compris::{annotate::*, normal::*, resolve::*},
     depiction::*,
-    kutil::std::{error::*, immutable::*},
+    kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -55,7 +56,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_optional_parent_type_name_field!(type_name, self, parent, parent_namespace, false, context);
 
         let Some(parent) = parent else {
@@ -81,7 +82,7 @@ where
             // } else
 
             if let Some(validation) =
-                unwrap_or_give!(data_type.schema_validation(parent, parent_namespace, context), context.errors, None)
+                give_unwrap!(data_type.schema_validation(parent, parent_namespace, context), &mut context.problems)
             {
                 self.validation.join_apply(validation);
             }
@@ -138,18 +139,18 @@ impl<AnnotatedT> AnnotatedStruct for ValueAssignment<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> Resolve<ValueAssignment<AnnotatedT>, AnnotatedT> for Variant<AnnotatedT>
+impl<AnnotatedT> Resolve<ValueAssignment<AnnotatedT>> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorReceiverT>(
+    fn resolve_with_problems<ProblemReceiverT>(
         self,
-        errors: &mut ErrorReceiverT,
-    ) -> ResolveResult<ValueAssignment<AnnotatedT>, AnnotatedT>
+        problems: &mut ProblemReceiverT,
+    ) -> ResolveResult<ValueAssignment<AnnotatedT>>
     where
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        let expression: Option<Expression<_>> = self.resolve_with_errors(errors)?;
+        let expression: Option<Expression<_>> = self.resolve_with_problems(problems)?;
         Ok(expression.map(|expression| expression.into()))
     }
 }

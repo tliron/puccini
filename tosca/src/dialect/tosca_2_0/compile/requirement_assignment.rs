@@ -3,7 +3,7 @@ use super::{
     value_assignment::*,
 };
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> RequirementAssignment<AnnotatedT>
 where
@@ -14,8 +14,8 @@ where
         &self,
         edge_template: &mut floria::EdgeTemplate,
         name: Name,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<(), ToscaError<WithAnnotations>>
+        context: &mut CompilationContext,
+    ) -> Result<(), Problem>
     where
         AnnotatedT: 'static,
     {
@@ -50,17 +50,17 @@ where
     }
 
     // /// Compile to Floria.
-    // pub fn compile_to_floria<StoreT, ErrorReceiverT>(
+    // pub fn compile_to_floria<StoreT, ProblemReceiverT>(
     //     &self,
     //     context: CompileToFloriaContext<OldCatalog<'_, AnnotatedT>, StoreT>,
     //     requirement_name: &str,
     //     node_template_id: floria::ID,
     //     node_type: &NodeType<AnnotatedT>,
-    //     errors: &mut ErrorReceiverT,
+    //     errors: &mut ProblemReceiverT,
     // ) -> Result<Option<floria::ID>, ToscaError<AnnotatedT>>
     // where
     //     StoreT: floria::Store,
-    //     ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+    //     ProblemReceiverT: ProblemReceiver<ToscaError<AnnotatedT>>,
     // {
     //     let finder = match self.new_finder(context.catalog, context.index) {
     //         Ok(finder) => finder,

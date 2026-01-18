@@ -61,7 +61,7 @@ impl Comparator for Version {
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}.{}", self.major, self.minor)?;
 
         if let Some(fix) = &self.fix {

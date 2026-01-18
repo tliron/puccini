@@ -1,10 +1,11 @@
 use super::{
-    super::{compile::*, entity::*, errors::*, source::*},
-    id::*,
+    super::{compile::*, source::*},
+    implementation::*,
 };
 
 use {
     compris::{annotate::*, normal::*},
+    problemo::*,
     std::any::*,
 };
 
@@ -17,34 +18,37 @@ pub trait Dialect
 where
     Self: Any,
 {
-    /// Dialect ID.
-    fn dialect_id(&self) -> DialectID;
-
-    /// Supported entity kinds.
-    fn entity_kinds(&self) -> &EntityKinds;
+    /// Implementation.
+    fn implementation(&self) -> &DialectImplementation;
 
     /// Initialize a source with annotations.
     fn initialize_source_with_annotations(
         &self,
         source: &mut Source,
         variant: Variant<WithAnnotations>,
-        errors: ToscaErrorReceiverRef,
-    ) -> Result<(), ToscaError<WithAnnotations>>;
+        problems: ProblemReceiverRef,
+    ) -> Result<(), Problem>;
 
     /// Initialize a source without annotations.
     fn initialize_source_without_annotations(
         &self,
         source: &mut Source,
         variant: Variant<WithoutAnnotations>,
-        errors: ToscaErrorReceiverRef,
-    ) -> Result<(), ToscaError<WithoutAnnotations>>;
+        problems: ProblemReceiverRef,
+    ) -> Result<(), Problem>;
 
     /// Compile a source representing a TOSCA service template to a Floria
     /// [VertexTemplate](floria::VertexTemplate).
     ///
     /// Though only one Floria ID is returned, the implementation may create other Floria entities.
-    fn compile_source(
+    fn compile_source_with_annotations(&self, context: &mut CompilationContext) -> Result<Option<floria::ID>, Problem>;
+
+    /// Compile a source representing a TOSCA service template to a Floria
+    /// [VertexTemplate](floria::VertexTemplate).
+    ///
+    /// Though only one Floria ID is returned, the implementation may create other Floria entities.
+    fn compile_source_without_annotations(
         &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>>;
+        context: &mut CompilationContext,
+    ) -> Result<Option<floria::ID>, Problem>;
 }

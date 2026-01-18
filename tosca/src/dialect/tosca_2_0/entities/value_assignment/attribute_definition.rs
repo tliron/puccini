@@ -7,7 +7,7 @@ use super::{
     value_assignment::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> Subentity<AttributeDefinition<AnnotatedT>> for ValueAssignment<AnnotatedT>
 where
@@ -19,7 +19,7 @@ where
         attribute_definition: Option<&AttributeDefinition<AnnotatedT>>,
         attribute_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_optional_type_name_field!(self, attribute_definition, attribute_definition_namespace, true, context);
 
         let Some(attribute_definition) = attribute_definition else {
@@ -36,10 +36,9 @@ where
         if let Some(data_type) = data_type {
             validate_type(&data_type, &attribute_definition.type_name, context)?;
 
-            if let Some(validation) = unwrap_or_give!(
+            if let Some(validation) = give_unwrap!(
                 data_type.schema_validation(attribute_definition, attribute_definition_namespace, context),
-                context.errors,
-                None
+                &mut context.problems,
             ) {
                 self.validation.join_apply(validation);
             }

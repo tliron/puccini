@@ -23,7 +23,7 @@ pub struct KubernetesError {
 }
 
 impl fmt::Display for KubernetesError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.message, formatter)
     }
 }

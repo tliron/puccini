@@ -7,7 +7,7 @@ use super::{
 };
 
 use {
-    kutil::std::error::*,
+    problemo::{common::*, *},
     std::{fs::*, io::Write, path::*},
 };
 
@@ -20,20 +20,21 @@ impl CsarCreator {
     /// to [Format::Tarball].
     ///
     /// Note that for [Format::ZIP] if file is [None] will return an error.
-    pub fn create_from_directory<ErrorReceiverT>(
-        mut self,
+    pub fn create_from_directory<ProblemReceiverT>(
+        &self,
         file: Option<&Path>,
         directory: &Path,
         write_tosca_meta: bool,
         delete_tosca_meta: bool,
         dry_run: bool,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<CreatedCsar>, CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<CreatedCsar>, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
         if !directory.is_dir() {
-            errors.give(CsarError::Invalid(format!("not a directory: {:?}", directory.display())))?;
+            problems
+                .give(InvalidError::as_problem(format!("not a directory: {:?}", directory.display())).via(CsarError))?;
             return Ok(None);
         }
 
@@ -43,14 +44,14 @@ impl CsarCreator {
             for location in &locations {
                 let location = directory.join(location);
                 if location.exists() {
-                    unwrap_or_give!(remove_file(location), errors);
+                    give_unwrap!(remove_file(location), problems);
                 }
             }
         }
 
         // Do we already have a TOSCA.meta file?
 
-        let mut tosca_meta = match ToscaMeta::from_directory(directory, errors)? {
+        let mut tosca_meta = match ToscaMeta::from_directory(directory, problems)? {
             Some(tosca_meta) => {
                 tracing::info!("using existing \"TOSCA.meta\"");
                 tosca_meta.complete()
@@ -58,26 +59,27 @@ impl CsarCreator {
 
             None => {
                 tracing::info!("creating \"TOSCA.meta\"");
-                self.into_tosca_meta()
+                self.to_tosca_meta()
             }
         };
 
-        tosca_meta.validate_definitions_in_directory(directory, errors)?;
+        tosca_meta.validate_definitions_in_directory(directory, problems)?;
 
         let directory_components = directory.components().count();
 
         // Do we already have entry_definitions?
 
         if tosca_meta.entry_definitions.is_none() {
-            let entry_definitions = path_to_name(
-                &must_unwrap_give!(entry_definitions_in_directory(directory), errors),
-                directory_components,
-            );
+            let entry_definitions =
+                path_to_name(&give_unwrap!(entry_definitions_in_directory(directory), problems), directory_components);
 
             match entry_definitions.to_str() {
                 Some(entry_definitions) => tosca_meta.entry_definitions = Some(entry_definitions.into()),
                 None => {
-                    errors.give(CsarError::Invalid(format!("path not UTF-8: {}", entry_definitions.display())))?;
+                    problems.give(
+                        InvalidError::as_problem(format!("path not UTF-8: {}", entry_definitions.display()))
+                            .via(CsarError),
+                    )?;
                     return Ok(None);
                 }
             }
@@ -87,8 +89,8 @@ impl CsarCreator {
 
         if write_tosca_meta {
             let location = directory.join(locations.get(0).expect("not empty"));
-            let mut file = must_unwrap_give!(File::create_new(location), errors);
-            must_unwrap_give!(file.write_all(tosca_meta_string.as_bytes()), errors);
+            let mut file = give_unwrap!(File::create_new(location), problems);
+            give_unwrap!(file.write_all(tosca_meta_string.as_bytes()), problems);
             return Ok(Some(CreatedCsar::new(tosca_meta, Format::Tarball, None, None)));
         }
 
@@ -102,7 +104,7 @@ impl CsarCreator {
                     Some(format) => format,
 
                     None => {
-                        errors.give(CsarError::Invalid("must specify format".into()))?;
+                        problems.give(InvalidError::as_problem("must specify format").via(CsarError))?;
                         return Ok(None);
                     }
                 },
@@ -113,17 +115,17 @@ impl CsarCreator {
 
         // Create archive
 
-        let mut archive: Option<ArchiveRef> = if dry_run {
+        let mut archive: Option<ArchiveWriterRef> = if dry_run {
             None
         } else {
-            Some(must_unwrap_give!(create_archive_file_or_stdout(file, format, self.compression_level), errors))
+            Some(give_unwrap!(create_archive_file_or_stdout(file, format, self.compression_level), problems))
         };
 
         // Initialize read tracker and size
 
         let (read_tracker, size) = match &self.read_tracker {
             Some(read_tracker) => {
-                let size = directory_size(directory, directory_components, &locations, errors)?;
+                let size = directory_size(directory, directory_components, &locations, problems)?;
                 read_tracker.initialize(size);
                 (Some(read_tracker), Some(size))
             }
@@ -136,21 +138,21 @@ impl CsarCreator {
 
         if let Some(archive) = &mut archive {
             tracing::debug!("adding: \"TOSCA.meta\"");
-            unwrap_or_give!(
+            give_unwrap!(
                 archive.add_string(
                     locations.get(0).expect("not empty"),
                     &tosca_meta_string,
                     self.compression_level,
                     read_tracker,
                 ),
-                errors
+                problems
             );
         }
 
         // Add directory to CSAR
 
         for entry in files_in_directory(&directory, true) {
-            if let Some(entry) = ok_give!(entry, errors) {
+            if let Some(entry) = entry.give_ok(problems)? {
                 if entry.file_type().is_dir() {
                     continue;
                 }
@@ -166,7 +168,7 @@ impl CsarCreator {
                 tracing::debug!("adding: {:?}", path.display());
 
                 if let Some(archive) = &mut archive {
-                    unwrap_or_give!(archive.add_file(name, path, self.compression_level, read_tracker), errors);
+                    give_unwrap!(archive.add_file(name, path, self.compression_level, read_tracker), problems);
                 }
             }
         }
@@ -182,19 +184,19 @@ impl CsarCreator {
 
 // Utils
 
-fn directory_size<ErrorReceiverT>(
+fn directory_size<ProblemReceiverT>(
     directory: &Path,
     directory_components: usize,
     locations: &Vec<PathBuf>,
-    errors: &mut ErrorReceiverT,
-) -> Result<u64, CsarError>
+    problems: &mut ProblemReceiverT,
+) -> Result<u64, Problem>
 where
-    ErrorReceiverT: ErrorReceiver<CsarError>,
+    ProblemReceiverT: ProblemReceiver,
 {
     let mut size = 0;
 
     for entry in files_in_directory(&directory, false) {
-        if let Some(entry) = ok_give!(entry, errors) {
+        if let Some(entry) = entry.give_ok(problems)? {
             if entry.file_type().is_dir() {
                 continue;
             }
@@ -204,7 +206,7 @@ where
                 continue;
             }
 
-            if let Some(metadata) = ok_give!(entry.metadata(), errors) {
+            if let Some(metadata) = entry.metadata().give_ok(problems)? {
                 size += metadata.len();
             }
         }

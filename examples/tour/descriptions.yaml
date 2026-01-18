@@ -14,7 +14,6 @@ description: >-
 node_types:
 
   Server:
-    derived_from: tosca:Compute
     # It's good practice to use YAML's ">-" for multiline strings
     # (It will collapse paragraphs into lines and remove the final trailing newline)
     description: >-
@@ -34,20 +33,27 @@ node_types:
         description: Tiers of memory
         type: map
         entry_schema:
-          type: RAMSize
+          type: RamSize
           # Using the long notation for "entry_schema" you can specify a description for it
           # (Which will override the type's description)
           description: Soldered RAM size
         default:
-          low: 1 gib
-          mid: 4 gib
-          hi: 16 gib
+          low: 1 GB
+          mid: 4 GB
+          hi: 16 GB
 
 data_types:
 
-  RAMSize:
-    derived_from: scalar-unit.size
+  RamSize:
+    derived_from: scalar
     description: RAM size
+    units:
+      B: 1
+    prefixes:
+      '': 1
+      K: 1000
+      M: 1000000
+      G: 1000000000
 
 service_template:
 

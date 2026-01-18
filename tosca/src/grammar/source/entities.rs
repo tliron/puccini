@@ -3,7 +3,7 @@ use super::{
     source::*,
 };
 
-use {kutil::std::immutable::*, std::any::*, std::collections::*};
+use {kutil::std::immutable::*, problemo::*, std::collections::*};
 
 impl Source {
     /// Find an entity by its reference.
@@ -17,8 +17,8 @@ impl Source {
     }
 
     /// Entity names.
-    pub fn entity_names(&self) -> Vec<(EntityKind, Name)> {
-        self.entities.keys().map(|key| (key.entity_kind, key.inner.clone())).collect()
+    pub fn entity_names(&self) -> impl Iterator<Item = (&EntityKind, &Name)> {
+        self.entities.keys().map(|key| (&key.entity_kind, &key.inner))
     }
 
     /// Entity names as a sorted tree.
@@ -54,18 +54,10 @@ impl Source {
     }
 
     /// Add an entity reference.
-    pub fn add_entity_ref<AnnotatedT>(
-        &mut self,
-        entity_kind: EntityKind,
-        name: Name,
-        entity: EntityRef,
-    ) -> Result<(), NameReusedError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    pub fn add_entity_ref(&mut self, entity_kind: EntityKind, name: Name, entity: EntityRef) -> Result<(), Problem> {
         tracing::trace!(source = self.source_id.to_string(), "adding entity: {}", name);
         match self.entities.insert(WithEntityKind::new(entity_kind, name.clone()), entity) {
-            Some(_) => Err(NameReusedError::new(name.to_string())),
+            Some(_) => Err(NameReusedError::as_problem(name)),
             None => {
                 self.namespace.insert(WithEntityKind::new(entity_kind, name.into()), self.source_id.clone());
                 Ok(())
@@ -74,16 +66,15 @@ impl Source {
     }
 
     /// Add an [Entity].
-    pub fn add_entity<EntityT, AnnotatedT>(
+    pub fn add_entity<EntityT>(
         &mut self,
         entity_kind: EntityKind,
         name: Name,
         entity: EntityT,
         fallback: bool,
-    ) -> Result<(), NameReusedError<AnnotatedT>>
+    ) -> Result<(), Problem>
     where
         EntityT: 'static + Clone + Entity,
-        AnnotatedT: Default,
     {
         if fallback {
             self.add_fallback_entity_ref(entity_kind, name.clone(), entity.clone().into())?;
@@ -95,34 +86,28 @@ impl Source {
     ///
     /// If not found (e.g. it is currently removed for its completion phase) will return the
     /// fallback if it exists.
-    pub fn entity_ref<AnnotatedT>(
+    pub fn entity_ref(
         &self,
         entity_kind: EntityKind,
         entity_kind_name: &ByteString,
         name: &Name,
-    ) -> Result<&EntityRef, UndeclaredError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<&EntityRef, Problem> {
         let key = WithEntityKind::new(entity_kind, name.clone());
         self.entities
             .get(&key)
             .or_else(|| self.fallback_entities.get(&key))
-            .ok_or_else(|| UndeclaredError::new(entity_kind_name.to_string(), name.to_string()))
+            .ok_or_else(|| UndeclaredError::as_problem(entity_kind_name, name))
     }
 
     /// Remove an entity and return its reference if it exists.
     ///
     /// Note that this will *not* remove the entity's name from the namespace.
-    pub fn remove_entity_ref<AnnotatedT>(
+    pub fn remove_entity_ref(
         &mut self,
         entity_kind: EntityKind,
         entity_kind_name: &ByteString,
         name: &Name,
-    ) -> Result<EntityRef, UndeclaredError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<EntityRef, Problem> {
         tracing::trace!(
             source = self.source_id.to_string(),
             kind = entity_kind_name.to_string(),
@@ -132,42 +117,36 @@ impl Source {
 
         self.entities
             .remove(&WithEntityKind::new(entity_kind, name.clone()))
-            .ok_or_else(|| UndeclaredError::new(entity_kind_name.to_string(), name.to_string()))
+            .ok_or_else(|| UndeclaredError::as_problem(entity_kind_name, name))
     }
 
     /// Add a fallback entity reference.
-    pub fn add_fallback_entity_ref<AnnotatedT>(
+    pub fn add_fallback_entity_ref(
         &mut self,
         entity_kind: EntityKind,
         name: Name,
         entity: EntityRef,
-    ) -> Result<(), NameReusedError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<(), Problem> {
         tracing::trace!(source = self.source_id.to_string(), "adding fallback entity: {}", name);
         match self.fallback_entities.insert(WithEntityKind::new(entity_kind, name.clone()), entity) {
-            Some(_) => Err(NameReusedError::new(name.to_string())),
+            Some(_) => Err(NameReusedError::as_problem(name)),
             None => Ok(()),
         }
     }
 
     /// Get a fallback entity reference *only* if we don't have the entity reference.
-    pub fn fallback_entity_ref<AnnotatedT>(
+    pub fn fallback_entity_ref(
         &self,
         entity_kind: EntityKind,
         entity_kind_name: &ByteString,
         name: &Name,
-    ) -> Result<Option<&EntityRef>, UndeclaredError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<Option<&EntityRef>, Problem> {
         let key = WithEntityKind::new(entity_kind, name.clone());
         if !self.entities.contains_key(&key) {
             self.fallback_entities
                 .get(&key)
                 .map(Some)
-                .ok_or_else(|| UndeclaredError::new(entity_kind_name.to_string(), name.to_string()))
+                .ok_or_else(|| UndeclaredError::as_problem(entity_kind_name, name))
         } else {
             Ok(None)
         }
@@ -177,17 +156,16 @@ impl Source {
     ///
     /// If not found (e.g. it is currently removed for its completion phase) will return the
     /// fallback if it exists.
-    pub fn entity<EntityT, AnnotatedT>(
+    pub fn entity<EntityT>(
         &self,
         entity_kind: EntityKind,
         entity_kind_name: &ByteString,
         name: &Name,
-    ) -> Result<&EntityT, ToscaError<AnnotatedT>>
+    ) -> Result<&EntityT, Problem>
     where
         EntityT: 'static,
-        AnnotatedT: Default,
     {
         let entity = self.entity_ref(entity_kind, entity_kind_name, name)?;
-        Ok(entity.into_any_ref_checked("entity", type_name::<EntityT>())?)
+        entity.downcast_ref_checked()
     }
 }

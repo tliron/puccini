@@ -4,7 +4,7 @@ edition = "2024"
 name = "puccini-plugin-tosca-2_0"
 description = "Floria plugin for TOSCA 2.0 built-in functions"
 version = "0.0.4"
-rust-version = "1.92"
+rust-version = "1.93"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -13,7 +13,7 @@ authors = ["Tal Liron"]
 
 readme = "../README.md"
 
-categories = [] # https://crates.io/category_slugs
+categories = ["wasm"] # https://crates.io/category_slugs
 keywords = [
     "cloud",
     "orchestration",
@@ -25,7 +25,7 @@ keywords = [
 [dependencies]
 puccini-plugin-sdk-tosca-2_0 = "=0.0.4"
 floria-plugin-sdk = "=0.0.5"
-regex = "1.12.2"
+regex = "1.12.3"
 
 [lib]
 crate-type = ["cdylib"]

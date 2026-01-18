@@ -1,8 +1,9 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -10,41 +11,40 @@ use {
 //
 
 /// Unknown type error.
-#[derive(Debug, Error)]
-pub struct UnknownTypeError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct UnknownTypeError {
     /// Type name.
     pub type_name: String,
 
     /// Context.
     pub context: String,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(UnknownTypeError);
-
-impl<AnnotatedT> UnknownTypeError<AnnotatedT> {
+impl UnknownTypeError {
     /// Constructor.
-    pub fn new(type_name: String, context: String) -> Self
+    pub fn new<TypeNameT, ContextT>(type_name: TypeNameT, context: ContextT) -> Self
     where
-        AnnotatedT: Default,
+        TypeNameT: ToString,
+        ContextT: ToString,
     {
-        Self { type_name, context, annotated: Default::default() }
+        Self { type_name: type_name.to_string(), context: context.to_string() }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<TypeNameT, ContextT>(type_name: TypeNameT, context: ContextT) -> Problem
+    where
+        TypeNameT: ToString,
+        ContextT: ToString,
+    {
+        Self::new(type_name, context)
+            .into_problem()
+            .with(AnnotatedCauseEquality::new::<Self>())
+            .with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<UnknownTypeError<NewAnnotatedT>> for UnknownTypeError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> UnknownTypeError<NewAnnotatedT> {
-        UnknownTypeError::new(self.type_name, self.context).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for UnknownTypeError<AnnotatedT> {
+impl Depict for UnknownTypeError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -54,8 +54,8 @@ impl<AnnotatedT> Depict for UnknownTypeError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for UnknownTypeError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for UnknownTypeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}, {}", self.type_name, self.context)
     }
 }

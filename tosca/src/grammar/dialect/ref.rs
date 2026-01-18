@@ -13,7 +13,7 @@ use {
 pub type DialectRef = Box<dyn Dialect>;
 
 impl fmt::Debug for DialectRef {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "DialectRef")
     }
 }
@@ -27,11 +27,8 @@ where
     }
 }
 
-impl IntoAnyRef for DialectRef {
-    fn into_any_ref<AnyT>(&self) -> Option<&AnyT>
-    where
-        AnyT: Any,
-    {
-        (self.as_ref() as &dyn Any).downcast_ref()
+impl AsAnyRef for DialectRef {
+    fn as_any_ref(&self) -> Option<&dyn Any> {
+        Some(self.as_ref())
     }
 }

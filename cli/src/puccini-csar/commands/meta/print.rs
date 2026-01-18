@@ -1,6 +1,6 @@
-use super::{super::super::errors::*, command::*};
+use super::command::*;
 
-use {anstream::eprintln, depiction::*, puccini_csar::creator::*};
+use {anstream::eprintln, depiction::*, problemo::*, puccini_csar::creator::*};
 
 impl Meta {
     pub fn print_introduction(&self) {
@@ -9,7 +9,7 @@ impl Meta {
         eprintln!("{}Reading from directory {:?}", prefix, DEFAULT_THEME.string(self.directory.display()));
     }
 
-    pub fn print_summary(&self, created: CreatedCsar) -> Result<(), MainError> {
+    pub fn print_summary(&self, created: CreatedCsar) -> Result<(), Problem> {
         let prefix = self.prefix();
 
         eprintln!("{}Wrote {:?}", prefix, DEFAULT_THEME.string(self.directory.join("TOSCA.meta").display()));

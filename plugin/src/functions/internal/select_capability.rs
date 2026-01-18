@@ -44,16 +44,16 @@ pub fn select_capability(arguments: Vec<Expression>, call_site: CallSite) -> Dis
 //
 
 #[derive(Debug, Default)]
-struct CapabilityConstraints<'own> {
+struct CapabilityConstraints<'context> {
     capability_type_id: Option<Id>,
-    capability_name: Option<&'own str>,
+    capability_name: Option<&'context str>,
 
     node_type_id: Option<Id>,
-    node_template: Option<(&'own str, usize)>,
+    node_template: Option<(&'context str, usize)>,
 }
 
-impl<'own> CapabilityConstraints<'own> {
-    fn parse(arguments: &'own Vec<Expression>) -> Result<Self, String> {
+impl<'context> CapabilityConstraints<'context> {
+    fn parse(arguments: &'context Vec<Expression>) -> Result<Self, String> {
         let mut find_node = Self::default();
 
         if let Some(argument) = arguments.first() {
@@ -184,8 +184,8 @@ impl<'own> CapabilityConstraints<'own> {
     }
 }
 
-impl<'own> fmt::Display for CapabilityConstraints<'own> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<'context> fmt::Display for CapabilityConstraints<'context> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let mut separate = false;
 
         if let Some(capability_type_id) = &self.capability_type_id {

@@ -1,12 +1,9 @@
 use super::{
-    super::{complete::*, entity::*, errors::*, name::*, source::*},
+    super::{complete::*, entity::*, name::*, source::*},
     catalog::*,
 };
 
-use {
-    compris::annotate::*,
-    kutil::std::{error::*, immutable::*},
-};
+use {kutil::std::immutable::*, problemo::*};
 
 impl Catalog {
     /// Whether all entities are complete.
@@ -20,48 +17,48 @@ impl Catalog {
     /// [should_complete](super::super::entity::Entity::should_complete) is true.
     ///
     /// Note that each entity is removed from the catalog while it is being completed.
-    pub fn complete_entities<AnnotatedT, ErrorReceiverT>(
-        &mut self,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<(), ToscaError<AnnotatedT>>
+    pub fn complete_entities<ProblemReceiverT>(&mut self, problems: &mut ProblemReceiverT) -> Result<(), Problem>
     where
-        AnnotatedT: Annotated + Default,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        let mut entity_names = self.entity_names();
+        let mut entity_names: Vec<_> = self
+            .entity_names()
+            .map(|(source_id, entity_kind, name)| (source_id.clone(), entity_kind.clone(), name.clone()))
+            .collect();
+
         entity_names.sort();
 
         for (source_id, entity_kind, name) in entity_names {
-            let entity_kinds = unwrap_or_give!(self.source_entity_kinds(&source_id), errors, &EntityKinds::default());
-            let entity_kind_name = entity_kinds.represent(entity_kind);
+            let entity_kind_name = match self.source_entity_kinds(&source_id).give_ok(problems)? {
+                Some(entity_kinds) => entity_kinds.represent(entity_kind),
+                None => EntityKinds::default().represent(entity_kind),
+            };
 
             match self.sources.get_mut(&source_id) {
-                Some(source) => {
-                    match source.remove_entity_ref::<WithoutAnnotations>(entity_kind, &entity_kind_name, &name) {
-                        Ok(mut entity) => {
-                            self.complete_entity(
-                                &mut entity,
-                                &entity_kind_name,
-                                &name,
-                                &source_id,
-                                &mut DerivationPath::new(source_id.clone(), name.clone()),
-                                errors,
-                            )?;
+                Some(source) => match source.remove_entity_ref(entity_kind, &entity_kind_name, &name) {
+                    Ok(mut entity) => {
+                        self.complete_entity(
+                            &mut entity,
+                            &entity_kind_name,
+                            &name,
+                            &source_id,
+                            &mut DerivationPath::new(source_id.clone(), name.clone()),
+                            problems,
+                        )?;
 
-                            match self.sources.get_mut(&source_id) {
-                                Some(source) => {
-                                    unwrap_or_give!(source.add_entity_ref(entity_kind, name, entity), errors)
-                                }
-
-                                None => panic!("source {} disappeared", source_id),
+                        match self.sources.get_mut(&source_id) {
+                            Some(source) => {
+                                give_unwrap!(source.add_entity_ref(entity_kind, name, entity), problems)
                             }
-                        }
 
-                        Err(_) => {
-                            panic!("{} {} disappeared from {}", entity_kind_name, name, source_id);
+                            None => panic!("source {} disappeared", source_id),
                         }
                     }
-                }
+
+                    Err(_) => {
+                        panic!("{} {} disappeared from {}", entity_kind_name, name, source_id);
+                    }
+                },
 
                 None => {
                     panic!("source {} disappeared", source_id);
@@ -72,18 +69,17 @@ impl Catalog {
         Ok(())
     }
 
-    pub(crate) fn complete_entity<AnnotatedT, ErrorReceiverT>(
+    pub(crate) fn complete_entity<ProblemReceiverT>(
         &mut self,
         entity: &mut EntityRef,
         entity_kind_name: &ByteString,
         name: &Name,
         source_id: &SourceID,
         derivation_path: &mut DerivationPath,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<bool, ToscaError<AnnotatedT>>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<bool, Problem>
     where
-        AnnotatedT: Annotated + Default,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         Ok(if entity.should_complete() {
             tracing::debug!(
@@ -93,12 +89,7 @@ impl Catalog {
                 "completing",
             );
 
-            entity
-                .complete(
-                    derivation_path,
-                    &mut CompletionContext::new(self, source_id, errors.into_annotated().as_ref()),
-                )
-                .map_err(|error| error.into_annotated())?;
+            entity.complete(derivation_path, &mut CompletionContext::new(self, source_id, problems.as_ref()))?;
 
             if entity.is_complete() {
                 tracing::debug!(

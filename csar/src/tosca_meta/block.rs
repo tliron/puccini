@@ -1,6 +1,8 @@
+use problemo::common::NotFoundError;
+
 use super::{super::errors::*, syntax::*, version::*};
 
-use {compris::normal::*, depiction::*, indexmap::map::*, kutil::std::error::*, std::fmt};
+use {compris::normal::*, depiction::*, indexmap::map::*, problemo::*, std::fmt};
 
 //
 // ToscaMetaBlock
@@ -16,6 +18,11 @@ pub struct ToscaMetaBlock {
 }
 
 impl ToscaMetaBlock {
+    /// Length.
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
     /// Keynames.
     pub fn keynames(&self) -> Keys<'_, String, String> {
         self.values.keys()
@@ -27,57 +34,57 @@ impl ToscaMetaBlock {
     }
 
     /// Get value or error if it doesn't exist.
-    pub fn must_get<ErrorReceiverT>(
+    pub fn must_get<ProblemReceiverT>(
         &self,
         keyname: &str,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<&String>, CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<&String>, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
         Ok(match self.values.get(keyname) {
             Some(value) => Some(value),
             None => {
-                errors.give(ToscaMetaError::RequiredKeyname(keyname.into()))?;
+                problems.give(RequiredKeynameError::as_problem(keyname).via(CsarError))?;
                 None
             }
         })
     }
 
     /// Get version value or error if it doesn't exist.
-    pub fn must_get_version<ErrorReceiverT>(
+    pub fn must_get_version<ProblemReceiverT>(
         &self,
         keyname: &str,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<Version>, CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<Version>, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        Ok(match self.must_get(keyname, errors)? {
-            Some(value) => ok_give!(Version::parse(keyname, value), errors),
+        Ok(match self.must_get(keyname, problems)? {
+            Some(value) => Version::parse(keyname, value).give_ok(problems)?,
             None => None,
         })
     }
 
     /// Get list of strings or error if it's malformed.
-    pub fn get_list<ErrorReceiverT>(
+    pub fn get_list<ProblemReceiverT>(
         &self,
         keyname: &str,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<Vec<String>>, CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<Vec<String>>, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
         Ok(match self.values.get(keyname) {
-            Some(value) => ok_give!(string_list_from_tosca_meta(keyname, value), errors),
+            Some(value) => string_list_from_tosca_meta(keyname, value).give_ok(problems)?,
             None => None,
         })
     }
 
     /// Insert.
-    pub fn insert(&mut self, keyname: String, value: String) -> Result<(), CsarError> {
+    pub fn insert(&mut self, keyname: String, value: String) -> Result<(), Problem> {
         if keyname.contains(':') {
-            return Err(InvalidKeyError::new(keyname, "keyname contains `:`".into()).into());
+            return Err(InvalidKeyError::as_problem(keyname, "keyname contains `:`".into()).via(CsarError));
         }
 
         self.values.insert(keyname, value);
@@ -85,9 +92,17 @@ impl ToscaMetaBlock {
     }
 
     /// Insert list of strings.
-    pub fn insert_list(&mut self, keyname: String, values: &Vec<String>) -> Result<(), CsarError> {
+    pub fn insert_list(&mut self, keyname: String, values: &Vec<String>) -> Result<(), Problem> {
         let list = string_list_to_tosca_meta(&keyname, values)?;
         self.insert(keyname, list.join(" "))
+    }
+
+    /// Remove.
+    pub fn remove(&mut self, keyname: &str) -> Result<(), Problem> {
+        match self.values.swap_remove(keyname) {
+            Some(_) => Err(NotFoundError::as_problem(keyname).via(CsarError)),
+            None => Ok(()),
+        }
     }
 
     /// Stringify.
@@ -98,7 +113,7 @@ impl ToscaMetaBlock {
 }
 
 impl fmt::Display for ToscaMetaBlock {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.stringify(None), formatter)
     }
 }

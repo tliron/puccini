@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+# sudo dnf install python-devel
+
+"$HERE/build-python-venv" "$@"
+into_python
+
+pip install --upgrade pip
+pip install --upgrade maturin[patchelf] rich
+
+if [ "$1" != -r ]; then
+    # See: https://github.com/PyO3/maturin/issues/2951
+    # MATURIN_ARGS='--profile=dev --strip=false'
+    MATURIN_ARGS=--profile=dev
+fi
+
+function build () {
+    cd "$ROOT/$1"
+
+    # --sdist
+    maturin build \
+        --compatibility=pypi \
+        $MATURIN_ARGS
+
+    # .tar.gz?
+    pip install --force-reinstall ../target/wheels/*.whl
+}
+
+build python
+build ../rust-read-url/python
+# build ../compris/python
+# build ../floria/python
+
+# Docs?
+# https://github.com/PyO3/pyo3/discussions/2330
+# https://github.com/Jij-Inc/pyo3-stub-gen

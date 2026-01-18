@@ -1,57 +1,41 @@
-use super::{
-    super::{super::errors::*, root::*},
-    command::*,
-};
+use super::{super::root::*, command::*};
 
 use {
     compris::annotate::*,
     floria::*,
-    kutil::{cli::run::*, std::error::*},
-    puccini_csar::{url::*, *},
+    problemo::{common::*, *},
     puccini_tosca::grammar::*,
     read_url::*,
-    std::fmt,
 };
 
 impl Compile {
     /// Run compile subcommand.
-    pub fn run(&self, root: &Root) -> Result<(), MainError> {
+    pub fn run(&self, root: &Root) -> Result<(), Problem> {
         #[cfg(not(feature = "plugins"))]
         if self.instantiate {
-            return Err(
-                ExitError::from("to use `--instantiate` you must enable \"plugins\" feature in the build").into()
-            );
+            return Err(ExitError::failure("to use `--instantiate` you must enable \"plugins\" feature in the build"));
         }
 
         if !self.instantiate {
             if !self.events.is_empty() || self.update {
-                return Err(ExitError::from("cannot use `--event` without `--instantiate`").into());
+                return Err(ExitError::failure_message("cannot use `--event` without `--instantiate`"));
             }
 
             if !self.inputs.is_empty() {
-                return Err(ExitError::from("cannot use `--inputs` without `--instantiate`").into());
+                return Err(ExitError::failure_message("cannot use `--inputs` without `--instantiate`"));
             }
 
             if !self.inputs_from.is_empty() {
-                return Err(ExitError::from("cannot use `--inputs-from` without `--instantiate`").into());
+                return Err(ExitError::failure_message("cannot use `--inputs-from` without `--instantiate`"));
             }
 
             if !self.outputs.is_empty() {
-                return Err(ExitError::from("cannot use `--output` without `--instantiate`").into());
+                return Err(ExitError::failure_message("cannot use `--output` without `--instantiate`"));
             }
         }
 
         #[allow(unreachable_code)]
-        if self.no_annotations {
-            #[cfg(feature = "without-annotations")]
-            return self.run_annotated::<WithoutAnnotations>(root);
-
-            #[cfg(not(feature = "without-annotations"))]
-            Err(ExitError::from(
-                "to use `--no-annotations` you must enable \"without-annotations\" feature in the build",
-            )
-            .into())
-        } else {
+        if self.annotations {
             #[cfg(feature = "with-annotations")]
             return self.run_annotated::<WithAnnotations>(root);
 
@@ -59,24 +43,31 @@ impl Compile {
             return self.run_annotated::<WithoutAnnotations>(root);
 
             #[cfg(not(all(feature = "with-annotations", feature = "without-annotations")))]
-            Err(ExitError::from(
+            Err(ExitError::failure(
                 "you must enable \"with-annotations\" and/or \"without-annotations\" features in the build",
-            )
-            .into())
+            ))
+        } else {
+            #[cfg(feature = "without-annotations")]
+            return self.run_annotated::<WithoutAnnotations>(root);
+
+            #[cfg(not(feature = "without-annotations"))]
+            Err(ExitError::failure(
+                "to use `--annotations=false` you must enable \"without-annotations\" feature in the build",
+            ))
         }
     }
 
-    fn run_annotated<AnnotatedT>(&self, root: &Root) -> Result<(), MainError>
+    fn run_annotated<AnnotatedT>(&self, root: &Root) -> Result<(), Problem>
     where
-        AnnotatedT: 'static + Annotated + Clone + fmt::Debug + Default + Send + Sync,
+        AnnotatedT: 'static + Annotated + Clone + Default,
     {
         let mut url_context = Self::url_context()?;
-        let mut csar_errors = Errors::<CsarError>::default();
+        let mut csar_problems = Problems::default();
 
-        let source_id = self.source_id(&url_context, &mut csar_errors)?;
+        let source_id = self.source_id(&url_context, &mut csar_problems)?;
         let mut catalog = Self::catalog::<AnnotatedT>()?;
 
-        let mut tosca_errors = Errors::<ToscaError<AnnotatedT>>::default();
+        let mut tosca_problems = Problems::default();
 
         // Inputs
 
@@ -84,18 +75,18 @@ impl Compile {
 
         // Load
 
-        if let Some(new_url_context) = if self.no_annotations {
-            catalog.load_source_without_annotations(&source_id, &url_context, &mut tosca_errors)?
+        if let Some(new_url_context) = if self.annotations {
+            catalog.load_source_with_annotations(&source_id, &url_context, &mut tosca_problems)
         } else {
-            catalog.load_source_with_annotations(&source_id, &url_context, &mut tosca_errors)?
-        } {
+            catalog.load_source_without_annotations(&source_id, &url_context, &mut tosca_problems)
+        }? {
             url_context = new_url_context;
         }
 
         // Complete
 
         if self.should_complete() {
-            catalog.complete_entities(&mut tosca_errors)?;
+            catalog.complete_entities(&mut tosca_problems)?;
         }
 
         // Compile
@@ -103,19 +94,27 @@ impl Compile {
         let store = InMemoryStore::default();
         let mut floria_service_template_id = None;
 
-        let directory = self.floria_directory().map_err(floria::StoreError::from)?;
+        let directory = self.floria_directory()?;
 
         if self.should_compile() {
-            let mut errors = tosca_errors.into_annotated();
-            let mut context =
-                CompilationContext::new(&source_id, &catalog, &directory, store.clone().into_ref(), errors.as_ref());
-            floria_service_template_id = catalog.compile_service_template(&mut context)?;
+            let mut context = CompilationContext::new(
+                &source_id,
+                &catalog,
+                &directory,
+                store.clone().as_ref(),
+                tosca_problems.as_ref(),
+            );
+            floria_service_template_id = if self.annotations {
+                catalog.compile_service_template_with_annotations(&mut context)
+            } else {
+                catalog.compile_service_template_without_annotations(&mut context)
+            }?;
         }
 
         // Instantiate
 
         #[cfg(feature = "plugins")]
-        let mut floria_errors = Errors::<FloriaError>::default();
+        let mut floria_problems = Problems::default();
 
         #[cfg(feature = "plugins")]
         let floria_instance = if self.instantiate
@@ -127,7 +126,7 @@ impl Compile {
                 &directory,
                 store.clone(),
                 &url_context,
-                &mut floria_errors,
+                &mut floria_problems,
             )?
         } else {
             None
@@ -138,7 +137,14 @@ impl Compile {
         let mut print_first = true;
         let mut output_floria = true;
 
-        Self::depict_errors(&csar_errors, &tosca_errors, &floria_errors, &mut print_first, &mut output_floria, root);
+        let has_problems = Self::depict_problems(
+            csar_problems,
+            tosca_problems,
+            floria_problems,
+            &mut print_first,
+            &mut output_floria,
+            root,
+        );
 
         self.depict_debug(&catalog, &mut print_first, &mut output_floria, root);
 
@@ -147,30 +153,17 @@ impl Compile {
 
         self.output_floria_template(floria_service_template_id, store, &mut print_first, &mut output_floria, root)?;
 
-        #[cfg(not(feature = "plugins"))]
-        let no_errors = csar_errors.is_empty() && tosca_errors.is_empty();
-
-        #[cfg(feature = "plugins")]
-        let no_errors = csar_errors.is_empty() && tosca_errors.is_empty() && floria_errors.is_empty();
-
-        return if no_errors { Ok(()) } else { Err(ExitError::new(1, None).into()) };
+        return if has_problems { Err(ExitError::failure()) } else { Ok(()) };
     }
 
-    fn source_id(&self, url_context: &UrlContextRef, errors: &mut Errors<CsarError>) -> Result<SourceID, CsarError> {
-        let url = self.input_file_or_url.clone();
-
-        if let Some(url) = url.clone()
-            && let Some(format) = Format::from_url(&url)
-        {
-            let csar_url = CsarUrl::new(url_context.clone(), url.into(), Some(format));
-            let entry_definitions_url = csar_url.entry_definitions_url(errors)?;
-            return Ok(SourceID::URL(entry_definitions_url.to_string().into()));
+    fn source_id(&self, url_context: &UrlContextRef, problems: &mut Problems) -> Result<SourceID, Problem> {
+        match self.input_file_or_url.clone() {
+            Some(url) => url_to_source_id(url, url_context, problems),
+            None => Ok(Default::default()),
         }
-
-        Ok(SourceID::url_or_default(url.map(|url| url.into())))
     }
 
-    fn url_context() -> Result<UrlContextRef, MainError> {
+    fn url_context() -> Result<UrlContextRef, Problem> {
         let url_context = UrlContext::new();
 
         #[cfg(feature = "filesystem")]

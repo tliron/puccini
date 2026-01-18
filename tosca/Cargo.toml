@@ -4,7 +4,7 @@ edition = "2024"
 name = "puccini-tosca"
 description = "TOSCA parser, validator, and Floria compiler"
 version = "0.0.4"
-rust-version = "1.92"
+rust-version = "1.93"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -23,28 +23,48 @@ keywords = [
 ]
 
 [dependencies]
-anstream = "0.6.21"
+anstream = "1.0.0"
 compris = { version = "=0.0.11", features = ["derive"] }
-chrono = "0.4.42"
+chrono = "0.4.43"
 depiction = { version = "=0.0.1", features = ["derive"] }
+derive_more = { version = "2.1.1", features = ["display", "error"] }
 duplicate = "2.0.1"
 floria = "=0.0.5"
 kutil = { version = "=0.0.5", features = ["std", "immutable"] }
 num-traits = "0.2.19"
+problemo = "=0.0.11"
+puccini-csar = { optional = true, version = "=0.0.4", features = ["url"] }
+pyo3 = { optional = true, version = "0.28.1" }
 read-url = { version = "=0.0.10", default-features = false, features = ["blocking"] }
-rootcause = "0.11.0"
 smart-default = "0.7.1"
-thiserror = "2.0.17"
 tracing = "0.1.44"
 tynm = "0.2.0"
-uuid = { version = "1.19.0", features = ["v4"] }
+uuid = { version = "1.21.0", features = ["v4"] }
 
 [features]
 default = ["plugins", "filesystem", "http", "tosca-2_0"]
+
+## Enable Floria plugins.
 plugins = ["floria/plugins"]
+
+## Enable file URLs.
 filesystem = ["read-url/file"]
+
+## Enable HTTP URls.
 http = ["read-url/http"]
+
+## Enable TOSCA 2.0 dialect.
 tosca-2_0 = []
+
+## Enable CSAR URLs.
+csar = ["dep:puccini-csar"]
+
+## Enable Python API.
+pyo3 = [
+    "tosca-2_0",
+    "dep:pyo3",
+    "compris/pyo3",
+]
 
 # https://stackoverflow.com/a/61417700
 [package.metadata.docs.rs]

@@ -1,57 +1,53 @@
-use super::{
-    super::{super::errors::*, root::*},
-    command::*,
-    debug::*,
-};
+use super::{super::root::*, command::*, debug::*};
 
 use {
-    anstream::{println, stdout},
-    compris::{annotate::*, normal::*, ser::*},
+    anstream::{eprint, println, stdout},
+    compris::{annotate::*, depict::*, normal::*, ser::*},
     depiction::*,
     floria::*,
-    kutil::{cli::run::*, std::error::*},
-    puccini_csar::*,
+    problemo::{common::*, *},
     puccini_tosca::grammar::*,
-    std::{collections::*, fmt},
+    std::collections::*,
 };
 
 impl Compile {
-    pub fn depict_errors<AnnotatedT>(
-        csar_errors: &Errors<CsarError>,
-        tosca_errors: &Errors<ToscaError<AnnotatedT>>,
-        floria_errors: &Errors<FloriaError>,
+    pub fn depict_problems(
+        csar_problems: Problems,
+        tosca_problems: Problems,
+        floria_problems: Problems,
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
-    ) where
-        AnnotatedT: 'static + Annotated + fmt::Debug,
-    {
-        if let Err(csar_errors) = csar_errors.check() {
+    ) -> bool {
+        let no_problems = csar_problems.is_empty() && tosca_problems.is_empty() && floria_problems.is_empty();
+
+        if let Err(csar_problems) = csar_problems.check() {
             *output_floria = false;
 
             if Self::print_next(print_first, root) {
-                for error in csar_errors {
-                    error.eprint_default_depiction();
-                }
+                csar_problems.annotated_depiction().with_heading("CSAR Errors").eprint_default_depiction();
             }
         }
 
-        if let Err(tosca_errors) = tosca_errors.check() {
+        if let Err(tosca_problems) = tosca_problems.check() {
             *output_floria = false;
 
             if Self::print_next(print_first, root) {
-                tosca_errors.annotated_depictions(Some("TOSCA Errors".into())).eprint_default_depiction();
+                tosca_problems.annotated_depiction().with_heading("TOSCA Errors").eprint_default_depiction();
             }
         }
 
         #[cfg(feature = "plugins")]
-        if let Err(floria_errors) = floria_errors.check() {
+        if let Err(floria_problems) = floria_problems.check() {
             *output_floria = false;
 
             if Self::print_next(print_first, root) {
-                floria_errors.to_depict("Floria Errors").eprint_default_depiction();
+                eprint!("{}", DEFAULT_THEME.heading("Floria Errors"));
+                floria_problems.eprint_default_depiction();
             }
         }
+
+        !no_problems
     }
 
     pub fn depict_debug(&self, catalog: &Catalog, print_first: &mut bool, output_floria: &mut bool, root: &Root) {
@@ -60,7 +56,7 @@ impl Compile {
                 *output_floria = false;
 
                 if Self::print_next(print_first, root) {
-                    catalog.namespaces_depiction().print_default_depiction();
+                    catalog.namespaces_depiction(true).print_default_depiction();
                 }
             }
 
@@ -68,7 +64,7 @@ impl Compile {
                 *output_floria = false;
 
                 if Self::print_next(print_first, root) {
-                    catalog.entities_depiction().print_default_depiction();
+                    catalog.entities_depiction(true).print_default_depiction();
                 }
             }
 
@@ -88,7 +84,7 @@ impl Compile {
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
-    ) -> Result<(), MainError>
+    ) -> Result<(), Problem>
     where
         StoreT: Clone + Store,
     {
@@ -120,7 +116,7 @@ impl Compile {
         print_first: &mut bool,
         output_floria: &mut bool,
         root: &Root,
-    ) -> Result<(), MainError>
+    ) -> Result<(), Problem>
     where
         StoreT: Clone + Store,
     {
@@ -146,7 +142,7 @@ impl Compile {
                             );
                         }
 
-                        None => return Err(ExitError::from(format!("undefined output: {}", name)).into()),
+                        None => return Err(ExitError::failure_message(format!("undefined output: {}", name))),
                     }
                 }
 
@@ -190,7 +186,7 @@ impl Compile {
         }
     }
 
-    fn output_compris(&self, expression: Expression, format: compris::Format, root: &Root) -> Result<(), MainError> {
+    fn output_compris(&self, expression: Expression, format: compris::Format, root: &Root) -> Result<(), Problem> {
         let variant: Variant<WithoutAnnotations> = expression.into();
 
         RepresentationWriter::new(Some(format), !self.output_plain, self.output_base64).write_to_file_or_stdout(
@@ -204,7 +200,7 @@ impl Compile {
         Ok(())
     }
 
-    fn compris_format(&self) -> Result<Option<compris::Format>, MainError> {
+    fn compris_format(&self) -> Result<Option<compris::Format>, Problem> {
         match &self.output_format {
             Some(output_format) => Ok(output_format.to_compris()),
 
@@ -213,8 +209,9 @@ impl Compile {
 
                 None => {
                     if self.output_file.is_some() {
-                        Err(ExitError::from("cannot determine output format; specify it explicitly with --format/-f")
-                            .into())
+                        Err(ExitError::failure_message(
+                            "cannot determine output format; specify it explicitly with --format/-f",
+                        ))
                     } else {
                         Ok(None)
                     }

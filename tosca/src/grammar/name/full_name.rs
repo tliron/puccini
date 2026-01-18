@@ -66,7 +66,7 @@ impl Depict for FullName {
 }
 
 impl fmt::Display for FullName {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{}{}", self.namespace, self.name)
     }
 }

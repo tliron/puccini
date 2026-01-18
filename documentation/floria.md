@@ -132,8 +132,8 @@ When does an update happen? If you recall from discussion above, a TOSCA propert
 Here's an example of a "preparer" with a schema descriptor compiled from [`data-types.yaml`](https://github.com/tliron/puccini/blob/main/examples/2.0/data-types.yaml):
 
 ```
-_apply(
-  _schema([
+puccini:apply(
+  puccini:schema([
     {
       "kind": "list",
       "entry": 6
@@ -143,22 +143,22 @@ _apply(
     {
       "kind": "struct",
       "fields": {
-        "nested-bytes": [4, false],
+        "nested-bytes": [ 4, false ],
         "nested-float": 5
       }
     },
     "bytes",
     {
       "kind": "float",
-      "validation": &_assert(greater_or_equal(value(), 0.0))
+      "validation": &puccini:assert(greater_or_equal(value(), 0.0))
     },
     {
       "kind": "struct",
       "fields": {
-        "float": [1, false],
+        "float": [ 1, false ],
         "integer": 2,
         "nested": 3,
-        "self": [6, false],
+        "self": [ 6, false ],
         "string": 7
       }
     },
@@ -170,7 +170,7 @@ _apply(
 )
 ```
 
-Careful observers will note that it may not be immediately clear *when* functions should be called. Some functions, specifically those in TOSCA `validation` expressions, would be called "on demand", and may indeed be called more than once, e.g. when validating the items of a list. Fortunately, Floria supports passing functions "by value", by marking them for "lazy" execution (marked with a `&` prefix above). While this difference cannot be expressed in TOSCA 2.0, Puccini makes use of it internally when constructing the "preparer" expression.
+Careful observers will note that it may not be immediately clear *when* functions should be called. Some functions, specifically those in TOSCA `validation` expressions, would be called "on demand", and may indeed be called more than once, e.g. when validating every item of a list. To allow for this, Floria supports passing functions "by value" (represented with the `&` prefix above). This is sometimes called "lazy" execution. Though TOSCA 2.0 does not support passing functions by value, Puccini makes use of this Floria feature when constructing the "preparer" expression.
 
 Built-In Functions
 ------------------

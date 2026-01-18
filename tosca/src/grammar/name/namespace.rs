@@ -42,7 +42,7 @@ impl Depict for Namespace {
 }
 
 impl fmt::Display for Namespace {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         for segment in &self.segments {
             write!(formatter, "{}:", segment)?;
         }

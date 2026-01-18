@@ -3,7 +3,7 @@ use super::{
     plugin::*,
 };
 
-use {compris::annotate::*, floria::AddEventHandler, std::mem::*};
+use {compris::annotate::*, floria::AddEventHandler, problemo::*, std::mem::*};
 
 impl<AnnotatedT> OperationAssignment<AnnotatedT>
 where
@@ -14,8 +14,8 @@ where
         &self,
         vertex_template: &mut floria::VertexTemplate,
         name: &Name,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<(), ToscaError<WithAnnotations>>
+        context: &mut CompilationContext,
+    ) -> Result<(), Problem>
     where
         AnnotatedT: 'static,
     {

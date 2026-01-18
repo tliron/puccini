@@ -1,3 +1,6 @@
 target/
 work/
 .cargo/
+__pycache__/
+
+moonbit/

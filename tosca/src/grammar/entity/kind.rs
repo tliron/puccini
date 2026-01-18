@@ -15,7 +15,7 @@ use {
 pub struct EntityKind(pub usize);
 
 impl fmt::Display for EntityKind {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.0, formatter)
     }
 }

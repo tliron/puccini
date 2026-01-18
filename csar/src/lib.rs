@@ -17,6 +17,10 @@ mod errors;
 #[cfg(feature = "creator")]
 pub mod creator;
 
+/// pyo3 support.
+#[cfg(feature = "pyo3")]
+pub mod pyo3;
+
 /// TOSCA meta.
 pub mod tosca_meta;
 

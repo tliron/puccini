@@ -1,6 +1,7 @@
 use super::super::{super::errors::*, block::*};
 
 use {
+    problemo::{common::*, *},
     std::{io, iter::*},
     utf8_chars::*,
 };
@@ -51,7 +52,7 @@ where
     }
 
     /// Read block.
-    pub fn read_block(&mut self) -> Result<Option<ToscaMetaBlock>, CsarError> {
+    pub fn read_block(&mut self) -> Result<Option<ToscaMetaBlock>, Problem> {
         match self.chars.peek() {
             Some(c) => match c {
                 Ok(c) => {
@@ -67,7 +68,7 @@ where
                     }
                 }
 
-                Err(error) => Err(ToscaMetaError::Malformed(error.to_string()).into()),
+                Err(error) => Err(MalformedError::as_problem(error).via(CsarError)),
             },
 
             None => Ok(None),
@@ -75,7 +76,7 @@ where
     }
 
     /// Read key.
-    pub fn read_key(&mut self) -> Result<Option<(String, String)>, CsarError> {
+    pub fn read_key(&mut self) -> Result<Option<(String, String)>, Problem> {
         let mut mode = KeyValueMode::Key;
 
         let mut keyname = String::default();
@@ -109,7 +110,7 @@ where
 
         if !keyname.is_empty() {
             if matches!(mode, KeyValueMode::Key) {
-                return Err(ToscaMetaError::Malformed("keyname not followed by `:`".into()).into());
+                return Err(MalformedError::as_problem("keyname not followed by `:`").via(CsarError));
             }
 
             Ok(Some((keyname, value)))
@@ -125,17 +126,17 @@ where
         Ok(())
     }
 
-    fn must_skip_space(&mut self) -> Result<(), CsarError> {
+    fn must_skip_space(&mut self) -> Result<(), Problem> {
         if let Some(next) = self.chars.next() {
             let next = next?;
             if next != ' ' {
-                return Err(ToscaMetaError::Malformed("`:` not followed by space".into()).into());
+                return Err(MalformedError::as_problem("`:` not followed by space").via(CsarError));
             }
         }
         Ok(())
     }
 
-    fn skip_spaces(&mut self) -> Result<(), CsarError> {
+    fn skip_spaces(&mut self) -> Result<(), Problem> {
         while let Some(next) = self.chars.peek() {
             match next {
                 Ok(next) => {
@@ -146,14 +147,14 @@ where
                     }
                 }
 
-                Err(error) => return Err(ToscaMetaError::Malformed(error.to_string()).into()),
+                Err(error) => return Err(MalformedError::as_problem(error).via(CsarError)),
             }
         }
 
         Ok(())
     }
 
-    fn continues(&mut self) -> Result<bool, CsarError> {
+    fn continues(&mut self) -> Result<bool, Problem> {
         match self.chars.peek() {
             Some(next) => match next {
                 Ok(next) => {
@@ -166,7 +167,7 @@ where
                     }
                 }
 
-                Err(error) => Err(ToscaMetaError::Malformed(error.to_string()).into()),
+                Err(error) => Err(MalformedError::as_problem(error).via(CsarError)),
             },
 
             None => Ok(false),

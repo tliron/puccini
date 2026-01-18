@@ -4,9 +4,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -72,7 +73,7 @@ where
         interface_definition: Option<&InterfaceDefinition<AnnotatedT>>,
         interface_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_type_name_field!(self, interface_definition, interface_definition_namespace, false, context);
         complete_subentity_map_field!(
             input,

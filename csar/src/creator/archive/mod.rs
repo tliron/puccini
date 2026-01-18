@@ -1,4 +1,3 @@
-mod archive;
 mod create;
 #[cfg(feature = "tarball")]
 mod tarball;
@@ -7,7 +6,7 @@ mod writer;
 mod zip;
 
 #[allow(unused_imports)]
-pub use {archive::*, create::*, writer::*};
+pub use {create::*, writer::*};
 
 #[cfg(feature = "tarball")]
 #[allow(unused_imports)]

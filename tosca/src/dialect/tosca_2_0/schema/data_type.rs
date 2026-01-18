@@ -4,8 +4,8 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, normal::MalformedError},
-    kutil::std::error::*,
+    compris::{annotate::*, errors::*},
+    problemo::*,
 };
 
 impl<AnnotatedT> DataType<AnnotatedT>
@@ -18,7 +18,7 @@ where
         definition: &SchemaDetailsT,
         definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<Option<Expression<AnnotatedT>>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<Expression<AnnotatedT>>, Problem>
     where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
@@ -32,7 +32,7 @@ where
         details: &SchemaDetailsT,
         details_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<Option<Schema<AnnotatedT>>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<Schema<AnnotatedT>>, Problem>
     where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
@@ -49,7 +49,7 @@ where
         details: &SchemaDetailsT,
         details_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<Option<SchemaReference>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<SchemaReference>, Problem>
     where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
@@ -91,9 +91,8 @@ where
                 schema.data_type_references.remove(&schema_key);
 
                 // A data type without a data kind?
-                context.errors.give(
-                    MalformedError::new(DATA_TYPE_NAME.into(), "undetermined data kind".into())
-                        .with_annotations_from(self),
+                context.problems.give(
+                    MalformedError::as_problem(DATA_TYPE_NAME, "undetermined data kind").with_annotations_from(self),
                 )?;
                 return Ok(None);
             }

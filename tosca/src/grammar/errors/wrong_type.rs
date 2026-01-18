@@ -1,9 +1,10 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
     kutil::std::string::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -11,8 +12,8 @@ use {
 //
 
 /// Wrong type error.
-#[derive(Debug, Error)]
-pub struct WrongTypeError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct WrongTypeError {
     /// Entity.
     pub entity: String,
 
@@ -21,35 +22,37 @@ pub struct WrongTypeError<AnnotatedT> {
 
     /// Expected type names.
     pub expected_type_names: Vec<String>,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(WrongTypeError);
-
-impl<AnnotatedT> WrongTypeError<AnnotatedT> {
+impl WrongTypeError {
     /// Constructor.
-    pub fn new(entity: String, type_name: String, expected_type_names: Vec<String>) -> Self
+    pub fn new<EntityT, TypeNameT>(entity: EntityT, type_name: TypeNameT, expected_type_names: Vec<String>) -> Self
     where
-        AnnotatedT: Default,
+        EntityT: ToString,
+        TypeNameT: ToString,
     {
-        Self { entity, type_name, expected_type_names, annotated: Default::default() }
+        Self { entity: entity.to_string(), type_name: type_name.to_string(), expected_type_names }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<EntityT, TypeNameT>(
+        entity: EntityT,
+        type_name: TypeNameT,
+        expected_type_names: Vec<String>,
+    ) -> Problem
+    where
+        EntityT: ToString,
+        TypeNameT: ToString,
+    {
+        Self::new(entity, type_name, expected_type_names)
+            .into_problem()
+            .with(AnnotatedCauseEquality::new::<Self>())
+            .with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<WrongTypeError<NewAnnotatedT>> for WrongTypeError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> WrongTypeError<NewAnnotatedT> {
-        WrongTypeError::new(self.entity, self.type_name, self.expected_type_names)
-            .with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for WrongTypeError<AnnotatedT> {
+impl Depict for WrongTypeError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -69,8 +72,8 @@ impl<AnnotatedT> Depict for WrongTypeError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for WrongTypeError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for WrongTypeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         if self.expected_type_names.is_empty() {
             write!(formatter, "{} is {}", self.entity, self.type_name,)
         } else {

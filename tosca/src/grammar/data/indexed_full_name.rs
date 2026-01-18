@@ -1,9 +1,9 @@
 use super::super::name::*;
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, errors::*, normal::*, resolve::*},
     depiction::*,
-    kutil::std::error::*,
+    problemo::*,
     std::{fmt, io},
 };
 
@@ -28,19 +28,16 @@ impl IndexedFullName {
     }
 }
 
-impl<AnnotatedT> Resolve<IndexedFullName, AnnotatedT> for Variant<AnnotatedT>
+impl<AnnotatedT> Resolve<IndexedFullName> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorReceiverT>(
-        self,
-        errors: &mut ErrorReceiverT,
-    ) -> ResolveResult<IndexedFullName, AnnotatedT>
+    fn resolve_with_problems<ProblemReceiverT>(self, problems: &mut ProblemReceiverT) -> ResolveResult<IndexedFullName>
     where
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let mut give =
-            |message| errors.give(MalformedError::new("indexed name".into(), message).with_annotations_from(&self));
+            |message| problems.give(MalformedError::as_problem("indexed name", message).with_annotations_from(&self));
 
         Ok(match &self {
             Self::Text(text) => match text.inner.parse() {
@@ -91,7 +88,7 @@ where
             },
 
             _ => {
-                errors.give(IncompatibleVariantTypeError::new_from(&self, &["text", "list"]))?;
+                problems.give(IncompatibleVariantTypeError::as_problem_from(&self, &["text", "list"]))?;
                 None
             }
         })
@@ -117,7 +114,7 @@ impl Depict for IndexedFullName {
 }
 
 impl fmt::Display for IndexedFullName {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self.index {
             Some(index) => write!(formatter, "{}[{}]", self.full_name, index),
             None => fmt::Display::fmt(&self.full_name, formatter),

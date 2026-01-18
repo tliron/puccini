@@ -1,4 +1,7 @@
-use std::{ffi::*, fmt, path::*};
+use {
+    kutil::std::string::*,
+    std::{fmt, path::*, str::*},
+};
 
 //
 // Format
@@ -33,19 +36,27 @@ impl Format {
 
     /// From path extension.
     pub fn from_extension(path: &Path) -> Option<Self> {
-        if let Some(extension) = path.extension() {
-            if extension == OsStr::new("tar") {
-                return Some(Self::Tarball);
-            } else if (extension == OsStr::new("gz")) || (extension == OsStr::new("tgz")) {
-                return Some(Self::GzipTarball);
-            } else if extension == OsStr::new("zst") {
-                return Some(Self::ZstandardTarball);
-            } else if (extension == OsStr::new("zip")) || (extension == OsStr::new("csar")) {
-                return Some(Self::ZIP);
-            }
+        if let Some(extension) = path.extension()
+            && let Some(extension) = extension.to_str()
+        {
+            extension.parse().ok()
+        } else {
+            None
         }
+    }
+}
 
-        None
+impl FromStr for Format {
+    type Err = ParseError;
+
+    fn from_str(extension: &str) -> Result<Self, Self::Err> {
+        match extension {
+            "tar" => Ok(Self::Tarball),
+            "gz" | "tgz" => Ok(Self::GzipTarball),
+            "zst" => Ok(Self::ZstandardTarball),
+            "zip" | "csar" => Ok(Self::ZIP),
+            _ => Err(format!("unsupported format: {}", extension).into()),
+        }
     }
 }
 

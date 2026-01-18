@@ -4,9 +4,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, depict::*, normal::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
+    problemo::*,
 };
 
 //
@@ -113,7 +114,7 @@ where
         &mut self,
         _derivation_path: &mut DerivationPath,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         assert!(self.completion_state == CompletionState::Incomplete);
 
         complete_subentity_map_field!(

@@ -3,7 +3,7 @@ use super::super::{
     context::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, problemo::*};
 
 /// Complete a [Taxonomy] of [Subentity].
 #[allow(unused_variables)]
@@ -14,7 +14,7 @@ pub fn complete_subentity_taxonomy<SubentityT, ParentSubentityT>(
     parent_namespace: Option<&Namespace>,
     must_be_declared: bool,
     context: &mut CompletionContext,
-) -> Result<(), ToscaError<WithAnnotations>>
+) -> Result<(), Problem>
 where
     SubentityT: Annotated + Subentity<ParentSubentityT>,
     ParentSubentityT: ToNamespace<SubentityT>,
@@ -26,9 +26,9 @@ where
             if must_be_declared {
                 for (name, subentity) in taxonomy.iter() {
                     if !parent_taxonomy.contains_name(name) {
-                        context.errors.give(
-                            UndeclaredError::new(type_name.into(), name.to_string()).with_annotations_from(subentity),
-                        )?;
+                        context
+                            .problems
+                            .give(UndeclaredError::as_problem(type_name, name).with_annotations_from(subentity))?;
                     }
                 }
             }

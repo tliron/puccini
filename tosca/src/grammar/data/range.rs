@@ -1,7 +1,7 @@
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, errors::*, normal::*, resolve::*},
     depiction::*,
-    kutil::std::error::*,
+    problemo::*,
     std::{fmt, io},
 };
 
@@ -34,35 +34,35 @@ impl Range {
     }
 }
 
-impl<AnnotatedT> Resolve<Range, AnnotatedT> for Variant<AnnotatedT>
+impl<AnnotatedT> Resolve<Range> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorReceiverT>(self, errors: &mut ErrorReceiverT) -> ResolveResult<Range, AnnotatedT>
+    fn resolve_with_problems<ProblemReceiverT>(self, problems: &mut ProblemReceiverT) -> ResolveResult<Range>
     where
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let maybe_annotations = self.maybe_annotations();
 
-        let give = |errors: &mut ErrorReceiverT, message: &str| {
-            errors.give(MalformedError::new("range".into(), message.into()).with_annotations_from(&maybe_annotations))
+        let give = |problems: &mut ProblemReceiverT, message: &str| {
+            problems.give(MalformedError::as_problem("range", message).with_annotations_from(&maybe_annotations))
         };
 
         Ok(match self {
             Self::List(list) => match list.into_pair() {
-                Some((lower_value, upper_value)) => match lower_value.resolve_with_errors(errors)? {
+                Some((lower_value, upper_value)) => match lower_value.resolve_with_problems(problems)? {
                     Some(lower) => match upper_value {
                         Self::Text(text) => {
                             if text.inner == "UNBOUNDED" {
                                 return Ok(Some(Range::new(lower, RangeUpperBound::Unbounded)));
                             } else {
-                                give(errors, "upper bound is not an unsigned integer or \"UNBOUNDED\"")?;
+                                give(problems, "upper bound is not an unsigned integer or \"UNBOUNDED\"")?;
                                 None
                             }
                         }
 
                         _ => upper_value
-                            .resolve_with_errors(errors)?
+                            .resolve_with_problems(problems)?
                             .and_then(|upper| Some(Range::new(lower, RangeUpperBound::Bounded(upper)))),
                     },
 
@@ -70,13 +70,13 @@ where
                 },
 
                 None => {
-                    give(errors, "is not a list of length 2")?;
+                    give(problems, "is not a list of length 2")?;
                     None
                 }
             },
 
             _ => {
-                errors.give(IncompatibleVariantTypeError::new_from(&self, &["list"]))?;
+                problems.give(IncompatibleVariantTypeError::as_problem_from(&self, &["list"]))?;
                 None
             }
         })
@@ -101,7 +101,7 @@ impl Depict for Range {
 }
 
 impl fmt::Display for Range {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "[{}, {}]", self.lower, self.upper)
     }
 }
@@ -122,7 +122,7 @@ pub enum RangeUpperBound {
 }
 
 impl fmt::Display for RangeUpperBound {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Unbounded => fmt::Display::fmt("UNBOUNDED", formatter),
             Self::Bounded(bounded) => fmt::Display::fmt(bounded, formatter),

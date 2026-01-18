@@ -1,0 +1,36 @@
+[package]
+edition = "2024"
+
+name = "puccini-python"
+description = "Python bindings for Puccini"
+version = "0.0.4"
+rust-version = "1.93"
+
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tliron/puccini"
+documentation = "https://docs.rs/puccini-tosca"
+authors = ["Tal Liron"]
+
+readme = "../README.md"
+
+categories = [] # https://crates.io/category_slugs
+keywords = [
+    "cloud",
+    "orchestration",
+    "wasm",
+    "tosca",
+    "khutulun",
+]
+
+[lib]
+name = "puccini"
+crate-type = ["cdylib"]
+
+[dependencies]
+compris = { version = "=0.0.11", default-features = false, features = ["pyo3"] }
+floria = { version = "=0.0.5", features = ["pyo3"] }
+kutil = { version = "=0.0.5", features = ["pyo3"] }
+puccini-csar = { version = "=0.0.4", features = ["pyo3", "all-formats"] }
+puccini-tosca = { version = "=0.0.4", default-features = false, features = ["pyo3", "csar"] }
+pyo3 = "0.28.1"
+read-url = { version = "=0.0.10", features = ["pyo3"] }

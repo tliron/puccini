@@ -5,7 +5,7 @@ use std::io;
 //
 
 /// Common reference type for [ReadTracker].
-pub type ReadTrackerRef = Box<dyn ReadTracker>;
+pub type ReadTrackerRef = Box<dyn ReadTracker + Send + Sync>;
 
 /// Read tracker.
 ///
@@ -19,6 +19,23 @@ pub trait ReadTracker {
 
     /// Track.
     fn track<'read>(&self, reader: &'read mut dyn io::Read) -> Box<dyn io::Read + 'read>;
+}
+
+//
+// DummyReadTracker
+//
+
+/// Dummy read tracker.
+pub struct DummyReadTracker;
+
+impl ReadTracker for DummyReadTracker {
+    fn initialize(&self, _size: u64) {}
+
+    fn finish(&self, _completed: bool) {}
+
+    fn track<'read>(&self, reader: &'read mut dyn io::Read) -> Box<dyn io::Read + 'read> {
+        Box::new(reader)
+    }
 }
 
 //

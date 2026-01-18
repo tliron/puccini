@@ -1,3 +1,0 @@
-# Source this!
-export RUST_BACKTRACE=full
-#export WASMTIME_BACKTRACE_DETAILS=1

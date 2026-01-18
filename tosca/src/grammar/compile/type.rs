@@ -1,51 +1,52 @@
 use super::{
-    super::{dialect::*, entity::*, errors::*, name::*, source::*},
+    super::{dialect::*, entity::*, name::*, source::*},
     context::*,
     metadata::*,
     name::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, problemo::*};
 
 //
 // TypeEntityCompiler
 //
 
 /// Type entity compiler.
-pub struct TypeEntityCompiler<'own, 'context, DialectT> {
+pub struct TypeEntityCompiler<'context, 'compile, DialectT> {
     /// Dialect.
-    pub dialect: &'own DialectT,
+    pub dialect: &'context DialectT,
 
     /// Dialect ID.
     pub dialect_id: DialectID,
 
     /// Context.
-    pub context: &'own mut CompilationContext<'context>,
+    pub context: &'context mut CompilationContext<'compile>,
 }
 
-impl<'own, 'context, DialectT> TypeEntityCompiler<'own, 'context, DialectT> {
+impl<'context, 'compile, DialectT> TypeEntityCompiler<'context, 'compile, DialectT> {
     /// Constructor.
     pub fn new(
-        dialect: &'own DialectT,
+        dialect: &'context DialectT,
         dialect_id: DialectID,
-        context: &'own mut CompilationContext<'context>,
+        context: &'context mut CompilationContext<'compile>,
     ) -> Self {
         Self { dialect, dialect_id, context }
     }
 
     /// Compile type entity to Floria.
-    pub fn compile<EntityTypeT>(
+    pub fn compile<EntityTypeT, AnnotatedT>(
         &mut self,
         entity_kind: EntityKind,
         floria_prefix: &str,
         full_name: &FullName,
         source_id: &SourceID,
-    ) -> Result<(), ToscaError<WithAnnotations>>
+    ) -> Result<(), Problem>
     where
-        EntityTypeT: 'static + TypeEntity<WithAnnotations>,
+        EntityTypeT: 'static + TypeEntity<AnnotatedT>,
+        AnnotatedT: Annotated + Default + Clone,
         DialectT: Dialect,
     {
-        let entity_kind_name = self.dialect.entity_kinds().represent(entity_kind);
+        let entity_kind_name = self.dialect.implementation().entity_kinds.represent(entity_kind);
 
         tracing::debug!(
             source = self.context.source_id.to_string(),
@@ -54,9 +55,9 @@ impl<'own, 'context, DialectT> TypeEntityCompiler<'own, 'context, DialectT> {
             "compiling"
         );
 
-        let (entity, _source) = must_unwrap_give!(
-            self.context.catalog.entity::<EntityTypeT, _>(entity_kind, &full_name, self.context.source_id),
-            self.context.errors
+        let (entity, _source) = give_unwrap!(
+            self.context.catalog.entity::<EntityTypeT>(entity_kind, &full_name, self.context.source_id),
+            &mut self.context.problems
         );
         let descriptor = entity.descriptor();
 
@@ -72,7 +73,7 @@ impl<'own, 'context, DialectT> TypeEntityCompiler<'own, 'context, DialectT> {
             floria_type.metadata.set_tosca_internal(true);
         }
 
-        unwrap_or_give!(self.context.store.add_class(floria_type), self.context.errors);
+        give_unwrap!(self.context.store.add_class(floria_type), &mut self.context.problems);
 
         Ok(())
     }

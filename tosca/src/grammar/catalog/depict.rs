@@ -1,16 +1,16 @@
 use super::{super::entity::*, catalog::*};
 
-use {compris::annotate::*, depiction::*, kutil::std::iter::*, std::io};
+use {depiction::*, kutil::std::iter::*, std::io};
 
 impl Catalog {
     /// To namespaces depiction.
-    pub fn namespaces_depiction<'own>(&'own self) -> NamespacesDepiction<'own> {
-        NamespacesDepiction::new(self)
+    pub fn namespaces_depiction<'this>(&'this self, skip_internal: bool) -> NamespacesDepiction<'this> {
+        NamespacesDepiction::new(self, skip_internal)
     }
 
     /// To entities depiction.
-    pub fn entities_depiction<'own>(&'own self) -> EntitiesDepiction<'own> {
-        EntitiesDepiction::new(self)
+    pub fn entities_depiction<'this>(&'this self, skip_internal: bool) -> EntitiesDepiction<'this> {
+        EntitiesDepiction::new(self, skip_internal)
     }
 }
 
@@ -19,30 +19,34 @@ impl Catalog {
 //
 
 /// Namespaces depiction.
-pub struct NamespacesDepiction<'own> {
-    /// Catalog.
-    pub catalog: &'own Catalog,
+pub struct NamespacesDepiction<'inner> {
+    /// Inner catalog.
+    pub inner: &'inner Catalog,
+
+    /// Whether to skip internal sources.
+    pub skip_internal: bool,
 }
 
-impl<'own> NamespacesDepiction<'own> {
+impl<'inner> NamespacesDepiction<'inner> {
     /// Constructor.
-    pub fn new(catalog: &'own Catalog) -> Self {
-        Self { catalog }
+    pub fn new(inner: &'inner Catalog, skip_internal: bool) -> Self {
+        Self { inner, skip_internal }
     }
 }
 
-impl<'own> Depict for NamespacesDepiction<'own> {
+impl<'inner> Depict for NamespacesDepiction<'inner> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
     {
         let default_entity_kinds = EntityKinds::default();
 
-        for ((source_id, source), first) in IterateWithFirst::new(IterateByKeyOrder::new(&self.catalog.sources)) {
-            let entity_kinds = self
-                .catalog
-                .dialect_entity_kinds::<WithoutAnnotations>(&source.dialect_id)
-                .unwrap_or(&default_entity_kinds);
+        for ((source_id, source), first) in IterateWithFirst::new(IterateByKeyOrder::new(&self.inner.sources)) {
+            if self.skip_internal && source_id.is_internal() {
+                continue;
+            }
+
+            let entity_kinds = self.inner.dialect_entity_kinds(&source.dialect_id).unwrap_or(&default_entity_kinds);
 
             if !first {
                 writeln!(writer)?;
@@ -62,30 +66,34 @@ impl<'own> Depict for NamespacesDepiction<'own> {
 //
 
 /// Entities depiction.
-pub struct EntitiesDepiction<'own> {
-    /// Catalog.
-    pub catalog: &'own Catalog,
+pub struct EntitiesDepiction<'inner> {
+    /// Inner catalog.
+    pub inner: &'inner Catalog,
+
+    /// Whether to skip internal sources.
+    pub skip_internal: bool,
 }
 
-impl<'own> EntitiesDepiction<'own> {
+impl<'inner> EntitiesDepiction<'inner> {
     /// Constructor.
-    pub fn new(catalog: &'own Catalog) -> Self {
-        Self { catalog }
+    pub fn new(inner: &'inner Catalog, skip_internal: bool) -> Self {
+        Self { inner, skip_internal }
     }
 }
 
-impl<'own> Depict for EntitiesDepiction<'own> {
+impl<'inner> Depict for EntitiesDepiction<'inner> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
     {
         let default_entity_kinds = EntityKinds::default();
 
-        for ((source_id, source), first) in IterateWithFirst::new(IterateByKeyOrder::new(&self.catalog.sources)) {
-            let entity_kinds = self
-                .catalog
-                .dialect_entity_kinds::<WithoutAnnotations>(&source.dialect_id)
-                .unwrap_or(&default_entity_kinds);
+        for ((source_id, source), first) in IterateWithFirst::new(IterateByKeyOrder::new(&self.inner.sources)) {
+            if self.skip_internal && source_id.is_internal() {
+                continue;
+            }
+
+            let entity_kinds = self.inner.dialect_entity_kinds(&source.dialect_id).unwrap_or(&default_entity_kinds);
 
             if !first {
                 writeln!(writer)?;

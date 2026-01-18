@@ -3,6 +3,8 @@ use super::{
     catalog::*,
 };
 
+use problemo::*;
+
 impl Catalog {
     /// Add a source.
     pub fn add_source(&mut self, source: Source) {
@@ -20,29 +22,17 @@ impl Catalog {
     }
 
     /// Get a source.
-    pub fn source<AnnotatedT>(&self, source_id: &SourceID) -> Result<&Source, SourceNotLoadedError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        self.sources.get(source_id).ok_or_else(|| SourceNotLoadedError::new(source_id.clone()))
+    pub fn source(&self, source_id: &SourceID) -> Result<&Source, Problem> {
+        self.sources.get(source_id).ok_or_else(|| SourceNotLoadedError::as_problem(source_id.clone()))
     }
 
     /// Get a source.
-    pub fn source_mut<AnnotatedT>(
-        &mut self,
-        source_id: &SourceID,
-    ) -> Result<&mut Source, SourceNotLoadedError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        self.sources.get_mut(source_id).ok_or_else(|| SourceNotLoadedError::new(source_id.clone()))
+    pub fn source_mut(&mut self, source_id: &SourceID) -> Result<&mut Source, Problem> {
+        self.sources.get_mut(source_id).ok_or_else(|| SourceNotLoadedError::as_problem(source_id.clone()))
     }
 
     /// Supported entity kinds.
-    pub fn source_entity_kinds<AnnotatedT>(&self, source_id: &SourceID) -> Result<&EntityKinds, ToscaError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        Ok(self.dialect_entity_kinds(&self.source(source_id)?.dialect_id)?)
+    pub fn source_entity_kinds(&self, source_id: &SourceID) -> Result<&EntityKinds, Problem> {
+        self.dialect_entity_kinds(&self.source(source_id)?.dialect_id)
     }
 }

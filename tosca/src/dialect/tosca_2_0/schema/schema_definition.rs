@@ -1,6 +1,6 @@
 use super::super::{super::super::grammar::*, data::*, dialect::*, entities::*};
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> SchemaDefinition<AnnotatedT>
 where
@@ -11,7 +11,7 @@ where
         &self,
         schema: &mut Schema<AnnotatedT>,
         context: &mut CompletionContext,
-    ) -> Result<Option<SchemaReference>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<SchemaReference>, Problem>
     where
         AnnotatedT: 'static,
     {

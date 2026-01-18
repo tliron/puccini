@@ -3,8 +3,9 @@ use super::super::source::*;
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -12,38 +13,29 @@ use {
 //
 
 /// Source not loaded error.
-#[derive(Debug, Error)]
-pub struct SourceNotLoadedError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct SourceNotLoadedError {
     /// Source ID.
     pub source_id: SourceID,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(SourceNotLoadedError);
-
-impl<AnnotatedT> SourceNotLoadedError<AnnotatedT> {
+impl SourceNotLoadedError {
     /// Constructor.
-    pub fn new(source_id: SourceID) -> Self
-    where
-        AnnotatedT: Default,
-    {
-        Self { source_id, annotated: Default::default() }
+    pub fn new(source_id: SourceID) -> Self {
+        Self { source_id }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem(source_id: SourceID) -> Problem {
+        Self::new(source_id)
+            .into_problem()
+            .with(AnnotatedCauseEquality::new::<Self>())
+            .with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<SourceNotLoadedError<NewAnnotatedT>> for SourceNotLoadedError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> SourceNotLoadedError<NewAnnotatedT> {
-        SourceNotLoadedError::new(self.source_id).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for SourceNotLoadedError<AnnotatedT> {
+impl Depict for SourceNotLoadedError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -52,8 +44,8 @@ impl<AnnotatedT> Depict for SourceNotLoadedError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for SourceNotLoadedError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for SourceNotLoadedError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.source_id, formatter)
     }
 }

@@ -1,6 +1,6 @@
 use super::super::{
     super::{compression_level::*, tracker::*},
-    archive::*,
+    writer::*,
 };
 
 use {
@@ -22,14 +22,14 @@ use {
 // timestamps but we cannot control how other systems interpret them.
 
 /// Create a ZIP [Archive].
-pub fn new_zip_archive<'own, WriteT>(writer: WriteT) -> ArchiveRef<'own>
+pub fn new_zip_archive<'writer, WriteT>(writer: WriteT) -> ArchiveWriterRef<'writer>
 where
-    WriteT: 'own + io::Seek + io::Write,
+    WriteT: 'writer + io::Seek + io::Write + Send,
 {
     Box::new(ZipWriter::new(writer))
 }
 
-impl<WriteT> Archive for ZipWriter<WriteT>
+impl<WriteT> ArchiveWriter for ZipWriter<WriteT>
 where
     WriteT: io::Seek + io::Write,
 {
@@ -64,10 +64,10 @@ where
 
 // Utils
 
-fn add_from_reader<'own, ReadT, WriteT>(
+fn add_from_reader<ReadT, WriteT>(
     zip_writer: &mut ZipWriter<WriteT>,
     name: &Path,
-    options: FullFileOptions<'own>,
+    options: FullFileOptions,
     reader: &mut ReadT,
     read_tracker: Option<&ReadTrackerRef>,
 ) -> io::Result<()>
@@ -90,11 +90,11 @@ where
     Ok(())
 }
 
-fn zip_options<'own>(
+fn zip_options<'options>(
     permissions: u32,
     modified: SystemTime,
     compression_level: Option<CompressionLevel>,
-) -> io::Result<FullFileOptions<'own>> {
+) -> io::Result<FullFileOptions<'options>> {
     let modified = to_zip_datetime(modified)?;
 
     let compression_level = compression_level.map(|compression_level| compression_level.to_zip_deflate());

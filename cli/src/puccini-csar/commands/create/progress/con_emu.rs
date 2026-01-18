@@ -3,7 +3,7 @@ use super::super::command::*;
 use {
     kutil::{cli::con_emu::*, std::exit::*},
     puccini_csar::creator::*,
-    std::{io, rc::*},
+    std::{io, sync::*},
 };
 
 impl Create {
@@ -19,7 +19,7 @@ impl Create {
 // ConEmuProgressStateTracker
 //
 
-type ConEmuProgressStateTrackerRef = Rc<ConEmuProgressStateTracker>;
+type ConEmuProgressStateTrackerRef = Arc<ConEmuProgressStateTracker>;
 
 // We need a wrapper because of the orphan rule
 #[derive(Default)]

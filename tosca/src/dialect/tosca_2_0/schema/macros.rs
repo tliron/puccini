@@ -38,9 +38,9 @@ macro_rules! complete_complex_schema_default_and_validation {
             (Some(default), None) => $value_schema.default = Some(default.clone()),
             (None, Some(default)) => $value_schema.default = Some(default.to_namespace($details_namespace)),
             (Some(default), Some(_)) => {
-                use ::kutil::std::error::*;
-                $context.errors.give(
-                    $crate::grammar::OverrideProhibitedError::new("default".into()).with_annotations_from(default),
+                use {::compris::annotate::*, ::problemo::*};
+                $context.problems.give(
+                    $crate::grammar::OverrideProhibitedError::as_problem("default").with_annotations_from(default),
                 )?;
                 return Ok(None);
             }
@@ -51,9 +51,9 @@ macro_rules! complete_complex_schema_default_and_validation {
             (Some(validation), None) => $value_schema.validation = Some(validation.clone()),
             (None, Some(validation)) => $value_schema.validation = Some(validation.to_namespace($details_namespace)),
             (Some(validation), Some(_)) => {
-                use ::kutil::std::error::*;
-                $context.errors.give(
-                    $crate::grammar::OverrideProhibitedError::new("validation".into())
+                use {::compris::annotate::*, ::problemo::*};
+                $context.problems.give(
+                    $crate::grammar::OverrideProhibitedError::as_problem("validation")
                         .with_annotations_from(validation),
                 )?;
                 return Ok(None);
@@ -91,9 +91,9 @@ macro_rules! complete_entry_schema {
             }
 
             (Some(schema_definition), Some(_)) => {
-                use ::kutil::std::error::*;
-                $context.errors.give(
-                    $crate::grammar::OverrideProhibitedError::new("entry_schema".into())
+                use {::compris::annotate::*, ::problemo::*};
+                $context.problems.give(
+                    $crate::grammar::OverrideProhibitedError::as_problem("entry_schema")
                         .with_annotations_from(schema_definition),
                 )?;
                 return Ok(None);
@@ -127,14 +127,10 @@ macro_rules! complete_key_schema {
                             .key_schema()
                             .and_then(|schema_definition| schema_definition.field_annotations("type_name").cloned());
 
-                        use ::kutil::std::error::*;
-                        $context.errors.give(
-                            $crate::grammar::WrongTypeError::new(
-                                "key_schema".into(),
-                                data_kind.to_string(),
-                                vec!["string".into()],
-                            )
-                            .with_annotations_option(annotations),
+                        use {::compris::annotate::*, ::problemo::*};
+                        $context.problems.give(
+                            $crate::grammar::WrongTypeError::as_problem("key_schema", data_kind, vec!["string".into()])
+                                .with_annotations_option(annotations),
                         )?;
                         return Ok(None);
                     }
@@ -156,14 +152,10 @@ macro_rules! complete_key_schema {
                             .key_schema()
                             .and_then(|schema_definition| schema_definition.field_annotations("type_name").cloned());
 
-                        use ::kutil::std::error::*;
-                        $context.errors.give(
-                            $crate::grammar::WrongTypeError::new(
-                                "key_schema".into(),
-                                data_kind.to_string(),
-                                vec!["string".into()],
-                            )
-                            .with_annotations_option(annotations),
+                        use {::compris::annotate::*, ::problemo::*};
+                        $context.problems.give(
+                            $crate::grammar::WrongTypeError::as_problem("key_schema", data_kind, vec!["string".into()])
+                                .with_annotations_option(annotations),
                         )?;
                         return Ok(None);
                     }
@@ -173,9 +165,9 @@ macro_rules! complete_key_schema {
             }
 
             (Some(schema_definition), Some(_)) => {
-                use ::kutil::std::error::*;
-                $context.errors.give(
-                    $crate::grammar::OverrideProhibitedError::new("key_schema".into())
+                use {::compris::annotate::*, ::problemo::*};
+                $context.problems.give(
+                    $crate::grammar::OverrideProhibitedError::as_problem("key_schema")
                         .with_annotations_from(schema_definition),
                 )?;
                 return Ok(None);

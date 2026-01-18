@@ -1,0 +1,47 @@
+use {
+    depiction::*,
+    derive_more::*,
+    problemo::*,
+    std::{fmt, io},
+};
+
+//
+// RequiredKeynameError
+//
+
+/// Required keyname error.
+#[derive(Debug, Error)]
+pub struct RequiredKeynameError {
+    /// Keyname.
+    pub keyname: String,
+}
+
+impl RequiredKeynameError {
+    /// Constructor.
+    pub fn new(keyname: String) -> Self {
+        Self { keyname }
+    }
+
+    /// Constructor.
+    pub fn as_problem(keyname: String) -> Problem {
+        problem_with_depict_error!(Self::new(keyname))
+    }
+}
+
+impl_depict_error_function!(RequiredKeynameError);
+
+impl fmt::Display for RequiredKeynameError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "{}", self.keyname)
+    }
+}
+
+impl Depict for RequiredKeynameError {
+    fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
+    where
+        WriteT: io::Write,
+    {
+        context.separate(writer)?;
+        write!(writer, "missing required keyname: {}", context.theme.meta(&self.keyname))
+    }
+}

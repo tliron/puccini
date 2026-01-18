@@ -5,7 +5,7 @@ use {
     std::iter::*,
 };
 
-impl<'own> ToscaPathParser<'own> {
+impl<'context> ToscaPathParser<'context> {
     /// Next expression.
     pub fn next_expression(&mut self, property: &Property) -> Result<Expression, String> {
         let Some(property_value) = property.value() else {

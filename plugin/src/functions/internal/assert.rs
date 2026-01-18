@@ -22,15 +22,15 @@ pub fn assert(arguments: Vec<Expression>, call_site: CallSite) -> DispatchResult
 }
 
 /// Assert reason.
-static ASSERT_REASON: LazyLock<Mutex<Option<String>>> = LazyLock::new(|| Default::default());
+static ASSERT_REASON: LazyLock<RwLock<Option<String>>> = LazyLock::new(|| Default::default());
 
 /// Get assert reason.
 pub fn get_assert_reason() -> Result<Option<String>, String> {
-    Ok(ASSERT_REASON.lock().map_escape_depiction_error()?.clone())
+    Ok(ASSERT_REASON.read().map_escape_depiction_error()?.clone())
 }
 
 /// Set assert reason.
 pub fn set_assert_reason(value: Option<String>) -> Result<(), String> {
-    *ASSERT_REASON.lock().map_escape_depiction_error()? = value;
+    *ASSERT_REASON.write().map_escape_depiction_error()? = value;
     Ok(())
 }

@@ -9,7 +9,7 @@ dsl_definitions:
 
   # This area is allowed but otherwise ignored by TOSCA
   # Its intended use is as a scratch space for YAML anchors
-  # See: http://yaml.org/spec/1.2/spec.html#id2785586
+  # See: https://yaml.org/spec/1.2.2/#71-alias-nodes
 
   # (Note that the key name doesn't matter here
   # It's just a placeholder)
@@ -18,16 +18,18 @@ dsl_definitions:
       protocol: udp
       port: 9100
 
+imports:
+
+- url: cloudy/cloudy.yaml
+  namespace: cloudy
+
 service_template:
 
   node_templates:
 
     web:
-      type: tosca:WebServer
+      type: cloudy:Server
       capabilities:
         # Here we'll use the anchor
         data_endpoint: *PORT
         admin_endpoint: *PORT
-
-    host:
-      type: tosca:Compute

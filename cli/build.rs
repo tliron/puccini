@@ -146,6 +146,6 @@ fn precompile_wasm(wasm: &[u8]) -> Result<Vec<u8>, String> {
     let debug = false;
 
     let environment =
-        floria::plugins::PluginEnvironment::new(debug).map_err(|error| format!("wasmtime engine: {}", error))?;
+        floria::plugins::PluginEnvironment::new(debug, false).map_err(|error| format!("wasmtime engine: {}", error))?;
     environment.engine.precompile_component(wasm).map_err(|error| format!("wasmtime precompile: {}", error))
 }

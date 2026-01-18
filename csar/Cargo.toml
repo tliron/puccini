@@ -4,7 +4,7 @@ edition = "2024"
 name = "puccini-csar"
 description = "TOSCA CSAR parser and packager"
 version = "0.0.4"
-rust-version = "1.92"
+rust-version = "1.93"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -23,35 +23,46 @@ keywords = [
 ]
 
 [dev-dependencies]
-anstream = "0.6.21"
+anstream = "1.0.0"
 
 [dependencies]
-chrono = { optional = true, version = "0.4.42" }
+chrono = { optional = true, version = "0.4.43" }
 compris = "=0.0.11"
 depiction = "=0.0.1"
+derive_more = { version = "2.1.1", features = ["display", "error"] }
 duplicate = "2.0.1"
-flate2 = { optional = true, version = "1.1.5" }
-indexmap = "2.12.1"
+flate2 = { optional = true, version = "1.1.9" }
+indexmap = "2.13.0"
 kutil = { version = "=0.0.5", features = ["std"] }
+problemo = "=0.0.11"
+pyo3 = { optional = true, version = "0.28.1" }
 read-url = { optional = true, version = "=0.0.10", features = ["blocking"] }
-rootcause = "0.11.0"
-thiserror = "2.0.17"
-self_cell = { optional = true, version = "1.2.1" }
+self_cell = { optional = true, version = "1.2.2" }
 tar = { optional = true, version = "0.4.44" }
 tracing = "0.1.44"
 utf8-chars = "3.0.6"
 walkdir = "2.5.0"
-zip = { optional = true, version = "7.0.0", default-features = false, features = ["deflate-flate2", "chrono"] }
+zip = { optional = true, version = "8.0.0", default-features = false, features = ["deflate-flate2", "chrono"] }
 zstd = { optional = true, version = "0.13.3" }
+# zeekstd = { optional = true, version = "0.6.2" }
 
 [features]
 creator = ["dep:self_cell"]
+
+streaming-formats = ["tarball", "gzip", "zstandard"]
+all-formats = ["streaming-formats", "zip"]
+
 tarball = ["dep:tar"]
 gzip = ["dep:flate2"]
 zip = ["dep:zip", "dep:chrono"]
 zstandard = ["dep:zstd"]
 
 url = ["dep:read-url"]
+
+pyo3 = [
+    "creator",
+    "dep:pyo3",
+]
 
 [[example]]
 name = "csar_meta"

@@ -2,16 +2,28 @@ use super::{super::entity::*, source::*};
 
 use {depiction::*, kutil::std::iter::*, std::io};
 
-const PREFIX: char = '@';
-
 impl Source {
     /// To namespaces depiction.
-    pub fn namespaces_depiction<'own>(&'own self, entity_kinds: &'own EntityKinds) -> NamespacesDepiction<'own> {
+    pub fn namespaces_depiction<'this, 'kinds, 'context>(
+        &'this self,
+        entity_kinds: &'kinds EntityKinds,
+    ) -> NamespacesDepiction<'context>
+    where
+        'this: 'context,
+        'kinds: 'context,
+    {
         NamespacesDepiction::new(self, entity_kinds)
     }
 
     /// To entities depiction.
-    pub fn entities_depiction<'own>(&'own self, entity_kinds: &'own EntityKinds) -> EntitiesDepiction<'own> {
+    pub fn entities_depiction<'this, 'kinds, 'context>(
+        &'this self,
+        entity_kinds: &'kinds EntityKinds,
+    ) -> EntitiesDepiction<'context>
+    where
+        'this: 'context,
+        'kinds: 'context,
+    {
         EntitiesDepiction::new(self, entity_kinds)
     }
 }
@@ -21,22 +33,22 @@ impl Source {
 //
 
 /// Namespaces depiction.
-pub struct NamespacesDepiction<'own> {
+pub struct NamespacesDepiction<'context> {
     /// Source.
-    pub source: &'own Source,
+    pub source: &'context Source,
 
     /// Entity kinds.
-    pub entity_kinds: &'own EntityKinds,
+    pub entity_kinds: &'context EntityKinds,
 }
 
-impl<'own> NamespacesDepiction<'own> {
+impl<'context> NamespacesDepiction<'context> {
     /// Constructor.
-    pub fn new(source: &'own Source, entity_kinds: &'own EntityKinds) -> Self {
+    pub fn new(source: &'context Source, entity_kinds: &'context EntityKinds) -> Self {
         Self { source, entity_kinds }
     }
 }
 
-impl<'own> Depict for NamespacesDepiction<'own> {
+impl<'context> Depict for NamespacesDepiction<'context> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -49,13 +61,12 @@ impl<'own> Depict for NamespacesDepiction<'own> {
             let context = context.child().increase_indentation_branch(last);
             for ((full_name, source_id), last) in IterateWithLast::new(names) {
                 context.indent_into_branch(writer, last)?;
-                write!(
-                    writer,
-                    "{} {}{}",
-                    context.theme.name(full_name),
-                    context.theme.delimiter(PREFIX),
-                    context.theme.meta(source_id)
-                )?;
+
+                if !full_name.is_empty() {
+                    write!(writer, "{} ", context.theme.name(full_name))?;
+                }
+
+                write!(writer, "{}{}", context.theme.delimiter(DEPICT_LOCATION_PREFIX), context.theme.meta(source_id))?;
             }
         }
 
@@ -68,22 +79,22 @@ impl<'own> Depict for NamespacesDepiction<'own> {
 //
 
 /// Entities depiction.
-pub struct EntitiesDepiction<'own> {
+pub struct EntitiesDepiction<'context> {
     /// Source.
-    pub source: &'own Source,
+    pub source: &'context Source,
 
     /// Entity kinds.
-    pub entity_kinds: &'own EntityKinds,
+    pub entity_kinds: &'context EntityKinds,
 }
 
-impl<'own> EntitiesDepiction<'own> {
+impl<'context> EntitiesDepiction<'context> {
     /// Constructor.
-    pub fn new(source: &'own Source, entity_kinds: &'own EntityKinds) -> Self {
+    pub fn new(source: &'context Source, entity_kinds: &'context EntityKinds) -> Self {
         Self { source, entity_kinds }
     }
 }
 
-impl<'own> Depict for EntitiesDepiction<'own> {
+impl<'context> Depict for EntitiesDepiction<'context> {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -99,7 +110,7 @@ impl<'own> Depict for EntitiesDepiction<'own> {
 
                 context.indent_into_branch(writer, last)?;
                 context.theme.write_name(writer, name)?;
-                entity.dyn_depict(Box::new(writer), &context.child().increase_indentation_branch(last))?;
+                entity.depict(writer, &context.child().increase_indentation_branch(last))?;
             }
         }
 

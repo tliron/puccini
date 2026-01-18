@@ -1,21 +1,21 @@
-use super::super::{compression_level::*, tracker::*};
+use super::super::super::{compression_level::*, tracker::*};
 
 use std::{io, path::*};
 
 /// Default archive entry permissions.
 pub const DEFAULT_ARCHIVE_ENTRY_PERMISSIONS: u32 = 0o004;
 
-//
-// Archive
-//
-
 /// Common reference type for [Archive].
-pub type ArchiveRef<'own> = Box<dyn Archive + 'own>;
+pub type ArchiveWriterRef<'archive> = Box<dyn ArchiveWriter + Send + 'archive>;
 
-/// Archive.
+//
+// ArchiveWriter
+//
+
+/// ArchiveWriter.
 ///
 /// This trait is `dyn`-compatible.
-pub trait Archive {
+pub trait ArchiveWriter {
     /// Create a new archive entry from a reader.
     fn add_from_reader(
         &mut self,
@@ -42,8 +42,8 @@ pub trait Archive {
 
 // We can't add these functions directly to the Archive trait because it must be `dyn`-compatible.
 
-/// [Archive] utilities.
-pub trait ArchiveUtilities {
+/// [ArchiveWriter] utilities.
+pub trait ArchiveWriterUtilities {
     /// Create a new archive entry from bytes.
     fn add_bytes<PathT>(
         &mut self,
@@ -79,9 +79,9 @@ pub trait ArchiveUtilities {
         SourcePathT: AsRef<Path>;
 }
 
-impl<ArchiveT> ArchiveUtilities for ArchiveT
+impl<ArchiveT> ArchiveWriterUtilities for ArchiveT
 where
-    ArchiveT: Archive + ?Sized,
+    ArchiveT: ArchiveWriter + ?Sized,
 {
     fn add_bytes<PathT>(
         &mut self,

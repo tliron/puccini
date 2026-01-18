@@ -3,7 +3,11 @@ use super::{
     format::*,
 };
 
-use {kutil::std::error::*, read_url::*, std::io};
+use {
+    problemo::{common::*, *},
+    read_url::*,
+    std::io,
+};
 
 //
 // CsarUrl
@@ -23,8 +27,27 @@ pub struct CsarUrl {
 
 impl CsarUrl {
     /// Constructor.
-    pub fn new(url_context: UrlContextRef, url: String, format: Option<Format>) -> CsarUrl {
+    pub fn new(url_context: UrlContextRef, url: String, format: Option<Format>) -> Self {
         Self { url_context, url, format }
+    }
+
+    /// Get entry definitions URL if CSAR.
+    pub fn to_entry_definitions_url<ProblemReceiverT>(
+        url: String,
+        url_context: UrlContextRef,
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<UrlRef>, Problem>
+    where
+        ProblemReceiverT: ProblemReceiver,
+    {
+        Ok(match Format::from_url(&url) {
+            Some(format) => {
+                let csar_url = CsarUrl::new(url_context.clone(), url, Some(format));
+                Some(csar_url.entry_definitions_url(problems)?)
+            }
+
+            None => None,
+        })
     }
 
     /// Format.
@@ -33,36 +56,39 @@ impl CsarUrl {
     }
 
     /// Get TOSCA meta.
-    pub fn tosca_meta<ErrorReceiverT>(
+    pub fn tosca_meta<ProblemReceiverT>(
         &self,
         validate_location: bool,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<ToscaMeta>, CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<ToscaMeta>, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        Ok(match self.tosca_meta_url(validate_location, errors)? {
+        Ok(match self.tosca_meta_url(validate_location, problems)? {
             Some(tosca_meta_url) => {
-                let reader = must_unwrap_give!(tosca_meta_url.open(), errors);
+                let reader = give_unwrap!(tosca_meta_url.open(), problems);
                 let mut reader = io::BufReader::new(reader);
-                Some(ToscaMeta::read(&mut reader, errors)?)
+                Some(ToscaMeta::read(&mut reader, problems)?)
             }
 
             None => {
-                errors.give(CsarError::Invalid(format!("archive does not have \"TOSCA.meta\": {}", self.url)))?;
+                problems.give(
+                    InvalidError::as_problem(format!("archive does not have \"TOSCA.meta\": {}", self.url))
+                        .via(CsarError),
+                )?;
                 None
             }
         })
     }
 
     /// Get TOSCA meta URL.
-    pub fn tosca_meta_url<ErrorReceiverT>(
+    pub fn tosca_meta_url<ProblemReceiverT>(
         &self,
         validate_location: bool,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<Option<UrlRef>, CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<Option<UrlRef>, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let mut tosca_meta_url = None;
 
@@ -70,11 +96,13 @@ impl CsarUrl {
         for location in tosca_meta_locations() {
             let url = format.with_scheme(&self.url, &location.display().to_string());
 
-            match self.url_context.url(&url) {
+            match self.url_context.url_or_file_path(&url) {
                 Ok(url) => {
                     if validate_location {
                         if tosca_meta_url.is_some() {
-                            errors.give(CsarError::Invalid("multiple \"TOSCA.meta\" files in CSAR".into()))?;
+                            problems.give(
+                                InvalidError::as_problem("multiple \"TOSCA.meta\" files in CSAR").via(CsarError),
+                            )?;
                         }
 
                         tosca_meta_url = Some(url);
@@ -84,14 +112,10 @@ impl CsarUrl {
                     }
                 }
 
-                Err(UrlError::IO(error)) => {
-                    if error.kind() != io::ErrorKind::NotFound {
-                        errors.give(UrlError::IO(error))?;
+                Err(problem) => {
+                    if !problem.has_error_type::<UnreachableError>() {
+                        problems.give(problem.via(CsarError))?;
                     }
-                }
-
-                Err(error) => {
-                    errors.give(error)?;
                 }
             }
         }
@@ -100,21 +124,21 @@ impl CsarUrl {
     }
 
     /// Get entry definitions URL.
-    pub fn entry_definitions_url<ErrorReceiverT>(&self, errors: &mut ErrorReceiverT) -> Result<UrlRef, CsarError>
+    pub fn entry_definitions_url<ProblemReceiverT>(&self, problems: &mut ProblemReceiverT) -> Result<UrlRef, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        let Some(meta) = self.tosca_meta(false, errors)? else {
-            return Err(CsarError::Missing("TOSCA.meta".into()));
+        let Some(meta) = self.tosca_meta(false, problems)? else {
+            return Err(MissingError::as_problem("TOSCA.meta").via(CsarError));
         };
 
         match &meta.entry_definitions {
             Some(entry_definitions) => {
                 let url = self.format().with_scheme(&self.url, entry_definitions);
-                Ok(self.url_context.url(&url)?)
+                Ok(self.url_context.url_or_file_path(&url)?)
             }
 
-            None => Err(CsarError::Missing("entry_definitions".into())),
+            None => Err(MissingError::as_problem("entry_definitions").via(CsarError)),
         }
     }
 }

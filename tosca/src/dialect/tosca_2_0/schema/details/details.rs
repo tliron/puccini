@@ -3,7 +3,7 @@ use super::super::{
     macros::*,
 };
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 //
 // SchemaDetails
@@ -73,7 +73,7 @@ where
         details: &SchemaDetailsT,
         details_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<Option<SchemaReference>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<SchemaReference>, Problem>
     where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
@@ -94,7 +94,7 @@ where
         details: &SchemaDetailsT,
         details_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<Option<SchemaReference>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<SchemaReference>, Problem>
     where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,

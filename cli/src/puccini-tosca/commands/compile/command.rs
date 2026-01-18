@@ -1,6 +1,6 @@
 use super::{debug::*, format::*};
 
-use {clap::*, std::path::*};
+use {clap::*, problemo::*, std::path::*};
 
 //
 // Compile
@@ -11,9 +11,18 @@ use {clap::*, std::path::*};
 pub struct Compile {
     /// TOSCA or CSAR;
     /// can be a file path or a URL;
-    /// when absent will read from stdin
+    /// when absent will read TOSCA YAML from stdin
     #[arg(verbatim_doc_comment)]
     pub input_file_or_url: Option<String>,
+
+    /// URL to Floria instance;
+    /// when empty will use an in-memory instance
+    #[arg(long = "floria", short = 'f', verbatim_doc_comment)]
+    pub floria: Option<String>,
+
+    /// compile into Floria directory
+    #[arg(long = "directory")]
+    pub directory: Option<String>,
 
     /// output file path;
     /// when absent will write to stdout
@@ -22,11 +31,11 @@ pub struct Compile {
 
     /// output format;
     /// when absent will try to use the output file extension
-    #[arg(long = "format", short = 'f', verbatim_doc_comment, value_enum)]
+    #[arg(long = "format", verbatim_doc_comment, value_enum)]
     pub output_format: Option<OutputFormat>,
 
     /// plain output;
-    /// avoid whitespace and colors
+    /// avoid colors and whitespace
     #[arg(long = "plain", short = 'p', verbatim_doc_comment)]
     pub output_plain: bool,
 
@@ -34,10 +43,6 @@ pub struct Compile {
     /// for "cbor" and "messagepack" formats only
     #[arg(long = "base64", verbatim_doc_comment)]
     pub output_base64: bool,
-
-    /// compile into Floria directory
-    #[arg(long = "directory")]
-    pub directory: Option<String>,
 
     /// set the TOSCA service inputs as a YAML or JSON map;
     /// when used multiple times the maps will be merged;
@@ -58,12 +63,12 @@ pub struct Compile {
     #[arg(long = "output", verbatim_doc_comment)]
     pub outputs: Vec<String>,
 
-    /// simulate instantiation into Floria directory;
-    /// only if there are no compilation errors
-    #[arg(long = "instantiate", short = 'i', verbatim_doc_comment)]
+    /// instantiate the compiled Floria template
+    #[arg(long = "instantiate", short = 'i')]
     pub instantiate: bool,
 
     /// propagate an event on the Floria instance;
+    /// when used multiple times the events will be propagates in sequence;
     /// requires `--instantiate`
     #[arg(long = "event", verbatim_doc_comment)]
     pub events: Vec<String>,
@@ -72,31 +77,37 @@ pub struct Compile {
     #[arg(long = "update", short = 'u', verbatim_doc_comment)]
     pub update: bool,
 
-    /// disable annotations
-    #[arg(long = "no-annotations")]
-    pub no_annotations: bool,
+    /// whether to use YAML annotations
+    #[arg(long = "annotations", action = clap::ArgAction::Set, default_value_t = true)]
+    pub annotations: bool,
 
     /// output debug information
     #[arg(long, short = 'd', value_enum)]
     pub debug: Option<Debug>,
 
-    /// URL to plugin override
-    #[arg(long = "plugin")]
-    pub plugin: Option<String>,
+    /// URL to TOSCA plugin override
+    #[arg(long = "tosca-plugin")]
+    pub tosca_plugin: Option<String>,
 
-    /// plugin override is precompiled for this platform (.cwasm file)
-    #[arg(long = "plugin-precompiled")]
-    pub plugin_precompiled: bool,
+    /// whether the `--tosca-plugin` is precompiled (.cwasm file);
+    /// when absent will try to use the file extension
+    #[arg(long = "tosca-plugin-precompiled", action = clap::ArgAction::Set, verbatim_doc_comment)]
+    pub tosca_plugin_precompiled: Option<bool>,
 
-    /// enable support for plugin debug information in Wasm
+    /// whether to support debug information in Wasm
     #[cfg(feature = "wasm-debug")]
-    #[arg(long = "plugin-debug", default_value_t = true, hide = true)]
-    pub plugin_debug: bool,
+    #[arg(long = "wasm-debug", default_value_t = true, hide = true)]
+    pub wasm_debug: bool,
 
-    /// enable support for plugin debug information in Wasm
+    /// whether to support debug information in Wasm
     #[cfg(not(feature = "wasm-debug"))]
-    #[arg(long = "plugin-debug")]
-    pub plugin_debug: bool,
+    #[arg(long = "wasm-debug", action = clap::ArgAction::Set, default_value_t = false)]
+    pub wasm_debug: bool,
+
+    /// whether to cache compiled Wasm to disk
+    #[cfg(feature = "plugins")]
+    #[arg(long = "wasm-cache", action = clap::ArgAction::Set, default_value_t = true)]
+    pub wasm_cache: bool,
 
     /// show this help
     #[arg(long, short = 'h', action = ArgAction::Help)]
@@ -120,10 +131,10 @@ impl Compile {
         }
     }
 
-    pub fn floria_directory(&self) -> Result<floria::Directory, floria::MalformedError> {
-        match &self.directory {
-            Some(directory) => directory.parse(),
-            None => Ok(Default::default()),
-        }
+    pub fn floria_directory(&self) -> Result<floria::Directory, Problem> {
+        Ok(match &self.directory {
+            Some(directory) => directory.parse()?,
+            None => Default::default(),
+        })
     }
 }

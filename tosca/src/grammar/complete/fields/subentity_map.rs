@@ -10,8 +10,8 @@ macro_rules! complete_subentity_map_field {
         $must_be_declared:expr,
         $context:expr $(,)?
     ) => {
-        errors_with_fallback_annotations_from_field!(errors, $context.errors, $self, stringify!($field), {
-            let context = context_with_errors!($context, errors);
+        problems_with_fallback_annotations_from_field!(problems, $context.problems, $self, stringify!($field), {
+            let context = context_with_problems!($context, problems);
             complete_subentity_map(
                 stringify!($type_name),
                 &mut $self.$field,
@@ -37,8 +37,8 @@ macro_rules! complete_optional_subentity_map_field {
         $context:ident $(,)?
     ) => {
         if let Some(mut subentity) = $self.$field.take() {
-            errors_with_fallback_annotations_from_field!(errors, $context.errors, $self, stringify!($field), {
-                let context = context_with_errors!($context, errors);
+            problems_with_fallback_annotations_from_field!(problems, $context.problems, $self, stringify!($field), {
+                let context = context_with_problems!($context, problems);
                 complete_subentity_map(
                     stringify!($type_name),
                     &mut subentity,

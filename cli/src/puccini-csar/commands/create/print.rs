@@ -1,9 +1,10 @@
-use super::{super::super::errors::*, command::*};
+use super::command::*;
 
 use {
     anstream::{eprint, eprintln},
     depiction::*,
     indicatif::*,
+    problemo::*,
     puccini_csar::creator::*,
 };
 
@@ -21,7 +22,7 @@ impl Create {
         eprintln!("{}Writing to {}", prefix, output);
     }
 
-    pub fn print_summary(&self, created: CreatedCsar) -> Result<(), MainError> {
+    pub fn print_summary(&self, created: CreatedCsar) -> Result<(), Problem> {
         let prefix = self.prefix();
 
         if let Some(compressed) = created.size {
@@ -58,10 +59,6 @@ impl Create {
     }
 
     fn prefix(&self) -> String {
-        if self.dry_run {
-            format!("{}", DEFAULT_THEME.meta("(dry run) "))
-        } else {
-            Default::default()
-        }
+        if self.dry_run { format!("{}", DEFAULT_THEME.meta("(dry run) ")) } else { Default::default() }
     }
 }

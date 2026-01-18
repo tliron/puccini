@@ -1,36 +1,42 @@
-use super::super::{catalog::*, errors::*, source::*};
+use super::super::{catalog::*, source::*};
+
+use problemo::*;
 
 //
 // CompletionContext
 //
 
 /// Completion context.
-pub struct CompletionContext<'own> {
+pub struct CompletionContext<'context> {
     /// Catalog.
-    pub catalog: &'own mut Catalog,
+    pub catalog: &'context mut Catalog,
 
     /// Source ID.
-    pub source_id: &'own SourceID,
+    pub source_id: &'context SourceID,
 
-    /// Errors.
-    pub errors: ToscaErrorReceiverRef<'own>,
+    /// Problems.
+    pub problems: ProblemReceiverRef<'context>,
 }
 
-impl<'own> CompletionContext<'own> {
+impl<'context> CompletionContext<'context> {
     /// Constructor.
-    pub fn new(catalog: &'own mut Catalog, source_id: &'own SourceID, errors: ToscaErrorReceiverRef<'own>) -> Self {
-        Self { catalog, source_id, errors }
+    pub fn new(
+        catalog: &'context mut Catalog,
+        source_id: &'context SourceID,
+        problems: ProblemReceiverRef<'context>,
+    ) -> Self {
+        Self { catalog, source_id, problems }
     }
 }
 
-/// [CompletionContext] with errors.
+/// [CompletionContext] with problems.
 #[macro_export]
-macro_rules! context_with_errors {
-    ($context:expr, $errors:expr) => {{
-        use ::kutil::std::error::*;
-        &mut $crate::grammar::CompletionContext::new($context.catalog, $context.source_id, $errors.as_ref())
+macro_rules! context_with_problems {
+    ($context:expr, $problems:expr) => {{
+        use problemo::*;
+        &mut $crate::grammar::CompletionContext::new($context.catalog, $context.source_id, $problems.as_ref())
     }};
 }
 
 #[allow(unused_imports)]
-pub use context_with_errors;
+pub use context_with_problems;

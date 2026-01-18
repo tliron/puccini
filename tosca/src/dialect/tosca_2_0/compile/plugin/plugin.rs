@@ -1,9 +1,6 @@
 use super::super::super::{super::super::grammar::*, dialect::*};
 
-use {
-    compris::annotate::*,
-    kutil::std::{error::*, immutable::*},
-};
+use {kutil::std::immutable::*, problemo::*};
 
 //
 // Plugin
@@ -31,9 +28,7 @@ impl Plugin {
     }
 
     /// Get or create the implicit plugin.
-    pub fn get_or_create_implicit(
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>> {
+    pub fn get_or_create_implicit(context: &mut CompilationContext) -> Result<Option<floria::ID>, Problem> {
         Self::new(PLUGIN_URL, true, None, None).get_or_create(Some(PLUGIN_NAME), context)
     }
 
@@ -41,8 +36,8 @@ impl Plugin {
     pub fn get_or_create(
         self,
         name: Option<ByteString>,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<Option<floria::ID>, ToscaError<WithAnnotations>> {
+        context: &mut CompilationContext,
+    ) -> Result<Option<floria::ID>, Problem> {
         Ok(Some(match context.store.get_plugin_by_url(&self.url)? {
             Some(plugin) => plugin.id,
 
@@ -55,7 +50,7 @@ impl Plugin {
                 };
 
                 let plugin_id = plugin.id.clone();
-                must_unwrap_give!(context.store.add_plugin(plugin), context.errors);
+                give_unwrap!(context.store.add_plugin(plugin), &mut context.problems);
                 plugin_id
             }
         }))

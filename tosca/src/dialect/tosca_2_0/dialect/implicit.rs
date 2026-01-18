@@ -1,12 +1,10 @@
-use kutil::std::error::FailFastErrorReceiver;
-
 use super::{
     super::{super::super::grammar::*, data::*, entities::*},
     dialect::*,
     entity_kind::*,
 };
 
-use {compris::annotate::*, kutil::std::immutable::*};
+use {compris::annotate::*, kutil::std::immutable::*, problemo::*};
 
 /// Wasm artifact type.
 pub const WASM_ARTIFACT_TYPE: Name = Name::new_static_unchecked("Wasm");
@@ -17,8 +15,8 @@ pub const WASM_PLUGIN_ARTIFACT_TYPE: Name = Name::new_static_unchecked("WasmPlug
 /// Implicit source ID.
 pub const IMPLICIT_SOURCE_ID: SourceID = SourceID::Internal(DIALECT_ID);
 
-/// Internal source ID.
-pub const INTERNAL_SOURCE_ID: SourceID = SourceID::Profile(ByteString::from_static("puccini"));
+/// Puccini source ID.
+pub const PUCCINI_SOURCE_ID: SourceID = SourceID::Profile(ByteString::from_static("puccini"));
 
 /// Internal namespace.
 pub fn internal_namespace() -> Namespace {
@@ -27,26 +25,26 @@ pub fn internal_namespace() -> Namespace {
 
 impl super::Dialect {
     /// Create the built-in sources.
-    pub fn built_in_sources<AnnotatedT>() -> Result<Vec<Source>, ToscaError<AnnotatedT>>
+    pub fn built_in_sources<AnnotatedT>() -> Result<Vec<Source>, Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
         let mut implicit = Source::new(IMPLICIT_SOURCE_ID, DIALECT_ID);
-        Self::add_implicit_data_types(&mut implicit)?;
-        Self::add_implicit_functions(&mut implicit)?;
+        Self::add_implicit_data_types::<AnnotatedT>(&mut implicit)?;
+        Self::add_implicit_functions::<AnnotatedT>(&mut implicit)?;
 
-        let mut internal = Source::new(INTERNAL_SOURCE_ID, DIALECT_ID);
-        internal.merge_namespace(&implicit, &Default::default(), &mut FailFastErrorReceiver)?;
-        Self::add_internal_artifact_types(&mut internal)?;
-        Self::add_internal_functions(&mut internal)?;
+        let mut puccini = Source::new(PUCCINI_SOURCE_ID, DIALECT_ID);
+        puccini.merge_namespace(&implicit, &Default::default(), &mut FailFast)?;
+        Self::add_puccini_artifact_types::<AnnotatedT>(&mut puccini)?;
+        Self::add_puccini_functions::<AnnotatedT>(&mut puccini)?;
 
         // The implicit functions refer to _internal::WasmPlugin
-        implicit.merge_namespace(&internal, &internal_namespace(), &mut FailFastErrorReceiver)?;
+        implicit.merge_namespace(&puccini, &internal_namespace(), &mut FailFast)?;
 
-        Ok(vec![implicit, internal])
+        Ok(vec![implicit, puccini])
     }
 
-    fn add_implicit_data_types<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
+    fn add_implicit_data_types<AnnotatedT>(source: &mut Source) -> Result<(), Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
@@ -63,17 +61,12 @@ impl super::Dialect {
             DataKind::List,
             DataKind::Map,
         ] {
-            source.add_entity::<_, AnnotatedT>(
-                DATA_TYPE,
-                data_kind.into(),
-                DataType::<AnnotatedT>::new_internal(data_kind),
-                false,
-            )?;
+            source.add_entity(DATA_TYPE, data_kind.into(), DataType::<AnnotatedT>::new_internal(data_kind), false)?;
         }
         Ok(())
     }
 
-    fn add_implicit_functions<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
+    fn add_implicit_functions<AnnotatedT>(source: &mut Source) -> Result<(), Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
@@ -121,7 +114,7 @@ impl super::Dialect {
             "intersection",
             "union",
         ] {
-            source.add_entity::<_, AnnotatedT>(
+            source.add_entity(
                 FUNCTION,
                 function.into(),
                 FunctionDefinition::<AnnotatedT>::new_internal(internal_namespace(), PLUGIN_URL),
@@ -132,7 +125,7 @@ impl super::Dialect {
         Ok(())
     }
 
-    fn add_internal_artifact_types<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
+    fn add_puccini_artifact_types<AnnotatedT>(source: &mut Source) -> Result<(), Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
@@ -141,7 +134,7 @@ impl super::Dialect {
         wasm.mime_type = Some("application/wasm".into());
         wasm.file_ext = Some(vec!["wasm".into(), "cwasm".into()]);
 
-        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_ARTIFACT_TYPE, wasm, true)?;
+        source.add_entity(ARTIFACT_TYPE, WASM_ARTIFACT_TYPE, wasm, true)?;
 
         let mut wasm_plugin = ArtifactType::<AnnotatedT>::new_internal();
 
@@ -162,17 +155,17 @@ impl super::Dialect {
         wasm_plugin.properties.insert("function".into(), function);
         wasm_plugin.properties.insert("event".into(), event);
 
-        source.add_entity::<_, AnnotatedT>(ARTIFACT_TYPE, WASM_PLUGIN_ARTIFACT_TYPE, wasm_plugin, false)?;
+        source.add_entity(ARTIFACT_TYPE, WASM_PLUGIN_ARTIFACT_TYPE, wasm_plugin, false)?;
 
         Ok(())
     }
 
-    fn add_internal_functions<AnnotatedT>(source: &mut Source) -> Result<(), ToscaError<AnnotatedT>>
+    fn add_puccini_functions<AnnotatedT>(source: &mut Source) -> Result<(), Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
         for function in ["apply", "assert", "schema", "select_capability"] {
-            source.add_entity::<_, AnnotatedT>(
+            source.add_entity(
                 FUNCTION,
                 function.into(),
                 FunctionDefinition::<AnnotatedT>::new_internal(Default::default(), PLUGIN_URL),

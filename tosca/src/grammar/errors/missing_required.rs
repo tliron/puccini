@@ -1,8 +1,9 @@
 use {
     compris::annotate::*,
     depiction::*,
+    derive_more::*,
+    problemo::*,
     std::{fmt, io},
-    thiserror::*,
 };
 
 //
@@ -10,41 +11,40 @@ use {
 //
 
 /// Missing required error.
-#[derive(Debug, Error)]
-pub struct MissingRequiredError<AnnotatedT> {
+#[derive(Debug, Error, PartialEq)]
+pub struct MissingRequiredError {
     /// Type name.
     pub type_name: String,
 
     /// Name.
     pub name: Option<String>,
-
-    /// Annotated.
-    pub annotated: AnnotatedT,
 }
 
-impl_annotated!(MissingRequiredError);
-
-impl<AnnotatedT> MissingRequiredError<AnnotatedT>
-where
-    AnnotatedT: Default,
-{
+impl MissingRequiredError {
     /// Constructor.
-    pub fn new(type_name: String, name: Option<String>) -> Self {
-        Self { type_name, name, annotated: Default::default() }
+    pub fn new<TypeNameT, NameT>(type_name: TypeNameT, name: Option<NameT>) -> Self
+    where
+        TypeNameT: ToString,
+        NameT: ToString,
+    {
+        Self { type_name: type_name.to_string(), name: name.map(|name| name.to_string()) }
+    }
+
+    /// Constructor.
+    #[track_caller]
+    pub fn as_problem<TypeNameT, NameT>(type_name: TypeNameT, name: Option<NameT>) -> Problem
+    where
+        TypeNameT: ToString,
+        NameT: ToString,
+    {
+        Self::new(type_name, name)
+            .into_problem()
+            .with(AnnotatedCauseEquality::new::<Self>())
+            .with(ErrorDepiction::new::<Self>())
     }
 }
 
-impl<AnnotatedT, NewAnnotatedT> IntoAnnotated<MissingRequiredError<NewAnnotatedT>> for MissingRequiredError<AnnotatedT>
-where
-    AnnotatedT: Annotated,
-    NewAnnotatedT: Annotated + Default,
-{
-    fn into_annotated(self) -> MissingRequiredError<NewAnnotatedT> {
-        MissingRequiredError::new(self.type_name, self.name).with_annotations_from(&self.annotated)
-    }
-}
-
-impl<AnnotatedT> Depict for MissingRequiredError<AnnotatedT> {
+impl Depict for MissingRequiredError {
     fn depict<WriteT>(&self, writer: &mut WriteT, context: &DepictionContext) -> io::Result<()>
     where
         WriteT: io::Write,
@@ -60,8 +60,8 @@ impl<AnnotatedT> Depict for MissingRequiredError<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> fmt::Display for MissingRequiredError<AnnotatedT> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for MissingRequiredError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match &self.name {
             Some(name) => write!(formatter, "{}: {}", self.type_name, name),
             None => write!(formatter, "{}", self.type_name),

@@ -4,24 +4,23 @@ use super::{
     source::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*, std::collections::*};
+use {kutil::std::collections::*, problemo::*, std::collections::*};
 
 impl Source {
     /// Namespace.
-    pub fn namespace(&self) -> Vec<(EntityKind, FullName, SourceID)> {
-        self.namespace.iter().map(|(key, source_id)| (key.entity_kind, key.inner.clone(), source_id.clone())).collect()
+    pub fn namespace(&self) -> impl Iterator<Item = (&EntityKind, &FullName, &SourceID)> {
+        self.namespace.iter().map(|(key, source_id)| (&key.entity_kind, &key.inner, source_id))
     }
 
     /// Merge a [Source] into a namespace.
-    pub fn merge_namespace<AnnotatedT, ErrorReceiverT>(
+    pub fn merge_namespace<ProblemReceiverT>(
         &mut self,
         dependency: &Self,
         namespace: &Namespace,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<(), ToscaError<AnnotatedT>>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<(), Problem>
     where
-        AnnotatedT: Annotated + Clone + Default,
-        ErrorReceiverT: ErrorReceiver<ToscaError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         tracing::debug!(
             source = self.source_id.to_string(),
@@ -31,27 +30,29 @@ impl Source {
         );
 
         for (entity_kind, full_name, source_id) in dependency.namespace() {
-            unwrap_or_give!(
-                self.map_name(entity_kind, full_name.clone().into_namespace(namespace.clone()), source_id.clone()),
-                errors,
+            give_unwrap!(
+                self.map_name(
+                    entity_kind.clone(),
+                    full_name.clone().into_namespace(namespace.clone()),
+                    source_id.clone()
+                ),
+                problems,
             );
         }
+
         Ok(())
     }
 
     /// Canonical full name for an entity.
-    pub fn canonical_full_name_for<AnnotatedT>(
+    pub fn canonical_full_name_for(
         &self,
         entity_kind: EntityKind,
         entity_kind_name: &str,
         full_name: &FullName,
-    ) -> Result<&FullName, UndeclaredError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
+    ) -> Result<&FullName, Problem> {
         let source_id = self.lookup(entity_kind, entity_kind_name, full_name)?;
         self.canonical_full_name(entity_kind, &full_name.name, source_id)
-            .ok_or_else(|| UndeclaredError::new(entity_kind_name.to_string(), full_name.to_string()))
+            .ok_or_else(|| UndeclaredError::as_problem(entity_kind_name, full_name))
     }
 
     /// Canonical full name for an entity.
@@ -74,7 +75,7 @@ impl Source {
 
     /// Canonical namespace.
     pub fn canonical_namespace(&self) -> Vec<(EntityKind, FullName, SourceID)> {
-        let names: HashSet<_> =
+        let names: FastHashSet<_> =
             self.namespace.iter().map(|(key, source_id)| (key.entity_kind, &key.inner.name, source_id)).collect();
 
         let mut namespace = Vec::with_capacity(names.len());
@@ -93,15 +94,15 @@ impl Source {
         let mut namespace = BTreeMap::<EntityKind, BTreeMap<FullName, SourceID>>::default();
 
         for (entity_kind, full_name, source_id) in self.namespace() {
-            match namespace.get_mut(&entity_kind) {
+            match namespace.get_mut(entity_kind) {
                 Some(names) => {
-                    names.insert(full_name, source_id);
+                    names.insert(full_name.clone(), source_id.clone());
                 }
 
                 None => {
                     let mut names = BTreeMap::default();
-                    names.insert(full_name, source_id);
-                    namespace.insert(entity_kind, names);
+                    names.insert(full_name.clone(), source_id.clone());
+                    namespace.insert(entity_kind.clone(), names);
                 }
             }
         }
@@ -110,21 +111,25 @@ impl Source {
     }
 
     /// Map a [FullName] to a [SourceID].
-    pub fn map_name<AnnotatedT>(
+    pub fn map_name(
         &mut self,
         entity_kind: EntityKind,
         full_name: FullName,
         source_id: SourceID,
-    ) -> Result<(), NameReusedError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        tracing::trace!(source = self.source_id.to_string(), "adding imported entity: {} -> {}", full_name, source_id);
+    ) -> Result<(), Problem> {
+        tracing::trace!(source = self.source_id.to_string(), "map full name to source: {} -> {}", full_name, source_id);
 
-        match self.namespace.insert(WithEntityKind::new(entity_kind, full_name.clone()), source_id) {
-            Some(_) => Err(NameReusedError::new(full_name.to_string())),
-            None => Ok(()),
+        let key = WithEntityKind::new(entity_kind, full_name.clone());
+
+        if let Some(existing) = self.namespace.get(&key)
+            && (*existing != source_id)
+        {
+            return Err(NameReusedError::as_problem(full_name));
         }
+
+        self.namespace.insert(key, source_id);
+
+        Ok(())
     }
 
     /// Find the [SourceID] of a [FullName].
@@ -133,16 +138,12 @@ impl Source {
     }
 
     /// Find the [SourceID] of a [FullName].
-    pub fn lookup<AnnotatedT>(
+    pub fn lookup(
         &self,
         entity_kind: EntityKind,
         entity_kind_name: &str,
         full_name: &FullName,
-    ) -> Result<&SourceID, UndeclaredError<AnnotatedT>>
-    where
-        AnnotatedT: Default,
-    {
-        self.try_lookup(entity_kind, full_name)
-            .ok_or_else(|| UndeclaredError::new(entity_kind_name.to_string(), full_name.to_string()))
+    ) -> Result<&SourceID, Problem> {
+        self.try_lookup(entity_kind, full_name).ok_or_else(|| UndeclaredError::as_problem(entity_kind_name, full_name))
     }
 }

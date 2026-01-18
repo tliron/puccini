@@ -11,11 +11,11 @@ macro_rules! completed_entity_from_full_name_field {
         $field:tt,
         $context:expr $(,)?
     ) => {{
-        match $context.catalog.completed_entity::<$tosca_type<AnnotatedT>, _, _>(
+        match $context.catalog.completed_entity::<$tosca_type<AnnotatedT>, _>(
             $kind,
             &$self.$field,
             $context.source_id,
-            &mut $context.errors.with_fallback_annotations_from_field($self, stringify!($field)),
+            &mut $context.problems.with_fallback_annotations_from_field($self, stringify!($field)),
         )? {
             Some((entity, _source)) => (Some(entity.clone()), Some(&$self.$field.namespace)),
             None => (None, Some(&$self.$field.namespace)),
@@ -35,11 +35,11 @@ macro_rules! completed_entity_from_optional_full_name_field {
         $context:expr $(,)?
     ) => {
         match &$self.$field {
-            Some(full_name) => match $context.catalog.completed_entity::<$tosca_type<AnnotatedT>, _, _>(
+            Some(full_name) => match $context.catalog.completed_entity::<$tosca_type<AnnotatedT>, _>(
                 $kind,
                 full_name,
                 $context.source_id,
-                &mut $context.errors.with_fallback_annotations_from_field($self, stringify!($field)),
+                &mut $context.problems.with_fallback_annotations_from_field($self, stringify!($field)),
             )? {
                 Some((entity, _source)) => (Some(entity.clone()), Some(&full_name.namespace)),
                 None => (None, Some(&full_name.namespace)),
@@ -63,12 +63,12 @@ macro_rules! completed_entity_checked_from_full_name_field {
     ) => {
         match &$self.$field {
             Some(full_name) => {
-                match $context.catalog.completed_entity_checked::<Self, _, _>(
+                match $context.catalog.completed_entity_checked::<Self, _>(
                     $kind,
                     full_name,
                     $context.source_id,
                     $derivation_path,
-                    &mut $context.errors.with_fallback_annotations_from_field($self, stringify!($field)),
+                    &mut $context.problems.with_fallback_annotations_from_field($self, stringify!($field)),
                 )? {
                     Some((entity, _source)) => (Some(entity.clone()), Some(&full_name.namespace)),
                     None => (None, Some(&full_name.namespace)),
@@ -93,11 +93,11 @@ macro_rules! completed_entity_from_optional_name_field {
         match &$self.$field {
             Some(name) => $context
                 .catalog
-                .completed_entity::<$tosca_type<AnnotatedT>, _, _>(
+                .completed_entity::<$tosca_type<AnnotatedT>, _>(
                     $kind,
                     &name.into(),
                     $context.source_id,
-                    &mut $context.errors.with_fallback_annotations_from_field($self, stringify!($field)),
+                    &mut $context.problems.with_fallback_annotations_from_field($self, stringify!($field)),
                 )?
                 .map(|(entity, _source)| entity.clone()),
 

@@ -1,10 +1,6 @@
 use super::super::{super::super::grammar::*, dialect::*, entities::*};
 
-use {
-    compris::annotate::*,
-    kutil::std::{error::*, immutable::*},
-    std::collections::*,
-};
+use {compris::annotate::*, kutil::std::immutable::*, problemo::*, std::collections::*};
 
 impl<AnnotatedT> ValueAssignment<AnnotatedT> {
     /// Compile to Floria.
@@ -12,8 +8,8 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
         &self,
         tosca_entity: &'static str,
         read_only: bool,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<floria::Property, ToscaError<WithAnnotations>>
+        context: &mut CompilationContext,
+    ) -> Result<floria::Property, Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
@@ -34,31 +30,30 @@ impl<AnnotatedT> ValueAssignment<AnnotatedT> {
     /// Floria property preparer, updater, and value.
     pub fn floria_property_fields(
         &self,
-        context: &mut CompilationContext<'_>,
-    ) -> Result<
-        (Option<floria::Expression>, Option<floria::Expression>, Option<floria::Expression>),
-        ToscaError<WithAnnotations>,
-    >
+        context: &mut CompilationContext,
+    ) -> Result<(Option<floria::Expression>, Option<floria::Expression>, Option<floria::Expression>), Problem>
     where
         AnnotatedT: 'static + Annotated + Clone + Default,
     {
         let preparer = match &self.validation {
-            Some(validation) => ok_give!(validation.clone().into_eager().compile(context), context.errors),
+            Some(validation) => validation.clone().into_eager().compile(context).give_ok(&mut context.problems)?,
             None => None,
         };
 
         let (updater, value) = match &self.expression {
-            Some(expression) => match ok_give!(expression.clone().into_eager().compile(context), context.errors) {
-                Some(expression) => {
-                    if expression.is_literal() {
-                        (None, Some(expression))
-                    } else {
-                        (Some(expression), None)
+            Some(expression) => {
+                match expression.clone().into_eager().compile(context).give_ok(&mut context.problems)? {
+                    Some(expression) => {
+                        if expression.is_literal() {
+                            (None, Some(expression))
+                        } else {
+                            (Some(expression), None)
+                        }
                     }
-                }
 
-                None => (None, None),
-            },
+                    None => (None, None),
+                }
+            }
 
             None => (None, None),
         };
@@ -74,8 +69,8 @@ pub fn compile_value_assignments<AnnotatedT>(
     prefix: &'static str,
     tosca_entity: &'static str,
     read_only: bool,
-    context: &mut CompilationContext<'_>,
-) -> Result<(), ToscaError<WithAnnotations>>
+    context: &mut CompilationContext,
+) -> Result<(), Problem>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {

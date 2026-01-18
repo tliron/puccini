@@ -5,9 +5,10 @@ use super::{
 };
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, depict::*, errors::*, normal::*, resolve::*},
     depiction::*,
-    kutil::std::{error::*, immutable::*},
+    kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -147,7 +148,7 @@ where
         &mut self,
         derivation_path: &mut DerivationPath,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         assert!(self.completion_state == CompletionState::Incomplete);
         self.completion_state = CompletionState::Cannot;
 
@@ -172,11 +173,11 @@ where
 
         if self.scalar_data_kind.is_none()
             && let Some(data_type) = &self.scalar_data_type
-            && let Some((data_type, _source)) = context.catalog.completed_entity::<Self, _, _>(
+            && let Some((data_type, _source)) = context.catalog.completed_entity::<Self, _>(
                 DATA_TYPE,
                 data_type,
                 context.source_id,
-                &mut context.errors.with_fallback_annotations_from_field(self, "data_type"),
+                &mut context.problems.with_fallback_annotations_from_field(self, "data_type"),
             )?
             && data_type.data_kind.is_some()
         {
@@ -193,19 +194,25 @@ where
             // Mandatory keys
 
             if matches!(kind, DataKind::List | DataKind::Map) && self.entry_schema.is_none() {
-                context.errors.give(MissingRequiredKeyError::new("entry_schema".into()).with_annotations_from(self))?;
+                context.problems.give(
+                    MissingRequiredKeyError::as_problem(Variant::<WithoutAnnotations>::from("entry_schema"))
+                        .with_annotations_from(self),
+                )?;
             }
 
             if matches!(kind, DataKind::Scalar) {
                 if self.scalar_units.is_none() {
-                    context.errors.give(MissingRequiredKeyError::new("units".into()).with_annotations_from(self))?;
+                    context.problems.give(
+                        MissingRequiredKeyError::as_problem(Variant::<WithoutAnnotations>::from("units"))
+                            .with_annotations_from(self),
+                    )?;
                 }
 
                 if let Some(scalar_data_kind) = self.scalar_data_kind
                     && !matches!(scalar_data_kind, DataKind::Float | DataKind::Integer)
                 {
-                    context.errors.give(
-                        MalformedError::new("data_type".into(), format!("not float or integer: {}", scalar_data_kind))
+                    context.problems.give(
+                        MalformedError::as_problem("data_type", format!("not float or integer: {}", scalar_data_kind))
                             .with_annotations_from_field(self, "data_type"),
                     )?;
                 }
@@ -214,45 +221,52 @@ where
             // Invalid keys
 
             if self.properties.is_some() && !matches!(kind, DataKind::Struct) {
-                context.errors.give(InvalidKeyError::new(
-                    Variant::from("properties").with_annotations_from_field(self, "properties"),
-                ))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("properties"))
+                        .with_annotations_from_field(self, "properties"),
+                )?;
             }
 
             if self.key_schema.is_some() && !matches!(kind, DataKind::Map) {
-                context.errors.give(InvalidKeyError::new(
-                    Variant::from("key_schema").with_annotations_from_field(self, "key_schema"),
-                ))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("key_schema"))
+                        .with_annotations_from_field(self, "key_schema"),
+                )?;
             }
 
             if self.entry_schema.is_some() && !matches!(kind, DataKind::Map | DataKind::List) {
-                context.errors.give(InvalidKeyError::new(
-                    Variant::from("entry_schema").with_annotations_from_field(self, "entry_schema"),
-                ))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("entry_schema"))
+                        .with_annotations_from_field(self, "entry_schema"),
+                )?;
             }
 
             if self.scalar_data_type.is_some() && !matches!(kind, DataKind::Scalar) {
-                context.errors.give(InvalidKeyError::new(
-                    Variant::from("data_type").with_annotations_from_field(self, "data_type"),
-                ))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("data_type"))
+                        .with_annotations_from_field(self, "data_type"),
+                )?;
             }
 
             if self.scalar_units.is_some() && !matches!(kind, DataKind::Scalar) {
-                context
-                    .errors
-                    .give(InvalidKeyError::new(Variant::from("units").with_annotations_from_field(self, "units")))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("units"))
+                        .with_annotations_from_field(self, "units"),
+                )?;
             }
 
             if self.scalar_canonical_unit.is_some() && !matches!(kind, DataKind::Scalar) {
-                context.errors.give(InvalidKeyError::new(
-                    Variant::from("canonical_unit").with_annotations_from_field(self, "canonical_unit"),
-                ))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("canonical_unit"))
+                        .with_annotations_from_field(self, "canonical_unit"),
+                )?;
             }
 
             if self.scalar_prefixes.is_some() && !matches!(kind, DataKind::Scalar) {
-                context.errors.give(InvalidKeyError::new(
-                    Variant::from("prefixes").with_annotations_from_field(self, "prefixes"),
-                ))?;
+                context.problems.give(
+                    InvalidKeyError::as_problem(Variant::<WithoutAnnotations>::from("prefixes"))
+                        .with_annotations_from_field(self, "prefixes"),
+                )?;
             }
         }
 

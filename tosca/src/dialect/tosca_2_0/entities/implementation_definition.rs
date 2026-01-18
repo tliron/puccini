@@ -1,9 +1,10 @@
 use super::{super::super::super::grammar::*, artifact_definition::*};
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
+    compris::{annotate::*, depict::*, errors::*, normal::*, resolve::*},
     depiction::*,
-    kutil::std::{error::*, immutable::*},
+    kutil::std::immutable::*,
+    problemo::*,
 };
 
 //
@@ -67,7 +68,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_subentity_field!(primary, self, parent, parent_namespace, context);
 
         // TODO: dependencies
@@ -128,7 +129,7 @@ where
         parent: Option<&Self>,
         parent_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         match self {
             Self::Definition(definition) => {
                 let parent = parent.and_then(|parent| match parent {
@@ -156,29 +157,29 @@ where
     }
 }
 
-impl<AnnotatedT> Resolve<ImplementationDefinitionArtifact<AnnotatedT>, AnnotatedT> for Variant<AnnotatedT>
+impl<AnnotatedT> Resolve<ImplementationDefinitionArtifact<AnnotatedT>> for Variant<AnnotatedT>
 where
     AnnotatedT: 'static + Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorReceiverT>(
+    fn resolve_with_problems<ProblemReceiverT>(
         self,
-        errors: &mut ErrorReceiverT,
-    ) -> ResolveResult<ImplementationDefinitionArtifact<AnnotatedT>, AnnotatedT>
+        problems: &mut ProblemReceiverT,
+    ) -> ResolveResult<ImplementationDefinitionArtifact<AnnotatedT>>
     where
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         Ok(match self {
             Self::Text(text) => Variant::from(text)
-                .resolve_with_errors(errors)?
+                .resolve_with_problems(problems)?
                 .and_then(|name| Some(ImplementationDefinitionArtifact::Name(name))),
 
-            Self::Map(map) => Variant::from(map).resolve_with_errors(errors)?.and_then(|artifact_definition| {
+            Self::Map(map) => Variant::from(map).resolve_with_problems(problems)?.and_then(|artifact_definition| {
                 Some(ImplementationDefinitionArtifact::Definition(artifact_definition))
             }),
 
             _ => {
-                errors.give(
-                    IncompatibleVariantTypeError::new_from(&self, &["text", "map"]).with_annotations_from(&self),
+                problems.give(
+                    IncompatibleVariantTypeError::as_problem_from(&self, &["text", "map"]).with_annotations_from(&self),
                 )?;
                 None
             }

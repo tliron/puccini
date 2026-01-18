@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+# See: https://component-model.bytecodealliance.org/language-support/building-a-simple-component/moonbit.html
+
+cd "$ROOT"
+
+wit-bindgen moonbit \
+    ../floria/library/assets/wit/floria-plugins.wit \
+    --out-dir moonbit \
+    --derive-eq \
+    --derive-show \
+    --derive-error

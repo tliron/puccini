@@ -52,21 +52,24 @@ impl CsarCreator {
         }
     }
 
-    /// Move relevant fields into a TOSCA meta.
-    pub fn into_tosca_meta(&mut self) -> ToscaMeta {
+    /// Clone relevant fields into a TOSCA meta.
+    pub fn to_tosca_meta(&self) -> ToscaMeta {
         let mut tosca_meta = ToscaMeta::default();
 
-        if self.created_by.is_some() {
-            tosca_meta.created_by = take(&mut self.created_by);
-        }
+        tosca_meta.created_by = self.created_by.clone();
+        tosca_meta.entry_definitions = self.entry_definitions.clone();
+        tosca_meta.other_definitions = self.additional_other_definitions.clone();
 
-        if self.entry_definitions.is_some() {
-            tosca_meta.entry_definitions = take(&mut self.entry_definitions);
-        }
+        tosca_meta
+    }
 
-        for other_definition in take(&mut self.additional_other_definitions) {
-            tosca_meta.other_definitions.push(other_definition);
-        }
+    /// Move relevant fields into a TOSCA meta.
+    pub fn into_tosca_meta(mut self) -> ToscaMeta {
+        let mut tosca_meta = ToscaMeta::default();
+
+        tosca_meta.created_by = take(&mut self.created_by);
+        tosca_meta.entry_definitions = take(&mut self.entry_definitions);
+        tosca_meta.other_definitions = take(&mut self.additional_other_definitions);
 
         tosca_meta
     }
@@ -75,7 +78,7 @@ impl CsarCreator {
 impl Default for CsarCreator {
     fn default() -> Self {
         Self {
-            format: Some(Format::GzipTarball),
+            format: None,
             compression_level: None,
             created_by: Some("Puccini".into()),
             entry_definitions: None,

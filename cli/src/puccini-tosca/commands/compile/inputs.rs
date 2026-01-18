@@ -1,13 +1,14 @@
-use super::{super::super::errors::*, command::*};
+use super::command::*;
 
 use {
     compris::{annotate::*, normal::*, parse::*, *},
+    problemo::*,
     puccini_tosca::grammar::*,
     read_url::*,
 };
 
 impl Compile {
-    pub fn inputs<AnnotatedT>(&self, url_context: &UrlContextRef) -> Result<Option<Map<AnnotatedT>>, MainError>
+    pub fn inputs<AnnotatedT>(&self, url_context: &UrlContextRef) -> Result<Option<Map<AnnotatedT>>, Problem>
     where
         AnnotatedT: Annotated + Clone + Default,
     {
@@ -18,12 +19,7 @@ impl Compile {
         for inputs in &self.inputs {
             let inputs = parser.parse_string(&inputs)?;
             let Variant::Map(inputs) = inputs else {
-                return Err(ToscaError::from(WrongTypeError::<AnnotatedT>::new(
-                    "inputs".into(),
-                    inputs.type_name().into(),
-                    vec!["map".into()],
-                ))
-                .into());
+                return Err(WrongTypeError::as_problem("inputs", inputs.type_name(), vec!["map".into()]));
             };
             all_inputs.inner.extend(inputs.inner);
         }
@@ -33,12 +29,7 @@ impl Compile {
             let mut inputs_url = inputs_url.open()?;
             let inputs = parser.parse_reader(&mut inputs_url)?;
             let Variant::Map(inputs) = inputs else {
-                return Err(ToscaError::from(WrongTypeError::<AnnotatedT>::new(
-                    "inputs".into(),
-                    inputs.type_name().into(),
-                    vec!["map".into()],
-                ))
-                .into());
+                return Err(WrongTypeError::as_problem("inputs", inputs.type_name(), vec!["map".into()]));
             };
             all_inputs.inner.extend(inputs.inner);
         }

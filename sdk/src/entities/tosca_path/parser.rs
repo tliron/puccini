@@ -8,14 +8,14 @@ use {
 //
 
 /// TOSCA Path parser.
-pub struct ToscaPathParser<'own> {
+pub struct ToscaPathParser<'context> {
     /// Iterator.
-    pub iterator: Peekable<Iter<'own, Expression>>,
+    pub iterator: Peekable<Iter<'context, Expression>>,
 }
 
-impl<'own> ToscaPathParser<'own> {
+impl<'context> ToscaPathParser<'context> {
     /// Constructor.
-    pub fn new(arguments: &'own Vec<Expression>) -> Self {
+    pub fn new(arguments: &'context Vec<Expression>) -> Self {
         Self { iterator: arguments.iter().peekable() }
     }
 }

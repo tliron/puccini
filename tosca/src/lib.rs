@@ -15,3 +15,7 @@ pub mod dialect;
 
 /// Grammar.
 pub mod grammar;
+
+/// Python API.
+#[cfg(feature = "pyo3")]
+pub mod pyo3;

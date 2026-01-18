@@ -7,7 +7,7 @@ use super::{
     value_assignment::*,
 };
 
-use {compris::annotate::*, kutil::std::error::*};
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> Subentity<ParameterDefinition<AnnotatedT>> for ValueAssignment<AnnotatedT>
 where
@@ -19,7 +19,7 @@ where
         parameter_definition: Option<&ParameterDefinition<AnnotatedT>>,
         parameter_definition_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<(), ToscaError<WithAnnotations>> {
+    ) -> Result<(), Problem> {
         complete_optional_parent_type_name_field!(
             type_name,
             self,
@@ -39,10 +39,9 @@ where
             } else if parameter_definition.default.is_some() {
                 self.expression = parameter_definition.default.to_namespace(parameter_definition_namespace);
             } else if parameter_definition.required.unwrap_or(true) {
-                context.errors.give(
-                    MissingRequiredError::new("parameter".into(), name.map(|name| name.to_string()))
-                        .with_annotations_from(self),
-                )?;
+                context
+                    .problems
+                    .give(MissingRequiredError::as_problem("parameter", name).with_annotations_from(self))?;
             }
         }
 
@@ -54,10 +53,9 @@ where
                 validate_type(&data_type, parent_data_type, context)?;
             }
 
-            if let Some(validation) = unwrap_or_give!(
+            if let Some(validation) = give_unwrap!(
                 data_type.schema_validation(parameter_definition, parameter_definition_namespace, context),
-                context.errors,
-                None
+                &mut context.problems,
             ) {
                 self.validation.join_apply(validation);
             }

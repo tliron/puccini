@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+"$HERE/build-python" "$@"
+
+into_python
+
+function example () {
+    m "\nexample: $1\n" "$RED"
+    "$ROOT/examples/python/$1.py"
+}
+
+example problem
+example read_url
+example tosca
+example tosca_internal
+example csar_meta
+example csar_write
+example csar_directory

@@ -1,7 +1,7 @@
 use super::super::super::super::grammar::*;
 
 use {
-    compris::{annotate::*, resolve::*},
+    compris::{annotate::*, depict::*, resolve::*},
     depiction::*,
     kutil::std::immutable::*,
 };

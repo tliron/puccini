@@ -1,6 +1,6 @@
 use super::super::{
-    super::{super::errors::*, compression_level::*, tracker::*},
-    archive::{Archive, *},
+    super::{compression_level::*, tracker::*},
+    writer::{ArchiveWriter, *},
 };
 
 use {
@@ -10,21 +10,21 @@ use {
 };
 
 /// Create a tarball [Archive].
-pub fn new_tarball_archive<'own, WriteT>(writer: WriteT) -> ArchiveRef<'own>
+pub fn new_tarball_archive<'writer, WriteT>(writer: WriteT) -> ArchiveWriterRef<'writer>
 where
-    WriteT: 'own + io::Write,
+    WriteT: 'writer + Send + io::Write,
 {
     Box::new(Builder::new(writer))
 }
 
 /// Create a Gzip tarball [Archive].
 #[cfg(feature = "gzip")]
-pub fn new_gzip_tarball_archive<'own, WriteT>(
+pub fn new_gzip_tarball_archive<'writer, WriteT>(
     writer: WriteT,
     compression_level: Option<CompressionLevel>,
-) -> ArchiveRef<'own>
+) -> ArchiveWriterRef<'writer>
 where
-    WriteT: 'own + io::Write,
+    WriteT: 'writer + io::Write + Send,
 {
     use flate2::{write::*, *};
 
@@ -37,24 +37,26 @@ where
 
 /// Create a Zstandard tarball [Archive].
 #[cfg(feature = "zstandard")]
-pub fn new_zstandard_tarball_archive<'own, WriteT>(
+pub fn new_zstandard_tarball_archive<'writer, WriteT>(
     writer: WriteT,
     compression_level: Option<CompressionLevel>,
-) -> Result<ArchiveRef<'own>, CsarError>
+) -> Result<ArchiveWriterRef<'writer>, problemo::Problem>
 where
-    WriteT: 'own + io::Write,
+    WriteT: 'writer + io::Write + Send,
 {
+    // use zeekstd::*;
     use zstd::stream::*;
 
     // 0 will choose default (which is 3)
     let compression_level =
         compression_level.map(|compression_level| compression_level.to_zstandard()).unwrap_or_default();
 
+    // let encoder = EncodeOptions::new().compression_level(compression_level).into_encoder(writer)?;
     let encoder = Encoder::new(writer, compression_level)?.auto_finish();
     Ok(new_tarball_archive(encoder))
 }
 
-impl<WriteT> Archive for Builder<WriteT>
+impl<WriteT> ArchiveWriter for Builder<WriteT>
 where
     WriteT: io::Write,
 {

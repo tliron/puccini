@@ -4,7 +4,7 @@ edition = "2024"
 name = "puccini-cli"
 description = "Puccini TOSCA and CSAR CLI utilities"
 version = "0.0.4"
-rust-version = "1.92"
+rust-version = "1.93"
 
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tliron/puccini"
@@ -29,20 +29,20 @@ keywords = [
 floria = "=0.0.5"
 
 [dependencies]
-anstream = "0.6.21"
+anstream = "1.0.0"
 compris = "=0.0.11"
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.58", features = ["derive"] }
 clap-num = "1.2.0"
-ctrlc = "3.5.1"
+ctrlc = "3.5.2"
 depiction = "=0.0.1"
 floria = "=0.0.5"
-indicatif = "0.18.3"
+indicatif = "0.18.4"
 kutil = { version = "=0.0.5", features = ["cli", "std", "clap"] }
 mimalloc = { version = "0.1.48", features = ["v3"] }
+problemo = "=0.0.11"
 puccini-csar = { version = "=0.0.4", features = ["creator", "url"] }
-puccini-tosca = { version = "=0.0.4", default-features = false, features = ["tosca-2_0"] }
+puccini-tosca = { version = "=0.0.4", default-features = false, features = ["tosca-2_0", "csar"] }
 read-url = { version = "=0.0.10", features = ["blocking"] }
-thiserror = "2.0.17"
 tracing = "0.1.44"
 
 [features]
@@ -50,11 +50,9 @@ default = [
     "plugins",
     "filesystem",
     "http",
-    "puccini-csar/tarball",
-    "puccini-csar/gzip",
-    "puccini-csar/zip",
-    "puccini-csar/zstandard",
+    "puccini-csar/all-formats",
     "with-annotations",
+    "without-annotations",
 ]
 
 plugins = [
@@ -62,8 +60,10 @@ plugins = [
     "floria/plugins-http-platform",
     "floria/plugins-tls",
 ]
+
 filesystem = ["puccini-tosca/filesystem"]
 http = ["puccini-tosca/http"]
+
 with-annotations = []
 without-annotations = []
 

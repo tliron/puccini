@@ -97,7 +97,7 @@ impl Comparator for Scalar {
 }
 
 impl fmt::Display for Scalar {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{} {}", self.number, self.unit)
     }
 }

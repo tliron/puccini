@@ -4,7 +4,7 @@ use super::{
     macros::*,
 };
 
-use compris::annotate::*;
+use {compris::annotate::*, problemo::*};
 
 impl<AnnotatedT> DataType<AnnotatedT>
 where
@@ -18,7 +18,7 @@ where
         details: &SchemaDetailsT,
         details_namespace: Option<&Namespace>,
         context: &mut CompletionContext,
-    ) -> Result<SchemaReference, ToscaError<WithAnnotations>>
+    ) -> Result<SchemaReference, Problem>
     where
         AnnotatedT: 'static,
         SchemaDetailsT: SchemaDetails<AnnotatedT>,
@@ -48,7 +48,7 @@ where
         &self,
         schema: &mut Schema<AnnotatedT>,
         context: &mut CompletionContext,
-    ) -> Result<Option<StructSchemaField>, ToscaError<WithAnnotations>>
+    ) -> Result<Option<StructSchemaField>, Problem>
     where
         AnnotatedT: 'static,
     {

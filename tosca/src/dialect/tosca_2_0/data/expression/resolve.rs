@@ -1,8 +1,9 @@
 use super::{super::super::super::super::grammar::*, call::*, expression::*};
 
 use {
-    compris::{annotate::*, normal::*, resolve::*},
-    kutil::std::{error::*, immutable::*},
+    compris::{annotate::*, errors::*, normal::*, resolve::*},
+    kutil::std::immutable::*,
+    problemo::*,
     std::collections::*,
 };
 
@@ -10,18 +11,15 @@ use {
 pub const FUNCTION_PREFIX: &str = "$";
 
 impl<AnnotatedT> Expression<AnnotatedT> {
-    fn resolve_list<ErrorReceiverT>(
-        list: List<AnnotatedT>,
-        errors: &mut ErrorReceiverT,
-    ) -> ResolveResult<Self, AnnotatedT>
+    fn resolve_list<ProblemReceiverT>(list: List<AnnotatedT>, problems: &mut ProblemReceiverT) -> ResolveResult<Self>
     where
         AnnotatedT: Annotated + Clone + Default,
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let mut expression_list = Vec::with_capacity(list.inner.len());
 
         for item in list {
-            if let Some(item) = item.resolve_with_errors(errors)? {
+            if let Some(item) = item.resolve_with_problems(problems)? {
                 expression_list.push(item);
             }
         }
@@ -49,15 +47,15 @@ impl<AnnotatedT> Expression<AnnotatedT> {
         }))
     }
 
-    fn resolve_map<ErrorReceiverT>(map: Map<AnnotatedT>, errors: &mut ErrorReceiverT) -> ResolveResult<Self, AnnotatedT>
+    fn resolve_map<ProblemReceiverT>(map: Map<AnnotatedT>, problems: &mut ProblemReceiverT) -> ResolveResult<Self>
     where
         AnnotatedT: Annotated + Clone + Default,
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let mut expression_map = BTreeMap::default();
 
         for pair in map {
-            if let Some((key, value)) = pair.resolve_with_errors(errors)? {
+            if let Some((key, value)) = pair.resolve_with_problems(problems)? {
                 expression_map.insert(key, value);
             }
         }
@@ -87,16 +85,16 @@ impl<AnnotatedT> Expression<AnnotatedT> {
     }
 }
 
-impl<AnnotatedT> Resolve<Expression<AnnotatedT>, AnnotatedT> for Variant<AnnotatedT>
+impl<AnnotatedT> Resolve<Expression<AnnotatedT>> for Variant<AnnotatedT>
 where
     AnnotatedT: Annotated + Clone + Default,
 {
-    fn resolve_with_errors<ErrorReceiverT>(
+    fn resolve_with_problems<ProblemReceiverT>(
         self,
-        errors: &mut ErrorReceiverT,
-    ) -> ResolveResult<Expression<AnnotatedT>, AnnotatedT>
+        problems: &mut ProblemReceiverT,
+    ) -> ResolveResult<Expression<AnnotatedT>>
     where
-        ErrorReceiverT: ErrorReceiver<ResolveError<AnnotatedT>>,
+        ProblemReceiverT: ProblemReceiver,
     {
         match self {
             Variant::Text(text) => {
@@ -114,9 +112,8 @@ where
                     let function: FullName = match string.parse() {
                         Ok(function) => function,
                         Err(error) => {
-                            errors.give(
-                                MalformedError::new("function name".into(), error.to_string())
-                                    .with_annotations_from(&text),
+                            problems.give(
+                                MalformedError::as_problem("function name", error).with_annotations_from(&text),
                             )?;
                             return Ok(None);
                         }
@@ -132,7 +129,7 @@ where
                 Ok(Some(text.inner.into()))
             }
 
-            Variant::List(list) => Expression::resolve_list(list, errors),
+            Variant::List(list) => Expression::resolve_list(list, problems),
 
             Variant::Map(map) => {
                 let prefixed = if let Some((key, _)) = map.to_key_value_pair()
@@ -155,22 +152,21 @@ where
                         // Unescape
                         let unescaped_key =
                             Variant::from(ByteString::from(key_string)).with_annotations_from(&key_text);
-                        return Expression::resolve_map(Map::from([(unescaped_key, value)]), errors);
+                        return Expression::resolve_map(Map::from([(unescaped_key, value)]), problems);
                     }
 
                     let mut arguments = Vec::default();
                     // TODO: are we allowing non-list arguments?
                     for argument in value.into_iterator() {
-                        let argument = argument.resolve_with_errors(errors)?.unwrap_or_default();
+                        let argument = argument.resolve_with_problems(problems)?.unwrap_or_default();
                         arguments.push(argument);
                     }
 
                     let function: FullName = match key_string.parse() {
                         Ok(function) => function,
                         Err(error) => {
-                            errors.give(
-                                MalformedError::new("function name".into(), error.to_string())
-                                    .with_annotations_from(&key_text),
+                            problems.give(
+                                MalformedError::as_problem("function name", error).with_annotations_from(&key_text),
                             )?;
                             return Ok(None);
                         }
@@ -183,7 +179,7 @@ where
                     ));
                 }
 
-                Expression::resolve_map(map, errors)
+                Expression::resolve_map(map, problems)
             }
 
             _ => Ok(Some(self.into())),

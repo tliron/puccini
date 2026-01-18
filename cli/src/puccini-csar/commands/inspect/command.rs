@@ -35,7 +35,7 @@ pub struct Inspect {
 
     /// maximum number of columns;
     /// for "text" format only
-    #[arg(long = "max-columns", default_value_t = 80, verbatim_doc_comment)]
+    #[arg(long = "max-columns", short = 'c', default_value_t = 80, verbatim_doc_comment)]
     pub max_columns: usize,
 
     /// show this help

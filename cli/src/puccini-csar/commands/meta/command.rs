@@ -24,15 +24,15 @@ pub struct Meta {
 
     /// maximum number of columns;
     /// for "text" format only
-    #[arg(long = "max-columns", default_value_t = 80, verbatim_doc_comment)]
+    #[arg(long = "max-columns", short = 'c', default_value_t = 80, verbatim_doc_comment)]
     pub max_columns: usize,
 
-    /// overwrite TOSCA.meta if it already exists
+    /// overwrite "TOSCA.meta" file if it already exists
     #[arg(long, short = 'f')]
     pub force: bool,
 
     /// enable dry run;
-    /// do everything except write the TOSCA.meta
+    /// do everything except write the "TOSCA.meta" file
     #[arg(long = "dry-run", short = 'd', verbatim_doc_comment)]
     pub dry_run: bool,
 

@@ -54,17 +54,17 @@ pub fn pop_call_site_value() -> Result<(), DispatchError> {
 
 // Utils
 
-type Static<StaticT> = LazyLock<Mutex<Option<StaticT>>>;
+type Static<StaticT> = LazyLock<RwLock<Option<StaticT>>>;
 
 static VALUE_STACK: Static<Vec<Expression>> = Static::new(|| Default::default());
 
 fn set_value_stack(stack: Option<Vec<Expression>>) -> Result<(), DispatchError> {
-    *VALUE_STACK.lock().map_escape_depiction_error()? = stack;
+    *VALUE_STACK.write().map_escape_depiction_error()? = stack;
     Ok(())
 }
 
 fn value_stack() -> Result<Option<Vec<Expression>>, DispatchError> {
-    Ok(VALUE_STACK.lock().map_escape_depiction_error()?.clone())
+    Ok(VALUE_STACK.read().map_escape_depiction_error()?.clone())
 }
 
 fn value_stack_top() -> Result<Option<Expression>, DispatchError> {

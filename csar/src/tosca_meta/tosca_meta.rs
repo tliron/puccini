@@ -3,7 +3,7 @@ use super::{super::errors::*, block::*, syntax::*, version::*};
 use {
     compris::normal::*,
     depiction::*,
-    kutil::std::error::*,
+    problemo::{common::*, *},
     std::{fs::*, io, path::*},
 };
 
@@ -48,18 +48,18 @@ pub struct ToscaMeta {
 
 impl ToscaMeta {
     /// Read.
-    pub fn read<ReadT, ErrorReceiverT>(read: &mut ReadT, errors: &mut ErrorReceiverT) -> Result<Self, CsarError>
+    pub fn read<ReadT, ProblemReceiverT>(read: &mut ReadT, problems: &mut ProblemReceiverT) -> Result<Self, Problem>
     where
         ReadT: io::BufRead,
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
         let mut tosca_meta = Self::default();
 
         let mut reader = ToscaMetaBlockReader::new_from(read);
         let mut index = 0;
-        while let Some(block) = must_unwrap_give!(reader.read_block(), errors, tosca_meta) {
+        while let Some(block) = give_unwrap!(reader.read_block(), problems, tosca_meta) {
             if index == 0 {
-                tosca_meta.parse_block_0(block, true, errors)?;
+                tosca_meta.parse_block_0(block, true, problems)?;
             } else {
                 tosca_meta.extra_blocks.push(block);
             }
@@ -68,39 +68,39 @@ impl ToscaMeta {
         }
 
         if !reader.is_empty() {
-            errors.give(ToscaMetaError::Malformed("has text after last block".into()))?;
+            problems.give(MalformedError::as_problem("has text after last block").via(CsarError))?;
         }
 
         Ok(tosca_meta)
     }
 
     /// Read from path.
-    pub fn read_path<PathT, ErrorReceiverT>(path: PathT, errors: &mut ErrorReceiverT) -> Result<Self, CsarError>
+    pub fn read_path<PathT, ProblemReceiverT>(path: PathT, problems: &mut ProblemReceiverT) -> Result<Self, Problem>
     where
         PathT: AsRef<Path>,
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        Self::read(&mut io::BufReader::new(File::open(path)?), errors)
+        Self::read(&mut io::BufReader::new(File::open(path)?), problems)
     }
 
     /// From bytes.
-    pub fn from_bytes<ErrorReceiverT>(bytes: &[u8], errors: &mut ErrorReceiverT) -> Result<Self, CsarError>
+    pub fn from_bytes<ProblemReceiverT>(bytes: &[u8], problems: &mut ProblemReceiverT) -> Result<Self, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        Self::read(&mut io::Cursor::new(bytes), errors)
+        Self::read(&mut io::Cursor::new(bytes), problems)
     }
 
     /// From string.
-    pub fn from_string<ErrorReceiverT>(string: &str, errors: &mut ErrorReceiverT) -> Result<Self, CsarError>
+    pub fn from_string<ProblemReceiverT>(string: &str, problems: &mut ProblemReceiverT) -> Result<Self, Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        Self::from_bytes(string.as_bytes(), errors)
+        Self::from_bytes(string.as_bytes(), problems)
     }
 
     /// Stringify.
-    pub fn stringify(&self, max_columns: Option<usize>) -> Result<String, CsarError> {
+    pub fn stringify(&self, max_columns: Option<usize>) -> Result<String, Problem> {
         let mut string = String::default();
 
         let block_0: ToscaMetaBlock = self.try_into()?;
@@ -114,34 +114,34 @@ impl ToscaMeta {
         Ok(string)
     }
 
-    fn parse_block_0<ErrorReceiverT>(
+    fn parse_block_0<ProblemReceiverT>(
         &mut self,
         block_0: ToscaMetaBlock,
         validate_version: bool,
-        errors: &mut ErrorReceiverT,
-    ) -> Result<(), CsarError>
+        problems: &mut ProblemReceiverT,
+    ) -> Result<(), Problem>
     where
-        ErrorReceiverT: ErrorReceiver<CsarError>,
+        ProblemReceiverT: ProblemReceiver,
     {
-        if let Some(version) = block_0.must_get_version("CSAR-Version", errors)? {
+        if let Some(version) = block_0.must_get_version("CSAR-Version", problems)? {
             self.csar_version = version;
         }
 
         if validate_version && (self.csar_version != Version::new(2, 0)) {
-            return Err(ToscaMetaError::UnsupportedVersion(self.csar_version.clone()).into());
+            return Err(UnsupportedVersionError::as_problem(self.csar_version.clone()).via(CsarError));
         }
 
         for keyname in block_0.keynames() {
             match keyname.as_str() {
                 "CSAR-Version" | "Created-By" | "Entry-Definitions" | "Other-Definitions" => {}
-                _ => errors.give(ToscaMetaError::UnsupportedKeyname(keyname.clone()))?,
+                _ => problems.give(UnsupportedKeynameError::as_problem(keyname.clone()).via(CsarError))?,
             }
         }
 
         self.created_by = block_0.get("Created-By").cloned();
         self.entry_definitions = block_0.get("Entry-Definitions").cloned();
 
-        if let Some(other_definitions) = block_0.get_list("Other-Definitions", errors)? {
+        if let Some(other_definitions) = block_0.get_list("Other-Definitions", problems)? {
             self.other_definitions = other_definitions;
         }
 
@@ -170,7 +170,7 @@ impl Default for ToscaMeta {
 }
 
 impl TryFrom<&ToscaMeta> for ToscaMetaBlock {
-    type Error = CsarError;
+    type Error = Problem;
 
     fn try_from(tosca_meta: &ToscaMeta) -> Result<Self, Self::Error> {
         let mut block_0 = ToscaMetaBlock::default();
